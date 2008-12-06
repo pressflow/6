@@ -88,8 +88,8 @@ function db_connect($url) {
 /**
  * Helper function for db_query().
  */
-function _db_query($query, $debug = 0) {
-  global $active_db, $queries, $user;
+function _db_query($query, $debug = 0, $slave = FALSE) {
+  global $active_db, $active_slave_db, $queries, $user;
 
   if (variable_get('dev_query', 0)) {
     list($usec, $sec) = explode(' ', microtime());
@@ -105,27 +105,40 @@ function _db_query($query, $debug = 0) {
     $query = '/* '. $name .' : '. $bt[2]['function'] .' */ '. $query;
   }
 
-  $result = mysql_query($query, $active_db);
+  $sent_to_slave = FALSE;
+  if (isset($active_slave_db) && $slave) {
+    $result = mysql_query($query, $active_slave_db);
+    $sent_to_slave = TRUE;
+  }
+  else {
+    $result = mysql_query($query, $active_db);
+  }
 
   if (variable_get('dev_query', 0)) {
     $query = $bt[2]['function'] ."\n". $query;
     list($usec, $sec) = explode(' ', microtime());
     $stop = (float)$usec + (float)$sec;
     $diff = $stop - $timer;
-    $queries[] = array($query, $diff);
+    $queries[] = array($query, $diff, $sent_to_slave);
+  }
+
+  if (!$sent_to_slave) {
+    $active_last_db = $active_db;
+  } else {
+    $active_last_db = $active_slave_db;
   }
 
   if ($debug) {
     print '<p>query: '. $query .'<br />error:'. mysql_error($active_db) .'</p>';
   }
 
-  if (!mysql_errno($active_db)) {
+  if (!mysql_errno($active_last_db)) {
     return $result;
   }
   else {
     // Indicate to drupal_error_handler that this is a database error.
     ${DB_ERROR} = TRUE;
-    trigger_error(check_plain(mysql_error($active_db) ."\nquery: ". $query), E_USER_WARNING);
+    trigger_error(check_plain(mysql_error($active_last_db) ."\nquery: ". $query), E_USER_WARNING);
     return FALSE;
   }
 }
@@ -241,6 +254,52 @@ function db_query_range($query) {
   $query .= ' LIMIT '. (int)$from .', '. (int)$count;
   return _db_query($query);
 }
+
+
+/**
+ * Runs a limited-range query in the active slave database.
+ *
+ * Use this as a substitute for db_query_slave() when a subset of the query is to be
+ * returned.
+ * User-supplied arguments to the query should be passed in as separate parameters
+ * so that they can be properly escaped to avoid SQL injection attacks.
+ *
+ * @param $query
+ *   A string containing an SQL query.
+ * @param ...
+ *   A variable number of arguments which are substituted into the query
+ *   using printf() syntax. The query arguments can be enclosed in one
+ *   array instead.
+ *   Valid %-modifiers are: %s, %d, %f, %b (binary data, do not enclose
+ *   in '') and %%.
+ *
+ *   NOTE: using this syntax will cast NULL and FALSE values to decimal 0,
+ *   and TRUE values to decimal 1.
+ *
+ * @param $from
+ *   The first result row to return.
+ * @param $count
+ *   The maximum number of result rows to return.
+ * @return
+ *   A database query result resource, or FALSE if the query was not executed
+ *   correctly.
+ */
+function db_query_range_slave($query) {
+  $args = func_get_args();
+  $count = array_pop($args);
+  $from = array_pop($args);
+  array_shift($args);
+
+  $query = db_prefix_tables($query);
+  if (isset($args[0]) and is_array($args[0])) { // 'All arguments in one array' syntax
+    $args = $args[0];
+  }
+  _db_query_callback($args, TRUE);
+  $query = preg_replace_callback(DB_QUERY_REGEXP, '_db_query_callback', $query);
+  $query .= ' LIMIT '. (int)$from .', '. (int)$count;
+  return _db_query($query, FALSE, TRUE);
+}
+
 
 /**
  * Runs a SELECT query and stores its results in a temporary table.
