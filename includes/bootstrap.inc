@@ -898,7 +898,7 @@ function drupal_is_denied($type, $mask) {
   // We deny access if the only matching records in the {access} table have
   // status 0 (deny). If any have status 1 (allow), or if there are no
   // matching records, we allow access.
-  $sql = "SELECT 1 FROM {access} WHERE type = '%s' AND LOWER('%s') LIKE LOWER(mask) AND status = %d";
+  $sql = "SELECT 1 FROM {access} WHERE type = '%s' AND '%s' LIKE mask AND status = %d";
   return db_result(db_query_range($sql, $type, $mask, 0, 0, 1)) && !db_result(db_query_range($sql, $type, $mask, 1, 0, 1));
 }
 

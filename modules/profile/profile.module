@@ -565,7 +565,7 @@ function _profile_get_fields($category, $register = FALSE) {
   }
   else {
     // Use LOWER('%s') instead of PHP's strtolower() to avoid UTF-8 conversion issues.
-    $filters[] = "LOWER(category) = LOWER('%s')";
+    $filters[] = "category = '%s'";
     $args[] = $category;
   }
   if (!user_access('administer users')) {
