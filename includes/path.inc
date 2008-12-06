@@ -46,21 +46,21 @@ function drupal_init_path() {
 function drupal_lookup_path($action, $path = '', $path_language = '') {
   global $language;
   // $map is an array with language keys, holding arrays of Drupal paths to alias relations
-  static $map = array(), $no_src = array(), $count;
+  static $map = array(), $no_src = array(), $has_paths;
 
   $path_language = $path_language ? $path_language : $language->language;
 
-  // Use $count to avoid looking up paths in subsequent calls if there simply are no aliases
-  if (!isset($count)) {
-    $count = db_result(db_query('SELECT COUNT(pid) FROM {url_alias}'));
+  // Use $has_paths to avoid looking up paths in subsequent calls if there simply are no aliases
+  if (!isset($has_paths)) {
+    $has_paths = (db_result(db_query_range('SELECT dst FROM {url_alias}', 0, 1)) !== FALSE);
   }
 
   if ($action == 'wipe') {
     $map = array();
     $no_src = array();
-    $count = NULL;
+    $has_paths = NULL;
   }
-  elseif ($count > 0 && $path != '') {
+  elseif ($has_paths && $path != '') {
     if ($action == 'alias') {
       if (isset($map[$path_language][$path])) {
         return $map[$path_language][$path];
