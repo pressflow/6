@@ -1,0 +1,6 @@
+; $Id: taxonomy.info,v 1.4 2007/06/08 05:50:56 dries Exp $
+name = Taxonomy
+description = Enables the categorization of content.
+package = Core - optional
+version = VERSION
+core = 6.x

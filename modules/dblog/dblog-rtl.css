@@ -1,0 +1,7 @@
+/* $Id: dblog-rtl.css,v 1.2.2.1 2008/09/02 16:56:49 dries Exp $ */
+
+#edit-type-wrapper, #edit-severity-wrapper {
+  float: right;
+  padding-right: 0;
+  padding-left: .8em;
+}

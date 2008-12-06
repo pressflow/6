@@ -1,0 +1,23 @@
+/* $Id: maintenance.css,v 1.1 2007/11/30 12:19:10 goba Exp $ */
+
+/* Update styles */
+#update-results {
+  margin-top: 3em;
+  padding: 0.25em;
+  border: 1px solid #ccc;
+  background: #eee;
+  font-size: smaller;
+}
+#update-results h2 {
+  margin-top: 0.25em;
+}
+#update-results h4 {
+  margin-bottom: 0.25em;
+}
+#update-results li.none {
+  color: #888;
+  font-style: italic;
+}
+#update-results li.failure strong {
+  color: #b63300;
+}
