@@ -1,5 +1,5 @@
 <?php
-// $Id: common.inc,v 1.756.2.35 2008/12/10 22:30:13 goba Exp $
+// $Id: common.inc,v 1.756.2.37 2008/12/11 17:39:42 goba Exp $
 
 /**
  * @file
