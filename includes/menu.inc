@@ -1,5 +1,5 @@
 <?php
-// $Id: menu.inc,v 1.255.2.25 2008/10/22 17:04:12 goba Exp $
+// $Id: menu.inc,v 1.255.2.27 2008/11/10 17:30:39 goba Exp $
 
 /**
  * @file

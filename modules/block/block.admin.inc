@@ -1,5 +1,5 @@
 <?php
-// $Id: block.admin.inc,v 1.14.2.3 2008/10/20 13:02:29 dries Exp $
+// $Id: block.admin.inc,v 1.14.2.5 2008/11/24 06:00:02 dries Exp $
 
 /**
  * @file
@@ -38,9 +38,14 @@ function block_admin_display_form(&$form_state, $blocks, $theme = NULL) {
   $throttle = module_exists('throttle');
   $block_regions = system_region_list($theme_key) + array(BLOCK_REGION_NONE => '<'. t('none') .'>');
 
+  // Weights range from -delta to +delta, so delta should be at least half
+  // of the amount of blocks present. This makes sure all blocks in the same
+  // region get an unique weight.
+  $weight_delta = round(count($blocks) / 2);
+
   // Build form tree
   $form = array(
-    '#action' => arg(3) ? url('admin/build/block/list/'. $theme_key) : url('admin/build/block'),
+    '#action' => arg(4) ? url('admin/build/block/list/'. $theme_key) : url('admin/build/block'),
     '#tree' => TRUE,
   );
 
@@ -64,6 +69,7 @@ function block_admin_display_form(&$form_state, $blocks, $theme = NULL) {
     $form[$key]['weight'] = array(
       '#type' => 'weight',
       '#default_value' => $block['weight'],
+      '#delta' => $weight_delta,
     );
     $form[$key]['region'] = array(
       '#type' => 'select',

@@ -1,5 +1,5 @@
 <?php
-// $Id: form.inc,v 1.265.2.13 2008/10/16 12:43:08 goba Exp $
+// $Id: form.inc,v 1.265.2.16 2008/11/22 13:03:19 dries Exp $
 
 /**
  * @defgroup forms Form builder functions
@@ -589,8 +589,7 @@ function drupal_validate_form($form_id, $form, &$form_state) {
  * @param $form
  *   An associative array containing the structure of the form.
  * @return
- *   A string containing the path of the page to display when processing
- *   is complete.
+ *   A string containing the themed HTML.
  */
 function drupal_render_form($form_id, &$form) {
   // Don't override #theme if someone already set it.
@@ -1499,7 +1498,7 @@ function form_get_options($element, $key) {
  * @ingroup themeable
  */
 function theme_fieldset($element) {
-  if ($element['#collapsible']) {
+  if (!empty($element['#collapsible'])) {
     drupal_add_js('misc/collapse.js');
 
     if (!isset($element['#attributes']['class'])) {
@@ -1507,7 +1506,7 @@ function theme_fieldset($element) {
     }
 
     $element['#attributes']['class'] .= ' collapsible';
-    if ($element['#collapsed']) {
+    if (!empty($element['#collapsed'])) {
       $element['#attributes']['class'] .= ' collapsed';
     }
   }
@@ -1915,7 +1914,15 @@ function expand_checkboxes($element) {
     }
     foreach ($element['#options'] as $key => $choice) {
       if (!isset($element[$key])) {
-        $element[$key] = array('#type' => 'checkbox', '#processed' => TRUE, '#title' => $choice, '#return_value' => $key, '#default_value' => isset($value[$key]), '#attributes' => $element['#attributes']);
+        $element[$key] = array(
+          '#type' => 'checkbox',
+          '#processed' => TRUE,
+          '#title' => $choice,
+          '#return_value' => $key,
+          '#default_value' => isset($value[$key]),
+          '#attributes' => $element['#attributes'],
+          '#ahah' => isset($element['#ahah']) ? $element['#ahah'] : NULL,
+        );
       }
     }
   }
