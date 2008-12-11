@@ -1,5 +1,5 @@
 <?php
-// $Id: node.install,v 1.4.2.1 2008/04/15 08:39:40 dries Exp $
+// $Id: node.install,v 1.4.2.2 2008/12/10 21:24:43 goba Exp $
 
 /**
  * Implementation of hook_schema().
@@ -258,7 +258,7 @@ function node_schema() {
         'not null' => TRUE,
         'default' => ''),
       'module' => array(
-        'description' => t('The module that implements this type.'),
+        'description' => t('The base string used to construct callbacks corresponding to this node type.'),
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE),

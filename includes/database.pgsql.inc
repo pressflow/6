@@ -1,5 +1,5 @@
 <?php
-// $Id: database.pgsql.inc,v 1.68.2.2 2008/07/08 09:50:03 goba Exp $
+// $Id: database.pgsql.inc,v 1.68.2.3 2008/11/17 10:31:41 goba Exp $
 
 /**
  * @file
@@ -85,6 +85,7 @@ function db_connect($url) {
   // Restore error tracking setting
   ini_set('track_errors', $track_errors_previous);
 
+  pg_query($connection, "set client_encoding=\"UTF8\"");
   return $connection;
 }
 
