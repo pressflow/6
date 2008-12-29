@@ -625,6 +625,13 @@ function system_modules($form_state = array()) {
   // Get current list of modules.
   $files = module_rebuild_cache();
 
+  // Remove hidden modules from display list.
+  foreach ($files as $filename => $file) {
+    if (!empty($file->info['hidden'])) {
+      unset($files[$filename]);
+    }
+  }
+
   uasort($files, 'system_sort_modules_by_info_name');
 
   if (!empty($form_state['storage'])) {
