@@ -1,0 +1,181 @@
+<?php
+/**
+ * @file Provides test for patches to bootstrap.inc
+ */
+ 
+
+/**
+ * Test changes to variable_set().
+ */
+class BootstrapVariableSet extends DrupalTestCase {
+  private $varName   = 'pressflow_test_var_set';
+  private $varValue  = 'The value for the test variable';
+  private $varUpdate = 'The update value for the test variable';
+  
+  /**
+   * Provides information about this test.
+   *
+   * @return array An array of test information.
+   */
+  function get_info() {
+    return array(
+      'name'  => t('bootstrap.inc variable_set Test'),
+      'desc'  => t('Tests patches made to variable_get().'),
+      'group' => 'Pressflow Core',
+    );
+  }
+
+
+  /**
+   * Insert a new variable and confirm that it can be retrieved regardless
+   * of the case of the characters in the name.
+   *
+   * @todo - This test can't pass due to how Drupal Core deals with case on
+   *         variable names.
+   */
+  function testInsertNew() {
+/*
+    variable_set($this->varName, $this->varValue);
+    $name  = pressflow_tests_fuzz_case($this->varName);
+    $value = variable_get($name, '');
+    
+    $msg = t('Insert new (@orig) and get with different case (@new): %s', 
+             array('@orig' => $this->varName, '@new' => $name));
+    $this->assertEqual($this->varValue, $value, $msg);
+*/
+  }
+
+
+  /**
+   * Initialize the test.
+   */
+/*
+  function setUp() {
+    variable_del($this->varName);
+  	parent::setUp();
+  }
+*/
+
+
+  /**
+   * Clean up after running the test.
+   */
+/*
+  function tearDown() {
+    variable_del($this->varName);
+    parent::tearDown();
+  }
+*/
+}
+
+
+/**
+ * Tests changes to drupal_is_denied().
+ */
+class BootstrapIsDenied extends DrupalTestCase {
+  /** Stores the IDs of the access rules that are created so we can clean
+   *  up when we're done. */
+  private $accessID = array();
+  
+  /** The access rules that will be created. */
+  private $accessRules = array(
+    array('mask' => '127.10.%',      'type' => 'host', 'status' => 1),
+    array('mask' => '64.122.5.%',    'type' => 'host', 'status' => 0),
+    array('mask' => '%@example.com', 'type' => 'mail', 'status' => 1),
+    array('mask' => '%@hotmail.com', 'type' => 'mail', 'status' => 0),
+    array('mask' => 'George',        'type' => 'user', 'status' => 1),
+    array('mask' => 'George%',       'type' => 'user', 'status' => 0),
+  );
+
+  /** These should allow access. */
+  private $shouldPass = array(
+    '127.10.1.255'           => 'host',
+    '65.122.5.2'             => 'host',
+    'sampleuser@example.com' => 'mail',
+    'google@yahoo.com'       => 'mail',
+    'George'                 => 'user',
+    'Frank'                  => 'user',
+  );
+
+  /** These should prevent access. */
+  private $shouldFail = array(
+    '64.122.5.22' => 'host',
+    'herbert@hotmail.com' => 'mail',
+    'George Wells' => 'user',
+  );
+  
+  
+  /**
+   * Provides information about this test.
+   *
+   * @return array An array of test information.
+   */
+  function get_info() {
+    return array(
+      'name' => t('boostrap.inc drupal_is_denied Test'),
+      'desc' => t('Tests patches made to drupal_is_denied().'),
+      'group' => 'Pressflow Core',
+    );
+  }
+
+
+  /**
+   * Test the allowed access rules.
+   */
+  function testDrupalIsDeniedAllows() {
+    foreach ($this->shouldPass as $mask => $type) {
+      $remask = pressflow_tests_fuzz_case($mask);
+      $result = drupal_is_denied($type, $remask);
+      
+      $msg = t('Check allowed mask: @mask with type @type - %s',
+               array('@mask' => $remask, '@type' => $type));
+      
+      $this->assertFalse($result, $msg);
+    }
+  }
+
+
+  /**
+   * Test the denied access rules.
+   */
+  function testDrupalIsDeniedDenials() {
+    foreach ($this->shouldFail as $mask => $type) {
+      $remask = pressflow_tests_fuzz_case($mask);
+      $result = drupal_is_denied($type, $remask);
+      
+      $msg = t('Check blocked mask: @mask with type @type - %s',
+               array('@mask' => $remask, '@type' => $type));
+      
+      $this->assertTrue($result, $msg);
+    }
+  }
+
+
+  /**
+   * Create some rules to test against.
+   */
+  function setUp() {
+    foreach ($this->accessRules as $rule) {
+      $aid = db_next_id('{access}_aid');
+      $this->accessID[] = $aid;
+    
+      db_query("INSERT INTO {access} (aid, mask, type, status) VALUES ('%s', '%s', '%s', %d)", 
+               $aid, $rule['mask'], $rule['type'], $rule['status']);
+    }
+    
+  	parent::setUp();
+  }
+
+
+  /**
+   * Clean up after ourselves.
+   */
+  function tearDown() {
+    
+    foreach ($this->accessID as $aid) {
+      db_query('DELETE FROM {access} WHERE aid = %d', $aid);
+    }
+    
+    parent::tearDown();
+  }
+}

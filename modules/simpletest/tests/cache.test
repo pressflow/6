@@ -1,0 +1,51 @@
+<?php
+/**
+ * @file Provides test for patches to cache.inc
+ */
+
+/**
+ * Test changes to cache_set().
+ */
+class CacheSetTest extends DrupalTestCase {
+
+  private $cacheName = 'test_cache_set_id';
+  private $cacheValue = 'initial test value';
+
+  /**
+   * Provides information about this test.
+   *
+   * @return array An array of test information.
+   */
+  function get_info() {
+    return array(
+      'name'  => t('cache.inc cache_set Test'),
+      'desc'  => t('Tests patches made to cache_set().'),
+      'group' => 'Pressflow Core',
+    );
+  }  
+
+
+  /**
+   * Test cache set functionality.
+   */
+  function testCacheSet() {
+    cache_set($this->cacheName, 'cache', $this->cacheValue);
+    $retrieved = cache_get($this->cacheName);
+    if ($retrieved) {
+      $value = $retrieved->data;
+    }
+    
+    $this->assertEqual($this->cacheValue, $value,
+                       t('Cache set/retrieve with identical name. %s'));
+    
+    $retrieved = cache_get(pressflow_tests_fuzz_case($this->cacheName));
+    if ($retrieved) {
+      $value = $retrieved->data;
+    }
+
+    $this->assertEqual($retrieved->data, $this->cacheValue,
+                       t('Cache set/retrieve with mixed case name. %s'));
+  }
+
+}
+
