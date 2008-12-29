@@ -17,6 +17,11 @@ define('MAINTENANCE_MODE', 'install');
  *   The installation phase we should proceed to.
  */
 function install_main() {
+  if (preg_match("/^simpletest\d+$/", $_SERVER['HTTP_USER_AGENT'])) {
+    header('HTTP/1.1 403 Forbidden');
+    exit;
+  }
+
   require_once './includes/bootstrap.inc';
   drupal_bootstrap(DRUPAL_BOOTSTRAP_CONFIGURATION);
 
