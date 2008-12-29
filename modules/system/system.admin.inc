@@ -19,7 +19,7 @@ function system_main_admin_page($arg = NULL) {
 
   // Check for status report errors.
   if (system_status(TRUE) && user_access('administer site configuration')) {
-    drupal_set_message(t('One or more problems were detected with your Drupal installation. Check the <a href="@status">status report</a> for more information.', array('@status' => url('admin/reports/status'))), 'error');
+    drupal_set_message(t('One or more problems were detected with your Pressflow installation. Check the <a href="@status">status report</a> for more information.', array('@status' => url('admin/reports/status'))), 'error');
   }
   $blocks = array();
   if ($admin = db_fetch_array(db_query("SELECT menu_name, mlid FROM {menu_links} WHERE link_path = 'admin' AND module = 'system'"))) {
