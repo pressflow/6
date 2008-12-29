@@ -13,7 +13,7 @@
  *   The items HTML.
  */
 function aggregator_page_last() {
-  drupal_add_feed(url('aggregator/rss'), variable_get('site_name', 'Drupal') .' '. t('aggregator'));
+  drupal_add_feed(url('aggregator/rss'), variable_get('site_name', 'Pressflow') .' '. t('aggregator'));
 
   $items = aggregator_feed_items_load('SELECT i.*, f.title AS ftitle, f.link AS flink FROM {aggregator_item} i INNER JOIN {aggregator_feed} f ON i.fid = f.fid ORDER BY i.timestamp DESC, i.iid DESC');
 
@@ -64,7 +64,7 @@ function aggregator_page_category($arg1, $arg2 = NULL) {
   // $form_state and $arg2 is $category. Otherwise, $arg1 is $category.
   $category = is_array($arg2) ? $arg2 : $arg1;
 
-  drupal_add_feed(url('aggregator/rss/'. $category['cid']), variable_get('site_name', 'Drupal') .' '. t('aggregator - @title', array('@title' => $category['title'])));
+  drupal_add_feed(url('aggregator/rss/'. $category['cid']), variable_get('site_name', 'Pressflow') .' '. t('aggregator - @title', array('@title' => $category['title'])));
 
   // It is safe to include the cid in the query because it's loaded from the
   // database by aggregator_category_load.
@@ -371,7 +371,7 @@ function theme_aggregator_page_rss($feeds, $category = NULL) {
     $items .= format_rss_item($feed->ftitle .': '. $feed->title, $feed->link, $feed->description, array('pubDate' => date('r', $feed->timestamp)));
   }
 
-  $site_name = variable_get('site_name', 'Drupal');
+  $site_name = variable_get('site_name', 'Pressflow');
   $url = url((isset($category) ? 'aggregator/categories/'. $category->cid : 'aggregator'), array('absolute' => TRUE));
   $description = isset($category) ? t('@site_name - aggregated feeds in category @title', array('@site_name' => $site_name, '@title' => $category->title)) : t('@site_name - aggregated feeds', array('@site_name' => $site_name));
 
@@ -421,7 +421,7 @@ function theme_aggregator_page_opml($feeds) {
   $output = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
   $output .= "<opml version=\"1.1\">\n";
   $output .= "<head>\n";
-  $output .= '<title>'. check_plain(variable_get('site_name', 'Drupal')) ."</title>\n";
+  $output .= '<title>'. check_plain(variable_get('site_name', 'Pressflow')) ."</title>\n";
   $output .= '<dateModified>'. gmdate('r') ."</dateModified>\n";
   $output .= "</head>\n";
   $output .= "<body>\n";

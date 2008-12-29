@@ -1711,7 +1711,7 @@ function node_feed($nids = FALSE, $channel = array()) {
 
   $channel_defaults = array(
     'version'     => '2.0',
-    'title'       => variable_get('site_name', 'Drupal'),
+    'title'       => variable_get('site_name', 'Pressflow'),
     'link'        => $base_url,
     'description' => variable_get('site_mission', ''),
     'language'    => $language->language
@@ -1742,7 +1742,7 @@ function node_page_default() {
 
   if ($num_rows) {
     $feed_url = url('rss.xml', array('absolute' => TRUE));
-    drupal_add_feed($feed_url, variable_get('site_name', 'Drupal') .' '. t('RSS'));
+    drupal_add_feed($feed_url, variable_get('site_name', 'Pressflow') .' '. t('RSS'));
     $output .= theme('pager', NULL, variable_get('default_nodes_main', 10));
   }
   else {

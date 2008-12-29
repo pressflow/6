@@ -1127,7 +1127,7 @@ function system_site_information_settings() {
   $form['site_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Name'),
-    '#default_value' => variable_get('site_name', 'Drupal'),
+    '#default_value' => variable_get('site_name', 'Pressflow'),
     '#description' => t('The name of this website.'),
     '#required' => TRUE
   );
@@ -1639,7 +1639,7 @@ function system_site_maintenance_settings() {
   $form['site_offline_message'] = array(
     '#type' => 'textarea',
     '#title' => t('Site off-line message'),
-    '#default_value' => variable_get('site_offline_message', t('@site is currently under maintenance. We should be back shortly. Thank you for your patience.', array('@site' => variable_get('site_name', 'Drupal')))),
+    '#default_value' => variable_get('site_offline_message', t('@site is currently under maintenance. We should be back shortly. Thank you for your patience.', array('@site' => variable_get('site_name', 'Pressflow')))),
     '#description' => t('Message to show visitors when the site is in off-line mode.')
   );
 

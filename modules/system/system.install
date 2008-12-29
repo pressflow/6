@@ -17,7 +17,7 @@ function system_requirements($phase) {
   // Report Drupal version
   if ($phase == 'runtime') {
     $requirements['drupal'] = array(
-      'title' => $t('Drupal'),
+      'title' => $t('Pressflow'),
       'value' => VERSION,
       'severity' => REQUIREMENT_INFO,
       'weight' => -10,

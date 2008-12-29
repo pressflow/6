@@ -99,7 +99,7 @@ function drupal_mail($module, $key, $to, $language, $params = array(), $from = N
     'MIME-Version'              => '1.0',
     'Content-Type'              => 'text/plain; charset=UTF-8; format=flowed; delsp=yes',
     'Content-Transfer-Encoding' => '8Bit',
-    'X-Mailer'                  => 'Drupal'
+    'X-Mailer'                  => 'Pressflow'
   );
   if ($default_from) {
     // To prevent e-mail from looking like spam, the addresses in the Sender and

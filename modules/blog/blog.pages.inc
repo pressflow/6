@@ -103,7 +103,7 @@ function blog_feed_user($account) {
  */
 function blog_feed_last() {
   $result = db_query_range(db_rewrite_sql("SELECT n.nid, n.created FROM {node} n WHERE n.type = 'blog' AND n.status = 1 ORDER BY n.created DESC"), 0, variable_get('feed_default_items', 10));
-  $channel['title'] = variable_get('site_name', 'Drupal') .' blogs';
+  $channel['title'] = variable_get('site_name', 'Pressflow') .' blogs';
   $channel['link'] = url('blog', array('absolute' => TRUE));
 
   $items = array();

@@ -115,7 +115,7 @@ function drupal_install_profile_name() {
     if (function_exists($function)) {
       $details = $function();
     }
-    $name = isset($details['name']) ? $details['name'] : 'Drupal';
+    $name = isset($details['name']) ? $details['name'] : 'Pressflow';
   }
 
   return $name;

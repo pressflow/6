@@ -1250,7 +1250,7 @@ function user_login(&$form_state) {
     '#attributes' => array('tabindex' => '1'),
   );
 
-  $form['name']['#description'] = t('Enter your @s username.', array('@s' => variable_get('site_name', 'Drupal')));
+  $form['name']['#description'] = t('Enter your @s username.', array('@s' => variable_get('site_name', 'Pressflow')));
   $form['pass'] = array('#type' => 'password',
     '#title' => t('Password'),
     '#description' => t('Enter the password that accompanies your username.'),
@@ -2070,7 +2070,7 @@ function user_mail_tokens($account, $language) {
   global $base_url;
   $tokens = array(
     '!username' => $account->name,
-    '!site' => variable_get('site_name', 'Drupal'),
+    '!site' => variable_get('site_name', 'Pressflow'),
     '!login_url' => user_pass_reset_url($account),
     '!uri' => $base_url,
     '!uri_brief' => preg_replace('!^https?://!', '', $base_url),

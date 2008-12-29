@@ -48,7 +48,7 @@ function taxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
 
         case 'feed':
           $channel['link'] = url('taxonomy/term/'. $str_tids .'/'. $depth, array('absolute' => TRUE));
-          $channel['title'] = variable_get('site_name', 'Drupal') .' - '. $title;
+          $channel['title'] = variable_get('site_name', 'Pressflow') .' - '. $title;
           // Only display the description if we have a single term, to avoid clutter and confusion.
           if (count($tids) == 1) {
             $term = taxonomy_get_term($tids[0]);
