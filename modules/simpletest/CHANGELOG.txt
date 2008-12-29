@@ -1,0 +1,66 @@
+// $Id: CHANGELOG.txt,v 1.1.2.42 2008/10/22 23:18:15 boombatower Exp $
+
+SimpleTest 6.x-2.6, xxxx-xx-xx (development version)
+------------------------------
+
+SimpleTest 6.x-2.5, 2008-10-22
+------------------------------
+- Backports:
+   * #308668: Make test selection page work with non-JS.
+   * #316344: Add meta refresh support to SimpleTest.
+   * #320127: error in drupal_web_test_case.php.
+   * #320161: drupalGetTestFiles does not sort files correctly.
+   * #320374: Simpletest now fails with max_allowed_packet = 1M.
+   * #322779: Simpletest calls file_check_directory incorrectly.
+- Changes:
+   * #319682: Install.txt refers to non-existent admin page.
+   * #323405: Remove bogus version = VERSION line from .info file.
+
+SimpleTest 6.x-2.4, 2008-09-22
+------------------------------
+- Bugs:
+   * #310427: settings.php check doesn't work properly.
+- Backports:
+   * #305077: Rework simpletest backend.
+   * #308399: The simpletest error handler is broken for PHP functions.
+   * #308262: Clean-up and documentation of simpletest.js.
+   * #308186: cURL 7.18.2 and SimpleTest module bitterly despise one another.
+   * #295697: update cURL requirement.
+   * #299186: assertFieldByXPath does not work for selects or textareas with value.
+   * #308272: Improve test selection page.
+   * #255613: Update clickLink() to use drupalGet() and clean-up code.
+- Changes:
+   * #310783: Fix up requirements check for settings.php.
+
+SimpleTest 6.x-2.3, 2008-09-15
+------------------------------
+- Backports:
+    * #297869: Add xpath method to SimpleTest.
+    * #297894: Add assertLink and assertNoLink to SimpleTest.
+    * #298137: drupalCreateContentType() should reset node permissions.
+    * #268148: Don't verify SSL certificates.
+    * #293099: Clarify form documentation and error handling.
+    * #296027: {simpletest} indexes come with wrong array expression.
+    * #299461: assertEqual() does not work with arrays.
+    * #246261: Simpletest-light doesn't handle selects with <optgroup>'s correctly.
+- Changes:
+    * #297890: Add notice to INSTALL.txt instructing users on Windows to
+               encode settings file with the UNIX standard.
+    * #302606: Usability: improve installation error message.
+
+SimpleTest 6.x-2.2, 2008-08-15
+------------------------------
+- Bugs:
+    * #292062: fixed role creation permission check for 6.x style.
+- Backports:
+    * #290316: test_id field name corrected.
+    * #293500: change message field to type text.
+    * #268063: added instruction in INSTALL.txt about hidden property.
+    * #291750: remove results after displayed.
+- Changes:
+    * #295001: clarified INSTALL.txt and installation requirements message.
+    * Updated README.txt with issue information.
+
+SimpleTest 6.x-2.1, 2008-08-05
+------------------------------
+- Complete backport of Drupal 7.x SimpleTest module.

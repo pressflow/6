@@ -1,0 +1,13 @@
+; $Id: simpletest.info,v 1.4.2.2.2.2 2008/10/22 23:04:50 boombatower Exp $
+name = "SimpleTest"
+description = "Provides a framework for unit and functional testing."
+package = Other
+core = 6.x
+PHP = 5.x
+
+; Information added by drupal.org packaging script on 2008-10-22
+version = "6.x-2.5"
+core = "6.x"
+project = "simpletest"
+datestamp = "1224717920"
+
