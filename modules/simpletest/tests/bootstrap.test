@@ -2,12 +2,12 @@
 /**
  * @file Provides test for patches to bootstrap.inc
  */
- 
+
 
 /**
  * Test changes to variable_set().
  */
-class BootstrapVariableSet extends DrupalTestCase {
+class BootstrapVariableSet extends DrupalWebTestCase {
   private $varName   = 'pressflow_test_var_set';
   private $varValue  = 'The value for the test variable';
   private $varUpdate = 'The update value for the test variable';
@@ -17,11 +17,11 @@ class BootstrapVariableSet extends DrupalTestCase {
    *
    * @return array An array of test information.
    */
-  function get_info() {
+  function getInfo() {
     return array(
-      'name'  => t('bootstrap.inc variable_set Test'),
+      'name'  => t('variable_get()'),
       'desc'  => t('Tests patches made to variable_get().'),
-      'group' => 'Pressflow Core',
+      'group' => 'Pressflow',
     );
   }
 
@@ -70,9 +70,73 @@ class BootstrapVariableSet extends DrupalTestCase {
 
 
 /**
+ * Shuffle the case of the alphabetic characters in the given string. The
+ * algorithm used, picks a certain number of random character in the given
+ * string and reverses the case of those characters.
+ *
+ * TODO: Move this function somewhere better.
+ *
+ * @param string $text The text to case-shuffle.
+ *
+ * @return string The case-shuffled text.
+ */
+function pressflow_tests_fuzz_case($text) {
+  $text = strtolower($text);
+
+  for ($i = 0; $i < strlen($text); $i++) {
+    if (preg_match('/[a-z]/', $text[$i]) > 0) {
+      if (rand(0, 1) == 1) {
+        $text[$i] = strtoupper($text[$i]);
+      }
+    }
+  }
+
+  return $text;
+}
+
+/**
+ * Force the variables to reset from the database.
+ *
+ * TODO: Move this function somewhere better.
+ */
+function pressflow_tests_reset_vars() {
+  global $conf;
+
+  cache_clear_all('variables', 'cache');
+  $vars = variable_init();
+
+  //------------------------------------------------------------------------
+  // Create a list of lowercase keys.
+  $temp  = array_keys($var);
+  $names = array();
+
+  foreach ($temp as $key) {
+    $names[] = strtolower($key);
+  }
+
+  //------------------------------------------------------------------------
+  // Unset any variable whose name equals (ingoring case) a database backed
+  // variable name
+  $conf_keys = array_keys($conf);
+  foreach ($conf_keys as $key) {
+    $low_key = strtolower($key);
+    if (array_search($low_key, $names) !== FALSE) {
+      unset($conf[$key]);
+    }
+  }
+
+  //------------------------------------------------------------------------
+  // Set the reloaded variables.
+  foreach ($vars as $key => $value) {
+    $conf[$key] = $value;
+  }
+}
+
+
+/**
  * Tests changes to drupal_is_denied().
  */
-class BootstrapIsDenied extends DrupalTestCase {
+class BootstrapIsDenied extends DrupalWebTestCase {
   /** Stores the IDs of the access rules that are created so we can clean
    *  up when we're done. */
   private $accessID = array();
@@ -110,11 +174,11 @@ class BootstrapIsDenied extends DrupalTestCase {
    *
    * @return array An array of test information.
    */
-  function get_info() {
+  function getInfo() {
     return array(
-      'name' => t('boostrap.inc drupal_is_denied Test'),
+      'name' => 'drupal_is_denied()',
       'desc' => t('Tests patches made to drupal_is_denied().'),
-      'group' => 'Pressflow Core',
+      'group' => 'Pressflow',
     );
   }
 
@@ -133,8 +197,7 @@ class BootstrapIsDenied extends DrupalTestCase {
       $this->assertFalse($result, $msg);
     }
   }
-
-
+  
   /**
    * Test the denied access rules.
    */
@@ -150,20 +213,17 @@ class BootstrapIsDenied extends DrupalTestCase {
     }
   }
 
-
   /**
    * Create some rules to test against.
    */
   function setUp() {
-    foreach ($this->accessRules as $rule) {
-      $aid = db_next_id('{access}_aid');
-      $this->accessID[] = $aid;
-    
-      db_query("INSERT INTO {access} (aid, mask, type, status) VALUES ('%s', '%s', '%s', %d)", 
-               $aid, $rule['mask'], $rule['type'], $rule['status']);
-    }
-    
   	parent::setUp();
+    foreach ($this->accessRules as $rule) {
+      db_query('INSERT INTO {access} (mask, type, status) VALUES ("%s", "%s", %d)',
+               $rule['mask'], $rule['type'], $rule['status']);
+      $aid = db_last_insert_id('access', 'aid');
+      $this->accessID[] = $aid;
+    }  
   }
 
 
@@ -171,7 +231,6 @@ class BootstrapIsDenied extends DrupalTestCase {
    * Clean up after ourselves.
    */
   function tearDown() {
-    
     foreach ($this->accessID as $aid) {
       db_query('DELETE FROM {access} WHERE aid = %d', $aid);
     }
