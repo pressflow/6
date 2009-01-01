@@ -53,7 +53,7 @@ class BootstrapVariableSet extends DrupalWebTestCase {
    * Initialize the test.
    */
   function setUp() {
-  	parent::setUp();
+    parent::setUp();
     variable_del($this->varName);
   }
 
@@ -216,7 +216,7 @@ class BootstrapIsDenied extends DrupalWebTestCase {
    * Create some rules to test against.
    */
   function setUp() {
-  	parent::setUp();
+    parent::setUp();
     foreach ($this->accessRules as $rule) {
       db_query('INSERT INTO {access} (mask, type, status) VALUES ("%s", "%s", %d)',
                $rule['mask'], $rule['type'], $rule['status']);
