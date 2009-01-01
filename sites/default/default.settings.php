@@ -200,11 +200,11 @@ ini_set('url_rewriter.tags',        '');
  *
  * Configuration for Squid
  *   ...
- *   acl cookie_logged_in_set rep_header Set-Cookie DRUPAL_LOGGED_IN=Y
+ *   acl cookie_logged_in_set rep_header Set-Cookie LOGGED_IN=Y
  *   cache deny cookie_logged_in_set
- *   acl cookie_logged_in_out rep_header Cookie DRUPAL_LOGGED_IN=Y
+ *   acl cookie_logged_in_out rep_header Cookie LOGGED_IN=Y
  *   cache deny cookie_logged_in_out
- *   acl cookie_logged_in     req_header Cookie DRUPAL_LOGGED_IN=Y
+ *   acl cookie_logged_in     req_header Cookie LOGGED_IN=Y
  *   cache deny cookie_logged_in
  *   ...
  *
@@ -212,7 +212,7 @@ ini_set('url_rewriter.tags',        '');
  *
  *    sub vcl_recv {
  *      ...
- *      if (req.http.Cookie && req.http.Cookie ~ "DRUPAL_LOGGED_IN=Y") {
+ *      if (req.http.Cookie && req.http.Cookie ~ "LOGGED_IN=Y") {
  *        pass;
  *      }
  *      ...

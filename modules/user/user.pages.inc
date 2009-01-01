@@ -149,7 +149,7 @@ function user_logout() {
   if (variable_get('reverse_proxy', 0)) {
     // If we are behind a reverse proxy, unset the logged in cookie by giving it
     // an empty value and a time in the past
-    setcookie('DRUPAL_LOGGED_IN', '', $_SERVER['REQUEST_TIME'] - 86400, '/');
+    setcookie('LOGGED_IN', '', $_SERVER['REQUEST_TIME'] - 86400, '/');
   }
 
   // Destroy the current session:

@@ -1374,7 +1374,7 @@ function user_authenticate_finalize(&$edit) {
   user_module_invoke('login', $edit, $user);
   if (variable_get('reverse_proxy', 0)) {
     // If we have a reverse proxy, set a special cookie so the proxy would pass through the requests.
-    setcookie('DRUPAL_LOGGED_IN', 'Y', $_SERVER['REQUEST_TIME'] + ini_get('session.cookie_lifetime'), '/');
+    setcookie('LOGGED_IN', 'Y', $_SERVER['REQUEST_TIME'] + ini_get('session.cookie_lifetime'), '/');
   }
 }
 

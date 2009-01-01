@@ -612,8 +612,8 @@ function drupal_page_header() {
   // Set a cookie if the user is logged in, so the reverse proxy would
   // pass through the request. This requires a rule in the reverse proxy's
   // configuration. See settings.php for details.
-  if ($user->uid && !isset($_COOKIE['DRUPAL_LOGGED_IN'])) {
-    setcookie('DRUPAL_LOGGED_IN', 'Y', $_SERVER['REQUEST_TIME'] + ini_get('session.cookie_lifetime'), '/');
+  if ($user->uid && !isset($_COOKIE['LOGGED_IN'])) {
+    setcookie('LOGGED_IN', 'Y', $_SERVER['REQUEST_TIME'] + ini_get('session.cookie_lifetime'), '/');
   }     
 
   header("Expires: Sun, 11 Mar 1984 12:00:00 GMT");
