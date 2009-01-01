@@ -19,7 +19,7 @@ class BootstrapVariableSet extends DrupalWebTestCase {
    */
   function getInfo() {
     return array(
-      'name'  => t('variable_get()'),
+      'name'  => 'variable_get()',
       'desc'  => t('Tests patches made to variable_get().'),
       'group' => 'Pressflow',
     );
@@ -29,43 +29,42 @@ class BootstrapVariableSet extends DrupalWebTestCase {
   /**
    * Insert a new variable and confirm that it can be retrieved regardless
    * of the case of the characters in the name.
-   *
-   * @todo - This test can't pass due to how Drupal Core deals with case on
-   *         variable names.
    */
   function testInsertNew() {
-/*
     variable_set($this->varName, $this->varValue);
+    $value = variable_get($this->varName, '');
+    
+    $msg = t('Insert new (@orig) and get with same case (@new).', 
+             array('@orig' => $this->varName, '@new' => $name));
+    $this->assertEqual($this->varValue, $value, $msg);
+
+    // Mangle the case of the variable name.
     $name  = pressflow_tests_fuzz_case($this->varName);
     $value = variable_get($name, '');
     
-    $msg = t('Insert new (@orig) and get with different case (@new): %s', 
+    $msg = t('Insert new (@orig) and get with different case (@new).', 
              array('@orig' => $this->varName, '@new' => $name));
-    $this->assertEqual($this->varValue, $value, $msg);
-*/
+    // NOTE: This test can't pass due to how Drupal deals with case on variable names.
+    //$this->assertEqual($this->varValue, $value, $msg);
   }
 
 
   /**
    * Initialize the test.
    */
-/*
   function setUp() {
-    variable_del($this->varName);
   	parent::setUp();
+    variable_del($this->varName);
   }
-*/
 
 
   /**
    * Clean up after running the test.
    */
-/*
   function tearDown() {
     variable_del($this->varName);
     parent::tearDown();
   }
-*/
 }
 
 
