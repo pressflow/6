@@ -1,5 +1,5 @@
 <?php
-// $Id: bootstrap.inc,v 1.206.2.7 2008/12/08 11:49:48 goba Exp $
+// $Id: bootstrap.inc,v 1.206.2.9 2009/01/14 19:10:25 goba Exp $
 
 /**
  * @file
@@ -267,7 +267,7 @@ function drupal_unset_globals() {
 }
 
 /**
- * Validate that $_SERVER['HTTP_HOST'] is safe.
+ * Validate that a hostname (for example $_SERVER['HTTP_HOST']) is safe.
  *
  * As $_SERVER['HTTP_HOST'] is user input, ensure it only contains characters
  * allowed in hostnames.  See RFC 952 (and RFC 2181). $_SERVER['HTTP_HOST'] is
@@ -276,9 +276,8 @@ function drupal_unset_globals() {
  * @return
  *  TRUE if only containing valid characters, or FALSE otherwise.
  */
-function drupal_valid_http_host() {
-  $_SERVER['HTTP_HOST'] = strtolower($_SERVER['HTTP_HOST']);
-  return preg_match('/^\[?(?:[a-z0-9-:\]_]+\.?)+$/', $_SERVER['HTTP_HOST']);
+function drupal_valid_http_host($host) {
+  return preg_match('/^\[?(?:[a-z0-9-:\]_]+\.?)+$/', $host);
 }
 
 /**
@@ -292,10 +291,21 @@ function conf_init() {
   global $db_url, $db_prefix, $cookie_domain, $conf, $installed_profile, $update_free_access;
   $conf = array();
 
-  if (!drupal_valid_http_host()) {
-    // HTTP_HOST is invalid, e.g. if containing slashes it may be an attack.
-    header('HTTP/1.1 400 Bad Request');
-    exit;
+  if (isset($_SERVER['HTTP_HOST'])) {
+    // As HTTP_HOST is user input, ensure it only contains characters allowed
+    // in hostnames. See RFC 952 (and RFC 2181).
+    // $_SERVER['HTTP_HOST'] is lowercased here per specifications.
+    $_SERVER['HTTP_HOST'] = strtolower($_SERVER['HTTP_HOST']);
+    if (!drupal_valid_http_host($_SERVER['HTTP_HOST'])) {
+      // HTTP_HOST is invalid, e.g. if containing slashes it may be an attack.
+      header('HTTP/1.1 400 Bad Request');
+      exit;
+    }
+  }
+  else {
+    // Some pre-HTTP/1.1 clients will not send a Host header. Ensure the key is
+    // defined for E_ALL compliance.
+    $_SERVER['HTTP_HOST'] = '';
   }
 
   if (file_exists('./'. conf_path() .'/settings.php')) {
@@ -1012,13 +1022,13 @@ function _drupal_bootstrap($phase) {
     case DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE:
       // Initialize configuration variables, using values from settings.php if available.
       $conf = variable_init(isset($conf) ? $conf : array());
-      // Load module handling.
-      require_once './includes/module.inc';
       $cache_mode = variable_get('cache', CACHE_DISABLED);
       // Get the page from the cache.
       $cache = $cache_mode == CACHE_DISABLED ? '' : page_get_cache();
       // If the skipping of the bootstrap hooks is not enforced, call hook_boot.
-      if ($cache_mode != CACHE_AGGRESSIVE) {
+      if (!$cache || $cache_mode != CACHE_AGGRESSIVE) {
+        // Load module handling.
+        require_once './includes/module.inc';
         bootstrap_invoke_all('boot');
       }
       // If there is a cached page, display it.

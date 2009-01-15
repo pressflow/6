@@ -1,5 +1,5 @@
 <?php
-// $Id: aggregator.module,v 1.374.2.3 2008/08/08 20:10:01 dries Exp $
+// $Id: aggregator.module,v 1.374.2.4 2009/01/14 21:36:16 goba Exp $
 
 /**
  * @file
@@ -647,7 +647,6 @@ function aggregator_refresh($feed) {
     default:
       watchdog('aggregator', 'The feed from %site seems to be broken, due to "%error".', array('%site' => $feed['title'], '%error' => $result->code .' '. $result->error), WATCHDOG_WARNING);
       drupal_set_message(t('The feed from %site seems to be broken, because of error "%error".', array('%site' => $feed['title'], '%error' => $result->code .' '. $result->error)));
-      module_invoke('system', 'check_http_request');
   }
 }
 

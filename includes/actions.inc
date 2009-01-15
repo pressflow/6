@@ -1,5 +1,5 @@
 <?php
-// $Id: actions.inc,v 1.8.2.5 2008/10/16 12:45:53 goba Exp $
+// $Id: actions.inc,v 1.8.2.6 2009/01/06 17:02:58 goba Exp $
 
 /**
  * @file
@@ -252,7 +252,7 @@ function actions_function_lookup($hash) {
  */
 function actions_synchronize($actions_in_code = array(), $delete_orphans = FALSE) {
   if (!$actions_in_code) {
-    $actions_in_code = actions_list();
+    $actions_in_code = actions_list(TRUE);
   }
   $actions_in_db = array();
   $result = db_query("SELECT * FROM {actions} WHERE parameters = ''");

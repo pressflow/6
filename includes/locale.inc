@@ -1,5 +1,5 @@
 <?php
-// $Id: locale.inc,v 1.174.2.5 2008/12/10 21:29:36 goba Exp $
+// $Id: locale.inc,v 1.174.2.7 2009/01/06 15:36:51 goba Exp $
 
 /**
  * @file
@@ -665,6 +665,7 @@ function locale_translate_import_form_submit($form, &$form_state) {
   else {
     drupal_set_message(t('File to import not found.'), 'error');
     $form_state['redirect'] = 'admin/build/translate/import';
+    return;
   }
 
   $form_state['redirect'] = 'admin/build/translate';
@@ -1368,7 +1369,7 @@ function _locale_import_one_string_db(&$report, $langcode, $source, $translation
   }
   elseif ($mode == LOCALE_IMPORT_OVERWRITE) {
     // Empty translation, remove existing if instructed.
-    db_query("DELETE FROM {locales_target} WHERE language = '%s' AND lid = %d AND plid = %d AND plural = %d", $translation, $langcode, $lid, $plid, $plural);
+    db_query("DELETE FROM {locales_target} WHERE language = '%s' AND lid = %d AND plid = %d AND plural = %d", $langcode, $lid, $plid, $plural);
     $report['deletes']++;
   }
 

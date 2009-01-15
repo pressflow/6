@@ -4,3 +4,9 @@ description = Allows the user to change the color scheme of certain themes.
 package = Core - optional
 version = VERSION
 core = 6.x
+
+; Information added by drupal.org packaging script on 2009-01-14
+version = "6.9"
+project = "drupal"
+datestamp = "1231976413"
+

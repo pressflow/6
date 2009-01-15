@@ -1,5 +1,5 @@
 <?php
-// $Id: update.fetch.inc,v 1.7.2.1 2008/04/09 18:36:58 goba Exp $
+// $Id: update.fetch.inc,v 1.7.2.2 2009/01/14 21:36:16 goba Exp $
 
 /**
  * @file
@@ -57,7 +57,6 @@ function _update_refresh() {
     watchdog('update', 'Fetched information about all available new releases and updates.', array(), WATCHDOG_NOTICE, l(t('view'), 'admin/reports/updates'));
   }
   else {
-    module_invoke('system', 'check_http_request');
     watchdog('update', 'Unable to fetch any information about available new releases and updates.', array(), WATCHDOG_ERROR, l(t('view'), 'admin/reports/updates'));
   }
   return $available;

@@ -1,5 +1,5 @@
 <?php
-// $Id: forum.install,v 1.16.2.1 2008/06/25 07:47:34 dries Exp $
+// $Id: forum.install,v 1.16.2.2 2009/01/06 15:46:37 goba Exp $
 
 /**
  * Implementation of hook_install().
@@ -65,28 +65,28 @@ function forum_uninstall() {
  */
 function forum_schema() {
   $schema['forum'] = array(
-    'description' => t('Stores the relationship of nodes to forum terms.'),
+    'description' => 'Stores the relationship of nodes to forum terms.',
     'fields' => array(
       'nid' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('The {node}.nid of the node.'),
+        'description' => 'The {node}.nid of the node.',
       ),
       'vid' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('Primary Key: The {node}.vid of the node.'),
+        'description' => 'Primary Key: The {node}.vid of the node.',
       ),
       'tid' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-        'description' => t('The {term_data}.tid of the forum term assigned to the node.'),
+        'description' => 'The {term_data}.tid of the forum term assigned to the node.',
       ),
     ),
     'indexes' => array(

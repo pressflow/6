@@ -6,3 +6,9 @@ core = 6.x
 engine = phptemplate
 stylesheets[all][] = style.css
 stylesheets[print][] = print.css
+
+; Information added by drupal.org packaging script on 2009-01-14
+version = "6.9"
+project = "drupal"
+datestamp = "1231976413"
+

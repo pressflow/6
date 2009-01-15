@@ -4,3 +4,9 @@ description = Tabled, multi-column theme in blue and orange tones.
 version = VERSION
 core = 6.x
 engine = phptemplate
+
+; Information added by drupal.org packaging script on 2009-01-14
+version = "6.9"
+project = "drupal"
+datestamp = "1231976413"
+

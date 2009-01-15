@@ -1,5 +1,5 @@
 <?php
-// $Id: node.module,v 1.947.2.11 2008/06/25 08:59:57 goba Exp $
+// $Id: node.module,v 1.947.2.13 2009/01/14 23:34:07 goba Exp $
 
 /**
  * @file
@@ -903,7 +903,6 @@ function node_save(&$node) {
 
   $node->timestamp = time();
   $node->format = isset($node->format) ? $node->format : FILTER_FORMAT_DEFAULT;
-  $update_node = TRUE;
 
   // Generate the node table query and the node_revisions table query.
   if ($node->is_new) {
@@ -920,7 +919,6 @@ function node_save(&$node) {
     }
     else {
       _node_save_revision($node, $user->uid, 'vid');
-      $update_node = FALSE;
     }
     $op = 'update';
   }
@@ -1979,7 +1977,9 @@ function node_search_validate($form, &$form_state) {
 function node_access($op, $node, $account = NULL) {
   global $user;
 
-  if (!$node) {
+  if (!$node || !in_array($op, array('view', 'update', 'delete', 'create'), TRUE)) {
+    // If there was no node to check against, or the $op was not one of the
+    // supported ones, we return access denied.
     return FALSE;
   }
   // Convert the node to an object if necessary:

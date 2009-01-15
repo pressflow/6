@@ -1,5 +1,5 @@
 <?php
-// $Id: form.inc,v 1.265.2.16 2008/11/22 13:03:19 dries Exp $
+// $Id: form.inc,v 1.265.2.17 2009/01/12 16:07:23 goba Exp $
 
 /**
  * @defgroup forms Form builder functions
@@ -972,7 +972,6 @@ function _form_builder_handle_input_element($form_id, &$form, &$form_state, $com
     $form['#id'] = form_clean_id('edit-'. implode('-', $form['#parents']));
   }
 
-  unset($edit);
   if (!empty($form['#disabled'])) {
     $form['#attributes']['disabled'] = 'disabled';
   }
