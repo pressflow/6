@@ -1,5 +1,5 @@
 <?php
-// $Id: language.inc,v 1.14 2008/01/06 16:46:02 goba Exp $
+// $Id: language.inc,v 1.14.2.1 2009/01/02 23:37:48 dries Exp $
 
 /**
  * @file
@@ -25,7 +25,7 @@ function language_initialize() {
     case LANGUAGE_NEGOTIATION_DOMAIN:
       foreach ($languages as $language) {
         $parts = parse_url($language->domain);
-        if (!empty($parts['host']) && ($_SERVER['SERVER_NAME'] == $parts['host'])) {
+        if (!empty($parts['host']) && ($_SERVER['HTTP_HOST'] == $parts['host'])) {
           return $language;
         }
       }

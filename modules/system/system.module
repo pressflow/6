@@ -1,5 +1,5 @@
 <?php
-// $Id: system.module,v 1.585.2.26 2008/12/11 17:39:42 goba Exp $
+// $Id: system.module,v 1.585.2.30 2009/01/14 23:34:07 goba Exp $
 
 /**
  * @file
@@ -9,7 +9,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '6.8');
+define('VERSION', '6.9');
 
 /**
  * Core API compatibility.
@@ -465,15 +465,6 @@ function system_menu() {
     'title' => 'Clean URL check',
     'page callback' => 'drupal_json',
     'page arguments' => array(array('status' => TRUE)),
-    'access callback' => TRUE,
-    'type' => MENU_CALLBACK,
-  );
-  // Menu handler to test that drupal_http_request() works locally.
-  // @see system_check_http_request()
-  $items['admin/reports/request-test'] = array(
-    'title' => 'Request test',
-    'page callback' => 'printf',
-    'page arguments' => array('request test'),
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
@@ -1870,20 +1861,14 @@ function _system_zonelist() {
  * will contain an error.
  *
  * @return
- *  Whether the admin/reports/request-test page can be requested via HTTP
- *  and contains the same output as if called via the menu system.
+ *  TRUE if this installation can issue HTTP requests.
  */
 function system_check_http_request() {
-  // Check whether we can do any request at all. First get the results for
-  // a very simple page which has access TRUE set via the menu system. Then,
-  // try to drupal_http_request() the same page and compare.
-  ob_start();
-  $path = 'admin/reports/request-test';
-  menu_execute_active_handler($path);
-  $nothing = ob_get_contents();
-  ob_end_clean();
-  $result = drupal_http_request(url($path, array('absolute' => TRUE)));
-  $works = isset($result->data) && $result->data == $nothing;
+  // Try to get the content of the front page via drupal_http_request().
+  $result = drupal_http_request(url('', array('absolute' => TRUE)));
+  // We only care that we get a http response - this means that Drupal
+  // can make a http request.
+  $works = isset($result->code) && ($result->code >= 100) && ($result->code < 600);
   variable_set('drupal_http_request_fails', !$works);
   return $works;
 }
