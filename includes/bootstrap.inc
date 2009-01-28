@@ -526,9 +526,10 @@ function variable_del($name) {
   global $conf;
 
   db_query("DELETE FROM {variable} WHERE name = '%s'", $name);
-  cache_clear_all('variables', 'cache');
 
   unset($conf[$name]);
+
+  cache_set('variables', 'cache', $conf);
 }
 
 
