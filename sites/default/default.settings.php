@@ -197,6 +197,27 @@ ini_set('url_rewriter.tags',        '');
  * logging, statistics and access management systems; if you are unsure
  * about this setting, do not have a reverse proxy, or Drupal operates in
  * a shared hosting environment, this setting should be set to disabled.
+ *
+ * Configuration for Squid
+ *   ...
+ *   acl cookie_logged_in_set rep_header Set-Cookie LOGGED_IN=Y
+ *   cache deny cookie_logged_in_set
+ *   acl cookie_logged_in_out rep_header Cookie LOGGED_IN=Y
+ *   cache deny cookie_logged_in_out
+ *   acl cookie_logged_in     req_header Cookie LOGGED_IN=Y
+ *   cache deny cookie_logged_in
+ *   ...
+ *
+ * Configuration for Varnish
+ *
+ *    sub vcl_recv {
+ *      ...
+ *      if (req.http.Cookie && req.http.Cookie ~ "LOGGED_IN=Y") {
+ *        pass;
+ *      }
+ *      ...
+ *    }
+ *
  */
 #   'reverse_proxy' => TRUE,
 /**

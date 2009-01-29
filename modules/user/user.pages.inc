@@ -146,6 +146,12 @@ function user_logout() {
 
   watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
 
+  if (variable_get('reverse_proxy', 0)) {
+    // If we are behind a reverse proxy, unset the logged in cookie by giving it
+    // an empty value and a time in the past
+    setcookie('LOGGED_IN', '', $_SERVER['REQUEST_TIME'] - 86400, '/');
+  }
+
   // Destroy the current session:
   session_destroy();
   module_invoke_all('user', 'logout', NULL, $user);

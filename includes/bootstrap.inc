@@ -617,7 +617,15 @@ function drupal_load($type, $name) {
  * @see page_set_cache()
  */
 function drupal_page_header() {
-  header("Expires: Sun, 19 Nov 1978 05:00:00 GMT");
+  global $user;
+ 
+  // Set a cookie if the user is logged in, so the reverse proxy would
+  // pass through the request. This requires a rule in the reverse proxy's
+  // configuration. See settings.php for details.
+  if ($user->uid && !isset($_COOKIE['LOGGED_IN'])) {
+    setcookie('LOGGED_IN', 'Y', $_SERVER['REQUEST_TIME'] + ini_get('session.cookie_lifetime'), '/');
+  }     
+
   header("Last-Modified: ". gmdate("D, d M Y H:i:s") ." GMT");
   header("Cache-Control: store, no-cache, must-revalidate");
   header("Cache-Control: post-check=0, pre-check=0", FALSE);
@@ -637,26 +645,34 @@ function drupal_page_cache_header($cache) {
   $last_modified = gmdate('D, d M Y H:i:s', $cache->created) .' GMT';
   $etag = '"'. md5($last_modified) .'"';
 
-  // See if the client has provided the required HTTP headers:
-  $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? stripslashes($_SERVER['HTTP_IF_MODIFIED_SINCE']) : FALSE;
-  $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : FALSE;
+  if (variable_get('reverse_proxy', 0)) {
+    // Optimize the headers for anonymous users when we have a reverse proxy such as Squid
+    $lifetime = variable_get('cache_lifetime', 300);
+    header('Expires: ' . gmdate('D, d M Y H:i:s', $cache->created + $lifetime) . ' GMT');
+    $age = abs(REQUEST_TIME - $cache->created);
+    header('Cache-Control: public, max-age=' . max(0, $lifetime - $age));
+  }
+  else {
+    // See if the client has provided the required HTTP headers:
+    $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? stripslashes($_SERVER['HTTP_IF_MODIFIED_SINCE']) : FALSE;
+    $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : FALSE;
 
-  if ($if_modified_since && $if_none_match
-      && $if_none_match == $etag // etag must match
-      && $if_modified_since == $last_modified) {  // if-modified-since must match
-    header('HTTP/1.1 304 Not Modified');
-    // All 304 responses must send an etag if the 200 response for the same object contained an etag
-    header("Etag: $etag");
-    return;
+    if ($if_modified_since && $if_none_match
+        && $if_none_match == $etag // etag must match
+        && $if_modified_since == $last_modified) {  // if-modified-since must match
+      header('HTTP/1.1 304 Not Modified');
+      // All 304 responses must send an etag if the 200 response for the same object contained an etag
+      header("Etag: $etag");
+      exit();
+    }
+    // Use the old header which does not get cached
+    header('Expires: Sun, 19 Nov 1978 05:00:00 GMT');
+    header('Cache-Control: must-revalidate');
   }
 
   // Send appropriate response:
   header("Last-Modified: $last_modified");
   header("ETag: $etag");
-
-  // The following headers force validation of cache:
-  header("Expires: Sun, 19 Nov 1978 05:00:00 GMT");
-  header("Cache-Control: must-revalidate");
 
   if (variable_get('page_compression', TRUE)) {
     // Determine if the browser accepts gzipped data.

@@ -1374,6 +1374,10 @@ function user_authenticate_finalize(&$edit) {
   // Regenerate the session ID to prevent against session fixation attacks.
   sess_regenerate();
   user_module_invoke('login', $edit, $user);
+  if (variable_get('reverse_proxy', 0)) {
+    // If we have a reverse proxy, set a special cookie so the proxy would pass through the requests.
+    setcookie('LOGGED_IN', 'Y', $_SERVER['REQUEST_TIME'] + ini_get('session.cookie_lifetime'), '/');
+  }
 }
 
 /**
