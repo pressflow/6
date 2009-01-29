@@ -69,10 +69,21 @@ function pager_query($query, $limit = 10, $element = 0, $count_query = NULL) {
   $pager_page_array = explode(',', $page);
 
   // We calculate the total of pages as ceil(items / limit).
-  $pager_total_items[$element] = db_result(db_query($count_query, $args));
+  if (isset($_SESSION['not_slavesafe']) && $_SESSION['not_slavesafe']) {
+    $pager_total_items[$element] = db_result(db_query($count_query, $args));
+  }
+  else {
+    $pager_total_items[$element] = db_result(db_query_slave($count_query, $args));
+  }
   $pager_total[$element] = ceil($pager_total_items[$element] / $limit);
   $pager_page_array[$element] = max(0, min((int)$pager_page_array[$element], ((int)$pager_total[$element]) - 1));
-  return db_query_range($query, $args, $pager_page_array[$element] * $limit, $limit);
+  if (isset($_SESSION['not_slavesafe']) && $_SESSION['not_slavesafe']) {
+    unset($_SESSION['not_slavesafe']);
+    return db_query_range($query, $args, $pager_page_array[$element] * $limit, $limit);
+  }
+  else {
+    return db_query_range_slave($query, $args, $pager_page_array[$element] * $limit, $limit);
+  }
 }
 
 /**
