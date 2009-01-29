@@ -1,0 +1,84 @@
+<?php
+/**
+ * @file test the user module changes
+ */
+ 
+/**
+ * Test changes to user.
+ */
+class UserModuleTest extends DrupalTestCase {
+  private $dummyUser = NULL;
+
+  /**
+   * Provides information about this test.
+   *
+   * @return array An array of test information.
+   */
+  function get_info() {
+    return array(
+      'name'  => t('user.module test'),
+      'desc'  => t('Verify LOWER patch for user module.'),
+      'group' => 'Pressflow Core',
+    );
+  }
+
+  /**
+   * Initialize the test.
+   */
+  function setUp() {
+    parent::setUp();
+    
+    $this->dummyUser = $this->drupalCreateUserRolePerm();
+  }
+
+
+  /**
+   * Clean up after ourselves.
+   */
+  function tearDown() { 
+    parent::tearDown();
+  }
+
+
+  /**
+   * Verify that a user can be loaded regardless of name case.
+   */
+  function test_user_load() {
+    $name = pressflow_tests_fuzz_case($this->dummyUser->name);
+    $result = user_load(array('name' => $name));
+    $this->assertEqual($this->dummyUser->uid, $result->uid, 'User ID matched. %s');
+  }
+
+
+  /**
+   * Verify that user remains blocked regardless of name case.
+   */
+  function test_user_is_blocked() {
+    user_save($this->dummyUser, array('status' => 0));
+    $name = pressflow_tests_fuzz_case($this->dummyUser->name);
+    $this->assertTrue((bool)user_is_blocked($name), 'User blocked %s');
+    
+    // Unblock the user, and test again.
+    user_save($this->dummyUser, array('status' => 1));
+    $name = pressflow_tests_fuzz_case($this->dummyUser->name);
+    $this->assertFalse((bool)user_is_blocked($name), 'User blocked %s');
+  }
+
+
+  /**
+   * Verify that a user cannot be given the same name as another user with
+   * just variance in case.
+   */
+  function test__user_edit_validate() {
+    $user = $this->drupalCreateUserRolePerm(array('change own username'));
+    $this->drupalLoginUser($user);
+    $this->drupalGet(url('user/' . $user->uid . '/edit', NULL, NULL, TRUE));
+    
+    $this->assertWantedRaw(t('Your preferred username'), 'User edit form.');
+    $this->setFieldById('edit-name', pressflow_tests_fuzz_case($this->dummyUser->name));
+    
+    $result = $this->clickSubmit(t('Submit'));
+    $this->assertWantedRaw(t('is already taken'), 'Test for name warning message. %s');
+  }
+
+}

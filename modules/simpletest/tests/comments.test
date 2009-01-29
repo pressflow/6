@@ -1,0 +1,106 @@
+<?php
+/**
+ * @file Provides test for changes to comment.module
+ */
+ 
+ 
+/**
+ * Test changes to comment_validate().
+ */
+class CommentValidateTest extends DrupalTestCase {
+  private $testNode     = NULL;
+  private $oldPerms     = '';
+  private $changedPerms = FALSE;
+  private $anonymous    = NULL;
+  private $preview      = NULL;
+
+
+  /**
+   * Provides information about this test.
+   *
+   * @return array An array of test information.
+   */
+  function get_info() {
+    return array(
+      'name'  => t('comment.module anonymous comment test'),
+      'desc'  => t('Verify that an anonymous user with the same name as a registered user cannot submit a comment of that name regardless of case.'),
+      'group' => 'Pressflow Core',
+    );
+  }
+
+
+  /**
+   * Initialize the test.
+   */
+  function setUp() {
+    parent::setUp();
+    $this->drupalModuleEnable('comment');
+    $this->testNode = $this->drupalCreateNode(array('type' => 'story'));
+    
+    // Backup the permissions for anonymous users
+    $this->oldPerms = db_result(db_query('SELECT perm FROM {permission} WHERE rid = 1'));
+    
+    // If permissions don't include 'post comments', add it
+    if (strpos($this->oldPerms, 'post comments') === FALSE) {
+      $newPerm = $this->oldPerms . ', access comments, post comments, post comments without approval';
+      $this->changedPerms = TRUE;
+      db_query("UPDATE {permission} SET perm = '%s' WHERE rid = 1", $newPerm);
+    }
+    
+    // Settings for comments should require contact info.
+    $this->anonymous = variable_get('comment_anonymous', NULL);
+    variable_set('comment_anonymous', COMMENT_ANONYMOUS_MUST_CONTACT);
+    
+    // Do not require a preview.
+    $this->preview = variable_get('comment_preview', NULL);
+    variable_set('comment_preview', COMMENT_PREVIEW_OPTIONAL);
+  }
+  
+  
+  /**
+   * Clean up after ourselves.
+   */
+  function tearDown() {
+    // Restore permissions.
+    if ($this->changedPerms) {
+      db_query("UPDATE {permission} SET perm = '%s' WHERE rid = 1", $this->oldPerms);
+    }
+    
+    // Restore the anonymous setting.
+    if ($this->anonymous !== NULL) {
+      variable_set('comment_anonymous', $this->anonymous);
+    }
+    else {
+      variable_del('comment_anonymous');
+    }
+
+    // Restore the preview setting.
+    if ($this->preivew !== NULL) {
+      variable_set('comment_preview', $this->preview);
+    }
+    else {
+      variable_del('comment_preview');
+    }
+
+    parent::tearDown();
+  }
+  
+  
+  /**
+   * Verify that a comment cannot be added with a name that belongs to a
+   * registered user.
+   */
+  function testCommentAdd() {
+    $user_one = user_load(array('uid' => 1));
+    $name     = pressflow_tests_fuzz_case($user_one->name);
+
+    $this->drupalGet(url($path = 'comment/reply/' . $this->testNode->nid, $query = NULL, $fragment = 'comment-form', $absolute = TRUE));
+    
+    $this->assertWantedRaw(t('Your name'), 'Test for comment form.');
+    $this->setFieldById('edit-name', $name);
+    $this->setFieldById('edit-mail', 'steve@apple.com');
+    $this->setFieldById('edit-comment', 'Comment body text');
+    $result = $this->clickSubmit(t('Post comment'));
+    $this->assertWantedRaw(t('The name you used belongs to a registered user'), 'Test for name warning message. %s');
+  }
+}

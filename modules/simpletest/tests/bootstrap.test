@@ -1,0 +1,240 @@
+<?php
+/**
+ * @file Provides test for patches to bootstrap.inc
+ */
+
+
+/**
+ * Test changes to variable_set().
+ */
+class BootstrapVariableSet extends DrupalWebTestCase {
+  private $varName   = 'pressflow_test_var_set';
+  private $varValue  = 'The value for the test variable';
+  private $varUpdate = 'The update value for the test variable';
+  
+  /**
+   * Provides information about this test.
+   *
+   * @return array An array of test information.
+   */
+  function getInfo() {
+    return array(
+      'name'  => t('variable_get()'),
+      'desc'  => t('Tests patches made to variable_get().'),
+      'group' => 'Pressflow',
+    );
+  }
+
+
+  /**
+   * Insert a new variable and confirm that it can be retrieved regardless
+   * of the case of the characters in the name.
+   *
+   * @todo - This test can't pass due to how Drupal Core deals with case on
+   *         variable names.
+   */
+  function testInsertNew() {
+/*
+    variable_set($this->varName, $this->varValue);
+    $name  = pressflow_tests_fuzz_case($this->varName);
+    $value = variable_get($name, '');
+    
+    $msg = t('Insert new (@orig) and get with different case (@new): %s', 
+             array('@orig' => $this->varName, '@new' => $name));
+    $this->assertEqual($this->varValue, $value, $msg);
+*/
+  }
+
+
+  /**
+   * Initialize the test.
+   */
+/*
+  function setUp() {
+    variable_del($this->varName);
+  	parent::setUp();
+  }
+*/
+
+
+  /**
+   * Clean up after running the test.
+   */
+/*
+  function tearDown() {
+    variable_del($this->varName);
+    parent::tearDown();
+  }
+*/
+}
+
+
+/**
+ * Shuffle the case of the alphabetic characters in the given string. The
+ * algorithm used, picks a certain number of random character in the given
+ * string and reverses the case of those characters.
+ *
+ * TODO: Move this function somewhere better.
+ *
+ * @param string $text The text to case-shuffle.
+ *
+ * @return string The case-shuffled text.
+ */
+function pressflow_tests_fuzz_case($text) {
+  $text = strtolower($text);
+
+  for ($i = 0; $i < strlen($text); $i++) {
+    if (preg_match('/[a-z]/', $text[$i]) > 0) {
+      if (rand(0, 1) == 1) {
+        $text[$i] = strtoupper($text[$i]);
+      }
+    }
+  }
+
+  return $text;
+}
+
+/**
+ * Force the variables to reset from the database.
+ *
+ * TODO: Move this function somewhere better.
+ */
+function pressflow_tests_reset_vars() {
+  global $conf;
+
+  cache_clear_all('variables', 'cache');
+  $vars = variable_init();
+
+  //------------------------------------------------------------------------
+  // Create a list of lowercase keys.
+  $temp  = array_keys($var);
+  $names = array();
+
+  foreach ($temp as $key) {
+    $names[] = strtolower($key);
+  }
+
+  //------------------------------------------------------------------------
+  // Unset any variable whose name equals (ingoring case) a database backed
+  // variable name
+  $conf_keys = array_keys($conf);
+  foreach ($conf_keys as $key) {
+    $low_key = strtolower($key);
+    if (array_search($low_key, $names) !== FALSE) {
+      unset($conf[$key]);
+    }
+  }
+
+  //------------------------------------------------------------------------
+  // Set the reloaded variables.
+  foreach ($vars as $key => $value) {
+    $conf[$key] = $value;
+  }
+}
+
+
+/**
+ * Tests changes to drupal_is_denied().
+ */
+class BootstrapIsDenied extends DrupalWebTestCase {
+  /** Stores the IDs of the access rules that are created so we can clean
+   *  up when we're done. */
+  private $accessID = array();
+  
+  /** The access rules that will be created. */
+  private $accessRules = array(
+    array('mask' => '127.10.%',      'type' => 'host', 'status' => 1),
+    array('mask' => '64.122.5.%',    'type' => 'host', 'status' => 0),
+    array('mask' => '%@example.com', 'type' => 'mail', 'status' => 1),
+    array('mask' => '%@hotmail.com', 'type' => 'mail', 'status' => 0),
+    array('mask' => 'George',        'type' => 'user', 'status' => 1),
+    array('mask' => 'George%',       'type' => 'user', 'status' => 0),
+  );
+
+  /** These should allow access. */
+  private $shouldPass = array(
+    '127.10.1.255'           => 'host',
+    '65.122.5.2'             => 'host',
+    'sampleuser@example.com' => 'mail',
+    'google@yahoo.com'       => 'mail',
+    'George'                 => 'user',
+    'Frank'                  => 'user',
+  );
+
+  /** These should prevent access. */
+  private $shouldFail = array(
+    '64.122.5.22' => 'host',
+    'herbert@hotmail.com' => 'mail',
+    'George Wells' => 'user',
+  );
+  
+  
+  /**
+   * Provides information about this test.
+   *
+   * @return array An array of test information.
+   */
+  function getInfo() {
+    return array(
+      'name' => 'drupal_is_denied()',
+      'desc' => t('Tests patches made to drupal_is_denied().'),
+      'group' => 'Pressflow',
+    );
+  }
+
+
+  /**
+   * Test the allowed access rules.
+   */
+  function testDrupalIsDeniedAllows() {
+    foreach ($this->shouldPass as $mask => $type) {
+      $remask = pressflow_tests_fuzz_case($mask);
+      $result = drupal_is_denied($type, $remask);
+      
+      $msg = t('Check allowed mask: @mask with type @type - %s',
+               array('@mask' => $remask, '@type' => $type));
+      
+      $this->assertFalse($result, $msg);
+    }
+  }
+  
+  /**
+   * Test the denied access rules.
+   */
+  function testDrupalIsDeniedDenials() {
+    foreach ($this->shouldFail as $mask => $type) {
+      $remask = pressflow_tests_fuzz_case($mask);
+      $result = drupal_is_denied($type, $remask);
+      
+      $msg = t('Check blocked mask: @mask with type @type - %s',
+               array('@mask' => $remask, '@type' => $type));
+      
+      $this->assertTrue($result, $msg);
+    }
+  }
+
+  /**
+   * Create some rules to test against.
+   */
+  function setUp() {
+  	parent::setUp();
+    foreach ($this->accessRules as $rule) {
+      db_query('INSERT INTO {access} (mask, type, status) VALUES ("%s", "%s", %d)',
+               $rule['mask'], $rule['type'], $rule['status']);
+      $aid = db_last_insert_id('access', 'aid');
+      $this->accessID[] = $aid;
+    }  
+  }
+
+
+  /**
+   * Clean up after ourselves.
+   */
+  function tearDown() {
+    foreach ($this->accessID as $aid) {
+      db_query('DELETE FROM {access} WHERE aid = %d', $aid);
+    }
+    
+    parent::tearDown();
+  }
+}
