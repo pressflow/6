@@ -1,5 +1,5 @@
 <?php
-// $Id: theme.inc,v 1.415.2.17 2008/12/10 21:09:05 goba Exp $
+// $Id: theme.inc,v 1.415.2.19 2009/02/25 21:02:16 goba Exp $
 
 /**
  * @file
@@ -1133,6 +1133,7 @@ function theme_status_messages($display = NULL) {
  *   A string containing an unordered list of links.
  */
 function theme_links($links, $attributes = array('class' => 'links')) {
+  global $language;
   $output = '';
 
   if (count($links) > 0) {
@@ -1151,7 +1152,8 @@ function theme_links($links, $attributes = array('class' => 'links')) {
       if ($i == $num_links) {
         $class .= ' last';
       }
-      if (isset($link['href']) && ($link['href'] == $_GET['q'] || ($link['href'] == '<front>' && drupal_is_front_page()))) {
+      if (isset($link['href']) && ($link['href'] == $_GET['q'] || ($link['href'] == '<front>' && drupal_is_front_page()))
+          && (empty($link['language']) || $link['language']->language == $language->language)) {
         $class .= ' active';
       }
       $output .= '<li'. drupal_attributes(array('class' => $class)) .'>';
@@ -1866,6 +1868,7 @@ function template_preprocess_page(&$variables) {
   $suggestion = 'page';
   $suggestions = array();
   while ($arg = arg($i++)) {
+    $arg = str_replace(array('/', '\\', '\0'), '', $arg);
     $suggestions[] = $suggestion .'-'. $arg;
     if (!is_numeric($arg)) {
       $suggestion .= '-'. $arg;
