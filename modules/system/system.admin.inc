@@ -1,5 +1,5 @@
 <?php
-// $Id: system.admin.inc,v 1.63.2.6 2009/01/06 13:33:24 dries Exp $
+// $Id: system.admin.inc,v 1.63.2.7 2009/02/25 11:38:41 goba Exp $
 
 /**
  * @file
@@ -1726,7 +1726,7 @@ function system_run_cron() {
  * Menu callback: return information about PHP.
  */
 function system_php() {
-  phpinfo(INFO_GENERAL | INFO_CONFIGURATION);
+  phpinfo();
   exit();
 }
 

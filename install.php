@@ -1,5 +1,5 @@
 <?php
-// $Id: install.php,v 1.113.2.7 2008/10/22 16:31:37 goba Exp $
+// $Id: install.php,v 1.113.2.8 2009/02/25 11:47:36 goba Exp $
 
 require_once './includes/install.inc';
 
@@ -556,9 +556,11 @@ function install_select_locale($profilename) {
       }
     }
 
-    foreach ($locales as $locale) {
-      if ($_POST['locale'] == $locale->name) {
-        return $locale->name;
+    if (!empty($_POST['locale'])) {
+      foreach ($locales as $locale) {
+        if ($_POST['locale'] == $locale->name) {
+          return $locale->name;
+        }
       }
     }
 
