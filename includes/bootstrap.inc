@@ -1,5 +1,5 @@
 <?php
-// $Id: bootstrap.inc,v 1.206.2.9 2009/01/14 19:10:25 goba Exp $
+// $Id: bootstrap.inc,v 1.206.2.11 2009/02/25 13:49:54 dries Exp $
 
 /**
  * @file
@@ -130,6 +130,16 @@ define('LANGUAGE_NEGOTIATION_PATH', 2);
  * if no language identified by domain.
  */
 define('LANGUAGE_NEGOTIATION_DOMAIN', 3);
+
+/**
+ * Language written left to right. Possible value of $language->direction.
+ */
+define('LANGUAGE_LTR', 0);
+
+/**
+ * Language written right to left. Possible value of $language->direction.
+ */
+define('LANGUAGE_RTL', 1);
 
 /**
  * Start the timer with the specified name. If you start and stop
@@ -551,7 +561,7 @@ function page_get_cache($status_only = FALSE) {
   }
   $cache = NULL;
 
-  if (!$user->uid && $_SERVER['REQUEST_METHOD'] == 'GET' && count(drupal_set_message()) == 0) {
+  if (!$user->uid && $_SERVER['REQUEST_METHOD'] == 'GET' && count(drupal_set_message()) == 0 && $_SERVER['SERVER_SOFTWARE'] !== 'PHP CLI') {
     $cache = cache_get($base_root . request_uri(), 'cache_page');
 
     if (empty($cache)) {
