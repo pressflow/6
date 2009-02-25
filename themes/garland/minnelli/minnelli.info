@@ -6,8 +6,8 @@ core = 6.x
 base theme = garland
 stylesheets[all][] = minnelli.css
 
-; Information added by drupal.org packaging script on 2009-01-14
-version = "6.9"
+; Information added by drupal.org packaging script on 2009-02-25
+version = "6.10"
 project = "drupal"
-datestamp = "1231976413"
+datestamp = "1235596218"
 
