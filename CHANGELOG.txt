@@ -1,4 +1,12 @@
-// $Id: CHANGELOG.txt,v 1.253.2.22 2009/01/14 23:34:06 goba Exp $
+// $Id: CHANGELOG.txt,v 1.253.2.25 2009/02/25 21:02:36 goba Exp $
+
+Drupal 6.10, 2009-02-25
+----------------------
+- Fixed a security issue, (Local file inclusion on Windows),
+  see SA-CORE-2009-003
+- Fixed node_feed() so custom fields can show up in RSS feeds.
+- Improved PostgreSQL compatibility.
+- Fixed a variety of small bugs.
 
 Drupal 6.9, 2009-01-14
 ----------------------
@@ -10,9 +18,6 @@ Drupal 6.9, 2009-01-14
 - Removed t() calls from all schema documentation. Suggested best practice
   changed for contributed modules, see http://drupal.org/node/322731.
 - Fixed a variety of small bugs.
-
-Drupal 6.9-dev, xxxx-xx-xx (development release)
-----------------------
 
 Drupal 6.8, 2008-12-11
 ----------------------

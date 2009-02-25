@@ -1,5 +1,5 @@
 <?php
-// $Id: database.inc,v 1.92.2.3 2008/10/20 09:13:04 goba Exp $
+// $Id: database.inc,v 1.92.2.4 2009/02/16 14:41:58 goba Exp $
 
 /**
  * @file
@@ -458,7 +458,7 @@ function db_escape_table($string) {
  *
  *  - 'primary key': An array of one or more key column specifiers (see below)
  *    that form the primary key.
- *  - 'unique key': An associative array of unique keys ('keyname' =>
+ *  - 'unique keys': An associative array of unique keys ('keyname' =>
  *    specification).  Each specification is an array of one or more
  *    key column specifiers (see below) that form a unique key on the table.
  *  - 'indexes':  An associative array of indexes ('indexame' =>

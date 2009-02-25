@@ -1,5 +1,5 @@
 <?php
-// $Id: install.inc,v 1.56.2.3 2008/08/14 09:26:43 dries Exp $
+// $Id: install.inc,v 1.56.2.4 2009/02/16 10:25:02 goba Exp $
 
 define('SCHEMA_UNINSTALLED', -1);
 define('SCHEMA_INSTALLED', 0);
@@ -281,7 +281,7 @@ function drupal_verify_profile($profile, $locale) {
 
   // Get a list of modules required by this profile.
   $function = $profile .'_profile_modules';
-  $module_list = array_merge(drupal_required_modules(), $function(), ($locale != 'en' ? array('locale') : array()));
+  $module_list = array_merge(drupal_required_modules(), $function(), ($locale != 'en' && !empty($locale) ? array('locale') : array()));
 
   // Get a list of modules that exist in Drupal's assorted subdirectories.
   $present_modules = array();

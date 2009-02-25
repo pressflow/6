@@ -1,5 +1,5 @@
 <?php
-// $Id: menu.admin.inc,v 1.26.2.3 2008/02/11 15:12:53 goba Exp $
+// $Id: menu.admin.inc,v 1.26.2.4 2009/02/25 13:15:40 goba Exp $
 
 /**
  * @file
@@ -366,7 +366,7 @@ function menu_item_delete_submit($form, &$form_state) {
  * Process menu and menu item add/edit form submissions.
  */
 function menu_edit_item_submit($form, &$form_state) {
-  $item = $form_state['values']['menu'];
+  $item = &$form_state['values']['menu'];
 
   // The value of "hidden" is the opposite of the value
   // supplied by the "enabled" checkbox.
