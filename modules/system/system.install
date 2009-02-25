@@ -1,5 +1,5 @@
 <?php
-// $Id: system.install,v 1.238.2.8 2009/01/14 21:36:16 goba Exp $
+// $Id: system.install,v 1.238.2.12 2009/02/25 14:02:46 goba Exp $
 
 /**
  * Test and report Drupal installation requirements.
@@ -64,10 +64,10 @@ function system_requirements($phase) {
   $memory_limit = ini_get('memory_limit');
   $requirements['php_memory_limit'] = array(
     'title' => $t('PHP memory limit'),
-    'value' => $memory_limit,
+    'value' => $memory_limit == -1 ? t('-1 (Unlimited)') : $memory_limit,
   );
 
-  if ($memory_limit && parse_size($memory_limit) < parse_size(DRUPAL_MINIMUM_PHP_MEMORY_LIMIT)) {
+  if ($memory_limit && $memory_limit != -1 && parse_size($memory_limit) < parse_size(DRUPAL_MINIMUM_PHP_MEMORY_LIMIT)) {
     $description = '';
     if ($phase == 'install') {
       $description = $t('Consider increasing your PHP memory limit to %memory_minimum_limit to help prevent errors in the installation process.', array('%memory_minimum_limit' => DRUPAL_MINIMUM_PHP_MEMORY_LIMIT));
@@ -1095,7 +1095,7 @@ function system_schema() {
       ),
     'unique keys' => array('dst_language' => array('dst', 'language')),
     'primary key' => array('pid'),
-    'indexes' => array('src' => array('src')),
+    'indexes' => array('src_language' => array('src', 'language')),
     );
 
   return $schema;
@@ -1161,7 +1161,7 @@ function system_update_6001() {
   db_add_primary_key($ret, 'term_node', array('vid', 'tid', 'nid'));
   db_add_index($ret, 'term_node', 'vid', array('vid'));
 
-  db_query('UPDATE {term_node} t SET vid = (SELECT vid FROM {node} n WHERE t.nid = n.nid)');
+  db_query('UPDATE {term_node} SET vid = (SELECT vid FROM {node} n WHERE {term_node}.nid = n.nid)');
   return $ret;
 }
 
@@ -1802,6 +1802,10 @@ function system_update_6021() {
         $item['router_path'] = $item['path'];
         $item['updated'] = FALSE;
       }
+      if ($item['description']) {
+        $item['options']['attributes']['title'] = $item['description'];
+      }      
+      
       // Save the link.
       menu_link_save($item);
       $_SESSION['menu_item_map'][$item['mid']] = array('mlid' => $item['mlid'], 'menu_name' => $item['menu_name']);
@@ -2532,6 +2536,16 @@ function system_update_6048() {
   return $ret;
 }
 
+
+/**
+ * Replace src index on the {url_alias} table with src, language.
+ */
+function system_update_6049() {
+  $ret = array();
+  db_drop_index($ret, 'url_alias', 'src');
+  db_add_index($ret, 'url_alias', 'src_language', array('src', 'language'));
+  return $ret;
+}
 
 /**
  * @} End of "defgroup updates-5.x-to-6.x"

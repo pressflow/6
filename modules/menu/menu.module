@@ -1,5 +1,5 @@
 <?php
-// $Id: menu.module,v 1.157.2.3 2008/05/10 06:53:53 dries Exp $
+// $Id: menu.module,v 1.157.2.5 2009/02/25 13:15:40 goba Exp $
 
 /**
  * @file
@@ -163,11 +163,13 @@ function menu_theme() {
  */
 function menu_enable() {
   menu_rebuild();
-  $link = db_fetch_array(db_query("SELECT mlid AS plid, menu_name from {menu_links} WHERE link_path = 'admin/build/menu' AND module = 'system'"));
-  $link['router_path'] = 'admin/build/menu-customize/%';
-  $link['module'] = 'menu';
+  $base_link = db_fetch_array(db_query("SELECT mlid AS plid, menu_name from {menu_links} WHERE link_path = 'admin/build/menu' AND module = 'system'"));
+  $base_link['router_path'] = 'admin/build/menu-customize/%';
+  $base_link['module'] = 'menu';
   $result = db_query("SELECT * FROM {menu_custom}");
   while ($menu = db_fetch_array($result)) {
+    // $link is passed by reference to menu_link_save(), so we make a copy of $base_link.
+    $link = $base_link;
     $link['mlid'] = 0;
     $link['link_title'] = $menu['title'];
     $link['link_path'] = 'admin/build/menu-customize/'. $menu['menu_name'];
@@ -296,7 +298,7 @@ function menu_nodeapi(&$node, $op) {
     case 'insert':
     case 'update':
       if (isset($node->menu)) {
-        $item = $node->menu;
+        $item = &$node->menu;
         if (!empty($item['delete'])) {
           menu_link_delete($item['mlid']);
         }
