@@ -1,7 +1,33 @@
-// $Id: CHANGELOG.txt,v 1.1.2.42 2008/10/22 23:18:15 boombatower Exp $
+// $Id: CHANGELOG.txt,v 1.1.2.63 2009/02/16 18:33:58 boombatower Exp $
 
-SimpleTest 6.x-2.6, xxxx-xx-xx (development version)
+SimpleTest 6.x-2.7, 2008-02-16
 ------------------------------
+- Bugs:
+   * #372697: Content type created but not  "appearing".
+   * #373722: Table {node_revision} doesn't exist
+- Changes:
+   * #370966: Ignore 1.x style tests.
+   * Format fix.
+   * #373172: Add curl requirement to documentation.
+
+SimpleTest 6.x-2.6, 2009-02-07
+------------------------------
+- Complete backport of Drupal 7.x SimpleTest module. (voids all backports).
+   * Added header to all relevant files.
+   * Updated INSTALL.txt.
+   * #369952: Clarify INSTALL.txt.
+   * Add drupalLogout() override.
+   * Add equivilent auto-clear user code.
+   * #359577: Add run-tests.sh to 6--2 branch.
+- Backports:
+   * #305150: Keep running tests checked.
+   * #313902: DX: Show fatal errors in tests. (Added to INSTALL.txt)
+   * #304940: SimpleTest shouldn't try to upload non files.
+   * #308186: cURL 7.18.2 and SimpleTest module bitterly despise one another. (again?)
+   * #330582: Retrieve HTTP response headers.
+   * #336043: Simpletest speedup: skip call to curlExec() in curlConnect().
+- Changes:
+   * #334679 by hass: improve update path from 5.x and 6.x-1.x to 6.x-2.x.
 
 SimpleTest 6.x-2.5, 2008-10-22
 ------------------------------

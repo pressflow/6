@@ -1,21 +1,24 @@
 <?php
-// $Id: simpletest.test,v 1.1.2.5 2008/09/16 02:59:53 boombatower Exp $
+// $Id: simpletest.test,v 1.1.2.9 2009/02/08 02:46:50 boombatower Exp $
+/**
+ * @file
+ * Backport of Drupal 7 simpletest.test with modifications, see BACKPORT.txt.
+ *
+ * Copyright 2008-2009 by Jimmy Berry ("boombatower", http://drupal.org/user/214218)
+ */
 
-class SimpleTestTestCase extends DrupalWebTestCase {
+class SimpleTestFunctionalTest extends DrupalWebTestCase {
   /**
    * The results array that has been parsed by getTestResults().
    */
-  protected $results;
+  protected $childTestResults;
 
   /**
    * Store the test ID from each test run for comparison, to ensure they are
-   * incramenting.
+   * incrementing.
    */
   protected $test_ids = array();
 
-  /**
-   * Implementation of getInfo().
-   */
   function getInfo() {
     return array(
       'name' => t('SimpleTest functionality'),
@@ -27,9 +30,6 @@ class SimpleTestTestCase extends DrupalWebTestCase {
     );
   }
 
-  /**
-   * Implementation of setUp().
-   */
   function setUp() {
     if (!$this->inCURL()) {
       parent::setUp('simpletest');
@@ -50,13 +50,24 @@ class SimpleTestTestCase extends DrupalWebTestCase {
     global $conf;
     if (!$this->inCURL()) {
       $this->drupalGet('node');
+      $this->assertTrue($this->drupalGetHeader('Date'), t('An HTTP header was received.'));
       $this->assertTitle(variable_get('site_name', 'Drupal'), t('Site title matches.'));
+      $this->assertNoTitle('Foo', t('Site title does not match.'));
       // Make sure that we are locked out of the installer when prefixing
       // using the user-agent header. This is an important security check.
       global $base_url;
 
       $this->drupalGet($base_url . '/install.php', array('external' => TRUE));
       $this->assertResponse(403, 'Cannot access install.php with a "simpletest" user-agent header.');
+
+      $this->drupalLogin($this->drupalCreateUser());
+      $headers = $this->drupalGetHeaders(TRUE);
+      $this->assertEqual(count($headers), 2, t('There was one intermediate request.'));
+      $this->assertTrue(strpos($headers[0][':status'], '302') !== FALSE, t('Intermediate response code was 302.'));
+      $this->assertFalse(empty($headers[0]['location']), t('Intermediate request contained a Location header.'));
+      $this->assertEqual($this->getUrl(), $headers[0]['location'], t('HTTP redirect was followed'));
+      $this->assertFalse($this->drupalGetHeader('Location'), t('Headers from intermediate request were reset.'));
+      $this->assertResponse(200, t('Response code from intermediate request was reset.'));
     }
   }
 
@@ -75,13 +86,14 @@ class SimpleTestTestCase extends DrupalWebTestCase {
       $this->stubTest();
     }
     else {
+
       // Run twice so test_ids can be accumulated.
       for ($i = 0; $i < 2; $i++) {
         // Run this test from web interface.
         $this->drupalGet('admin/build/testing');
 
         $edit = array();
-        $edit['SimpleTestTestCase'] = TRUE;
+        $edit['SimpleTestFunctionalTest'] = TRUE;
         $this->drupalPost(NULL, $edit, t('Run tests'));
 
         // Parse results and confirm that they are correct.
@@ -105,14 +117,14 @@ class SimpleTestTestCase extends DrupalWebTestCase {
     $this->drupalCreateUser(array($this->valid_permission));
     $this->drupalCreateUser(array($this->invalid_permission));
 
-    $this->pass(t('Test ID is @id.', array('@id' => $this->test_id)));
+    $this->pass(t('Test ID is @id.', array('@id' => $this->testId)));
 
     // Generates a warning.
     $i = 1 / 0;
 
     // Call an assert function specific to that class.
     $this->assertNothing();
-    
+
     // Generates a warning inside a PHP function.
     array_key_exists(NULL, NULL);
   }
@@ -128,20 +140,22 @@ class SimpleTestTestCase extends DrupalWebTestCase {
    * Confirm that the stub test produced the desired results.
    */
   function confirmStubTestResults() {
-    $this->assertAssertion($this->pass, 'Other', 'Pass', 'simpletest.test', 'SimpleTestTestCase->stubTest()');
-    $this->assertAssertion($this->fail, 'Other', 'Fail', 'simpletest.test', 'SimpleTestTestCase->stubTest()');
+    $this->assertAssertion($this->pass, 'Other', 'Pass', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
+    $this->assertAssertion($this->fail, 'Other', 'Fail', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
 
-    $this->assertAssertion(t('Created permissions: @perms', array('@perms' => $this->valid_permission)), 'Role', 'Pass', 'simpletest.test', 'SimpleTestTestCase->stubTest()');
-    $this->assertAssertion(t('Invalid permission %permission.', array('%permission' => $this->invalid_permission)), 'Role', 'Fail', 'simpletest.test', 'SimpleTestTestCase->stubTest()');
+    $this->assertAssertion(t('Created permissions: @perms', array('@perms' => $this->valid_permission)), 'Role', 'Pass', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
+    $this->assertAssertion(t('Invalid permission %permission.', array('%permission' => $this->invalid_permission)), 'Role', 'Fail', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
 
     // Check that a warning is catched by simpletest.
-    $this->assertAssertion('Division by zero', 'Warning', 'Fail', 'simpletest.test', 'SimpleTestTestCase->stubTest()');
+    $this->assertAssertion('Division by zero', 'Warning', 'Fail', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
 
     // Check that the backtracing code works for specific assert function.
-    $this->assertAssertion('This is nothing.', 'Other', 'Pass', 'simpletest.test', 'SimpleTestTestCase->stubTest()');
+    $this->assertAssertion('This is nothing.', 'Other', 'Pass', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
 
     // Check that errors that occur inside PHP internal functions are correctly reported.
-    $this->assertAssertion('The second argument should be either an array or an object', 'Warning', 'Fail', 'simpletest.test', 'SimpleTestTestCase->stubTest()');
+    // The exact error message differs between PHP versions so we check only
+    // the function name 'array_key_exists'.
+    $this->assertAssertion('array_key_exists', 'Warning', 'Fail', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
 
     $this->test_ids[] = $test_id = $this->getTestIdFromResults();
     $this->assertTrue($test_id, t('Found test ID in results.'));
@@ -151,7 +165,7 @@ class SimpleTestTestCase extends DrupalWebTestCase {
    * Fetch the test id from the test results.
    */
   function getTestIdFromResults() {
-    foreach($this->results['assertions'] as $assertion) {
+    foreach($this->childTestResults['assertions'] as $assertion) {
       if (preg_match('@^Test ID is ([0-9]*)\.$@', $assertion['message'], $matches)) {
         return $matches[1];
       }
@@ -173,7 +187,7 @@ class SimpleTestTestCase extends DrupalWebTestCase {
   function assertAssertion($message, $type, $status, $file, $function) {
     $message = trim(strip_tags($message));
     $found = FALSE;
-    foreach ($this->results['assertions'] as $assertion) {
+    foreach ($this->childTestResults['assertions'] as $assertion) {
       if ((strpos($assertion['message'], $message) !== FALSE) &&
           $assertion['type'] == $type &&
           $assertion['status'] == $status &&
@@ -213,7 +227,7 @@ class SimpleTestTestCase extends DrupalWebTestCase {
         }
       }
     }
-    $this->results = $results;
+    $this->childTestResults = $results;
   }
 
   /**
