@@ -1,5 +1,11 @@
 <?php
-// $Id: block.test,v 1.1.2.1 2008/05/28 04:31:37 boombatower Exp $
+// $Id: block.test,v 1.1.2.1.2.1 2009/02/08 02:46:50 boombatower Exp $
+/**
+ * @file
+ * Backport of Drupal 7 block.test with modifications, see BACKPORT.txt.
+ *
+ * Copyright 2008-2009 by Jimmy Berry ("boombatower", http://drupal.org/user/214218)
+ */
 
 class BlockTestCase extends DrupalWebTestCase {
   /**
