@@ -539,7 +539,7 @@ function variable_del($name) {
 
   unset($conf[$name]);
 
-  cache_set('variables', 'cache', $conf);
+  cache_set('variables', $conf);
 }
 
 
