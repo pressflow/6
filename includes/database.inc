@@ -179,7 +179,7 @@ function db_set_active($name = 'default') {
   else {
     unset($active_slave_db);
   }
-  
+
   return $previous_name;
 }
 
