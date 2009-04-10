@@ -562,7 +562,7 @@ function page_get_cache($status_only = FALSE) {
   }
   $cache = NULL;
 
-  if (!$user->uid && $_SERVER['REQUEST_METHOD'] == 'GET' && count(drupal_set_message()) == 0 && $_SERVER['SERVER_SOFTWARE'] !== 'PHP CLI') {
+  if (!$user->uid && $_SERVER['REQUEST_METHOD'] == 'GET' && count(drupal_set_message()) == 0 && $_SERVER['SERVER_SOFTWARE'] !== 'PHP CLI' && !isset($_COOKIE['NO_CACHE'])) {
     $cache = cache_get($base_root . request_uri(), 'cache_page');
 
     if (empty($cache)) {
@@ -637,7 +637,6 @@ function drupal_page_header() {
     setcookie('LOGGED_IN', 'Y', $_SERVER['REQUEST_TIME'] + ini_get('session.cookie_lifetime'), '/');
   }     
 
-  header("Expires: Sun, 11 Mar 1984 12:00:00 GMT");
   header("Last-Modified: ". gmdate("D, d M Y H:i:s") ." GMT");
   header("Cache-Control: store, no-cache, must-revalidate");
   header("Cache-Control: post-check=0, pre-check=0", FALSE);
@@ -660,9 +659,10 @@ function drupal_page_cache_header($cache) {
   if (variable_get('reverse_proxy', 0)) {
     // Optimize the headers for anonymous users when we have a reverse proxy such as Squid
     $lifetime = variable_get('cache_lifetime', 300);
-    header('Expires: ' . gmdate('D, d M Y H:i:s', $cache->created + $lifetime) . ' GMT');
-    $age = abs(REQUEST_TIME - $cache->created);
-    header('Cache-Control: public, max-age=' . max(0, $lifetime - $age));
+    header('Expires: Sun, 11 Mar 1985 12:00:00 GMT');
+    $age = abs($_SERVER['REQUEST_TIME'] - $cache->created);
+    header('Cache-Control: public, max-age=0');
+    header('Cache-Control: public, s-maxage=' . max(0, $lifetime - $age));
   }
   else {
     // See if the client has provided the required HTTP headers:
