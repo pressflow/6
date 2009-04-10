@@ -658,7 +658,6 @@ function drupal_page_cache_header($cache) {
   if (variable_get('reverse_proxy', 0)) {
     // Optimize the headers for anonymous users when we have a reverse proxy such as Squid
     $lifetime = variable_get('cache_lifetime', 300);
-    
     header('Expires: Sun, 19 Nov 1978 05:00:00 GMT');
     $age = abs($_SERVER['REQUEST_TIME'] - $cache->created);
     header('Cache-Control: public, max-age=0');
