@@ -1,5 +1,5 @@
 <?php
-// $Id: block.test,v 1.1.2.1.2.1 2009/02/08 02:46:50 boombatower Exp $
+// $Id: block.test,v 1.1.2.1.2.2 2009/04/23 05:39:52 boombatower Exp $
 /**
  * @file
  * Backport of Drupal 7 block.test with modifications, see BACKPORT.txt.
@@ -11,7 +11,7 @@ class BlockTestCase extends DrupalWebTestCase {
   /**
    * Implementation of getInfo().
    */
-  function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => t('Block functionality'),
       'description' => t('Add, edit and delete custom block. Configure and move a module-defined block.'),

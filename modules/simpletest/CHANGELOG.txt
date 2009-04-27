@@ -1,6 +1,29 @@
-// $Id: CHANGELOG.txt,v 1.1.2.63 2009/02/16 18:33:58 boombatower Exp $
+// $Id: CHANGELOG.txt,v 1.1.2.80 2009/04/23 05:41:34 boombatower Exp $
 
-SimpleTest 6.x-2.7, 2008-02-16
+SimpleTest 6.x-2.9, xxxx-xx-xx (development version)
+------------------------------
+
+SimpleTest 6.x-2.8, 2009-04-23
+------------------------------
+- Bugs:
+   * #382334: drupalGetNodeByTitle uses node_load_multiple in 6.x.
+   * #385152: Clear user_access() cache.
+   * Change file in drupalGetTestFiles() to use ereg() format used in Drupal 6.
+   * #430512 by soxofaan: Drupal 7 style database code in run-tests.sh.
+   * #430682: backport: run-tests.sh does not work with non-default server port.
+- Changes:
+   * #346844: Clear language statics to remove locale module errors.
+   * #400296 by carlos8f: Use "SHOW TABLES" in simpletest_get_like_tables().
+   * #390232: Update 313902-2.patch to D6.10 misc/drupal.js
+   * #409372 by Dave Reid: Hide modules that have hidden = TRUE on admin/build/modules.
+   * #415864: Backport sample files.
+   * #400296: Revert: Use "SHOW TABLES" in simpletest_get_like_tables().
+   * #409294 by wlp1979: Add extra condition to getAssertionCall() for DrupalWebTestCaseCore.
+   * Merge DrupalWebTestCase change into DrupalWebTestCaseCore.
+   * Move "core" directory files into root.
+   * #442436: Full backport of Drupal 7 SimpleTest and common.inc functions.
+
+SimpleTest 6.x-2.7, 2009-02-16
 ------------------------------
 - Bugs:
    * #372697: Content type created but not  "appearing".

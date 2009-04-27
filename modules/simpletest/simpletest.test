@@ -1,5 +1,6 @@
 <?php
-// $Id: simpletest.test,v 1.1.2.9 2009/02/08 02:46:50 boombatower Exp $
+// $Id: simpletest.test,v 1.1.2.11 2009/04/23 05:39:51 boombatower Exp $
+// Core: Id: simpletest.test,v 1.17 2009/03/31 01:49:53 webchick Exp
 /**
  * @file
  * Backport of Drupal 7 simpletest.test with modifications, see BACKPORT.txt.
@@ -19,7 +20,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
    */
   protected $test_ids = array();
 
-  function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => t('SimpleTest functionality'),
       'description' => t('Test SimpleTest\'s web interface: check that the intended tests were
@@ -268,5 +269,22 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
    */
   function inCURL() {
     return preg_match("/^simpletest\d+/", $_SERVER['HTTP_USER_AGENT']);
+  }
+
+  /*
+   * Drupal 6.
+   */
+
+  function testUserAccess()
+  {
+    $user = $this->drupalCreateUser(array('administer unit tests'));
+    $this->assertTrue(user_access('administer unit tests', $user), 'user_access() check successfull.');
+  }
+
+  function testUserAccessCache()
+  {
+    $user = $this->drupalCreateUser(array('administer nodes'));
+    $this->assertTrue(user_access('administer nodes', $user), 'user_access() cache has been cleaned');
+
   }
 }

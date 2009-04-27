@@ -1,13 +1,15 @@
-; $Id: simpletest.info,v 1.4.2.2.2.3 2009/02/08 02:35:39 boombatower Exp $
+; $Id: simpletest.info,v 1.4.2.2.2.4 2009/04/23 05:39:51 boombatower Exp $
 name = "SimpleTest"
 description = "Provides a framework for unit and functional testing."
 package = Development
-core = 6.x
-PHP = 5.x
+version = VERSION
+core = 7.x
+files[] = simpletest.module
+files[] = simpletest.install
 
-; Information added by drupal.org packaging script on 2009-02-16
-version = "6.x-2.7"
+; Information added by drupal.org packaging script on 2009-04-23
+version = "6.x-2.8"
 core = "6.x"
 project = "simpletest"
-datestamp = "1234809668"
+datestamp = "1240465894"
 
