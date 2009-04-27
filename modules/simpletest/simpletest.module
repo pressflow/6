@@ -1,5 +1,6 @@
 <?php
-// $Id: simpletest.module,v 1.33.2.4.2.13 2009/02/08 21:03:18 boombatower Exp $
+// $Id: simpletest.module,v 1.33.2.4.2.17 2009/04/23 05:39:52 boombatower Exp $
+// Core: Id: simpletest.module,v 1.39 2009/03/31 01:49:53 webchick Exp
 /**
  * @file
  * Backport of Drupal 7 simpletest.module with modifications, see BACKPORT.txt.
@@ -40,6 +41,12 @@ function simpletest_menu() {
  * Implementation of hook_perm().
  */
 function simpletest_perm() {
+//  return array(
+//    'administer unit tests' => array(
+//      'title' => t('Administer unit tests'),
+//      'description' => t('Manage and run automated testing. %warning', array('%warning' => t('Warning: Give to trusted roles only; this permission has security implications.'))),
+//    ),
+//  );
   return array('administer unit tests');
 }
 
@@ -90,7 +97,7 @@ function simpletest_test_form() {
     $header = array(t('Message'), t('Group'), t('Filename'), t('Line'), t('Function'), array('colspan' => 2, 'data' => t('Status')));
     while ($result = db_fetch_object($results)) {
       $class = $result->test_class;
-      $info = $uncategorized_tests[$class]->getInfo();
+      $info = call_user_func(array($class, 'getInfo'));
       $group = $info['group'];
       $selected_tests[$group][$class] = TRUE;
       if (!isset($group_summary[$group])) {
@@ -124,17 +131,14 @@ function simpletest_test_form() {
     }
 
     // Clear test results.
-    if (variable_get('simpletest_clear_results', TRUE)) {
-      db_query('DELETE FROM {simpletest} WHERE test_id = %d', $_SESSION['test_id']);
-      db_query('DELETE FROM {simpletest_test_id} WHERE test_id = %d', $_SESSION['test_id']);
-    }
+    simpletest_clean_results_table($_SESSION['test_id']);
     unset($_SESSION['test_id']);
 
     $all_ok = TRUE;
     foreach ($form['results'] as $group => &$elements) {
       $group_ok = TRUE;
       foreach ($elements as $class => &$element) {
-        $info = $uncategorized_tests[$class]->getInfo();
+        $info = call_user_func(array($class, 'getInfo'));
         $ok = $element['summary']['#fail'] + $element['summary']['#exception'] == 0;
         $element += array(
           '#type' => 'fieldset',
@@ -171,15 +175,13 @@ function simpletest_test_form() {
     $form['tests']['table'][$group_name] = array(
       '#collapsed' => TRUE,
     );
-    foreach ($test_group as $test) {
-      $test_info = $test->getInfo();
-      $test_class = get_class($test);
-      $is_selected = isset($selected_tests[$group_name][$test_class]);
-      $form['tests']['table'][$group_name][$test_class] = array(
+    foreach ($test_group as $class => $info) {
+      $is_selected = isset($selected_tests[$group_name][$class]);
+      $form['tests']['table'][$group_name][$class] = array(
         '#type' => 'checkbox',
-        '#title' => $test_info['name'],
+        '#title' => $info['name'],
         '#default_value' => $is_selected,
-        '#description' => $test_info['description'],
+        '#description' => $info['description'],
       );
       if ($is_selected) {
         $form['tests']['table'][$group_name]['#collapsed'] = FALSE;
@@ -488,21 +490,22 @@ function simpletest_get_all_tests() {
 
     $existing_classes = get_declared_classes();
     foreach ($files as $file) {
+//      include_once DRUPAL_ROOT . '/' . $file;
       include_once $file;
     }
     $classes = array_values(array_diff(get_declared_classes(), $existing_classes));
     $formatted_classes = array();
     foreach ($classes as $key => $class) {
-      if (method_exists($class, 'getInfo')) {
-        $formatted_classes[$class] = new $class;
+      if (!method_exists($class, 'getInfo')) {
+        unset($classes[$key]);
       }
     }
   }
-  if (count($formatted_classes) == 0) {
+  if (count($classes) == 0) {
     drupal_set_message('No test cases found.', 'error');
     return FALSE;
   }
-  return $formatted_classes;
+  return $classes;
 }
 
 /**
@@ -514,9 +517,9 @@ function simpletest_get_all_tests() {
  */
 function simpletest_categorize_tests($tests) {
   $groups = array();
-  foreach ($tests as $test => $instance) {
-    $info = $instance->getInfo();
-    $groups[$info['group']][$test] = $instance;
+  foreach ($tests as $test) {
+    $info = call_user_func(array($test, 'getInfo'));
+    $groups[$info['group']][$test] = $info;
   }
   uksort($groups, 'strnatcasecmp');
   return $groups;
@@ -528,7 +531,8 @@ function simpletest_categorize_tests($tests) {
 function simpletest_clean_environment() {
   simpletest_clean_database();
   simpletest_clean_temporary_directories();
-  simpletest_clean_results_table();
+  $count = simpletest_clean_results_table();
+  drupal_set_message(t('Removed @count test results.', array('@count' => $count)));
 }
 
 /**
@@ -556,7 +560,7 @@ function simpletest_clean_database() {
 }
 
 /**
- * Find all tables that are like the specified base table name.
+ * Find all tables that are like the specified base table name. (Drupal 6)
  *
  * @param string $base_table Base table name.
  * @param boolean $count Return the table count instead of list of tables.
@@ -564,22 +568,18 @@ function simpletest_clean_database() {
  */
 function simpletest_get_like_tables($base_table = 'simpletest', $count = FALSE) {
   global $db_url, $db_prefix;
-  $url = parse_url($db_url);
+  $url = parse_url(is_array($db_url) ? $db_url['default'] : $db_url);
   $database = substr($url['path'], 1);
-  $select = $count ? 'COUNT(table_name)' : 'table_name';
-  $result = db_query("SELECT $select FROM information_schema.tables WHERE table_schema = '$database' AND table_name LIKE '$db_prefix$base_table%'");
+  $result = db_query("SELECT table_name FROM information_schema.tables WHERE table_schema = '$database' AND table_name LIKE '$db_prefix$base_table%'");
   $schema = drupal_get_schema_unprocessed('simpletest');
 
-  if ($count) {
-    return db_result($result);
-  }
   $tables = array();
   while ($table = db_result($result)) {
     if (!isset($schema[$table])) {
       $tables[] = $table;
     }
   }
-  return $tables;
+  return ($count) ? count($tables) : $tables;
 }
 
 /**
@@ -605,7 +605,7 @@ function simpletest_clean_temporary_directories() {
 }
 
 /**
- * Remove all files from specified directory and then remove directory.
+ * Remove all files from specified directory and then remove directory. (Drupal 6)
  *
  * @param string $path Directory path.
  */
@@ -627,16 +627,58 @@ function simpletest_clean_temporary_directory($path) {
 }
 
 /**
- * Clear the test results tables.
+ * Clear the test result tables.
+ *
+ * @param $test_id
+ *   Test ID to remove results for, or NULL to remove all results.
+ * @return
+ *   The number of results removed or FALSE.
  */
-function simpletest_clean_results_table() {
+function simpletest_clean_results_table($test_id = NULL) {
   if (variable_get('simpletest_clear_results', TRUE)) {
-    $count = db_result(db_query('SELECT COUNT(test_id) FROM {simpletest_test_id}'));
+    if ($test_id) {
+//      $count = db_result(db_query('SELECT COUNT(test_id) FROM {simpletest_test_id} WHERE test_id = :test_id', array(':test_id' => $test_id)));
+      $count = db_result(db_query('SELECT COUNT(test_id) FROM {simpletest_test_id} WHERE test_id = %d', $test_id));
 
-    // Clear test results.
-    db_query('DELETE FROM {simpletest}');
-    db_query('DELETE FROM {simpletest_test_id}');
+//      db_delete("simpletest")
+//        ->condition('test_id', $test_id)
+//        ->execute();
+//      db_delete("simpletest_test_id")
+//        ->condition('test_id', $test_id)
+//        ->execute();
+      db_query("DELETE FROM {simpletest} WHERE test_id = %d", $test_id);
+      db_query("DELETE FROM {simpletest_test_id} WHERE test_id = %d", $test_id);
+    }
+    else {
+      $count = db_result(db_query('SELECT COUNT(test_id) FROM {simpletest_test_id}'));
 
-    drupal_set_message(t('Removed @count test results.', array('@count' => $count)));
+      // Clear test results.
+//      db_delete("simpletest")->execute();
+//      db_delete("simpletest_test_id")->execute();
+      db_query('DELETE FROM {simpletest}');
+      db_query('DELETE FROM {simpletest_test_id}');
+    }
+
+    return $count;
+  }
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_form_FORM_ID_alter(): system_modules. (Drupal 6)
+ *
+ * Hide modules that have 'hidden = TRUE' in their .info files.
+ */
+function simpletest_form_system_modules_alter(&$form, $form_state) {
+  foreach ($form['validation_modules']['#value'] as $filename => $file) {
+    if (!empty($file->info['hidden'])) {
+      unset($form['name'][$filename]);
+      unset($form['version'][$filename]);
+      unset($form['description'][$filename]);
+      unset($form['status']['#options'][$filename]);
+      unset($form['throttle']['#options'][$filename]);
+      unset($form['validation_modules']['#value'][$filename]);
+    }
   }
 }
+

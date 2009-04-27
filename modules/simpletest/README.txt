@@ -1,4 +1,4 @@
-$Id: README.txt,v 1.12.4.3 2009/02/08 02:35:39 boombatower Exp $
+$Id: README.txt,v 1.12.4.4 2009/03/28 03:35:17 boombatower Exp $
 
 AUTHOR
 ------
@@ -11,7 +11,8 @@ visit the project page at: http://drupal.org/project/simpletest.
 
 DESCRIPTION
 -----------
-SimpleTest 6.x-2.x is a backport of Drupal 7 core SimpleTest.
+SimpleTest 6.x-2.x is a backport of Drupal 7 core SimpleTest and has the same
+requirements as Drupal 7 SimpleTest.
 
 STATUS
 ------
