@@ -227,6 +227,6 @@ ini_set('url_rewriter.tags',        '');
 # );
 
 $GLOBALS['simpletest_installed'] = TRUE;
-   if (preg_match("/^simpletest\d+$/", $_SERVER['HTTP_USER_AGENT'])) {
-     $db_prefix = $_SERVER['HTTP_USER_AGENT'];
-   }
+if (preg_match("/^simpletest\d+$/", $_SERVER['HTTP_USER_AGENT'])) {
+  $db_prefix = $_SERVER['HTTP_USER_AGENT'];
+}
