@@ -5,8 +5,8 @@ version = VERSION
 core = 6.x
 engine = phptemplate
 
-; Information added by drupal.org packaging script on 2009-02-25
-version = "6.10"
+; Information added by drupal.org packaging script on 2009-04-30
+version = "6.11"
 project = "drupal"
-datestamp = "1235596218"
+datestamp = "1241050838"
 

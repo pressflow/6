@@ -1,5 +1,5 @@
 <?php
-// $Id: system.install,v 1.238.2.12 2009/02/25 14:02:46 goba Exp $
+// $Id: system.install,v 1.238.2.14 2009/04/27 12:50:13 goba Exp $
 
 /**
  * Test and report Drupal installation requirements.
@@ -2526,6 +2526,15 @@ function system_update_6047() {
 }
 
 /**
+ * @} End of "defgroup updates-5.x-to-6.x"
+ */
+
+/**
+ * @defgroup updates-6.x-extra Extra system updates for 6.x
+ * @{
+ */
+
+/**
 * Increase the size of the 'load_functions' and 'to_arg_functions' fields in table 'menu_router'.
 */
 function system_update_6048() {
@@ -2535,7 +2544,6 @@ function system_update_6048() {
 
   return $ret;
 }
-
 
 /**
  * Replace src index on the {url_alias} table with src, language.
@@ -2548,6 +2556,16 @@ function system_update_6049() {
 }
 
 /**
- * @} End of "defgroup updates-5.x-to-6.x"
+ * Clear any menu router blobs stored in the cache table.
+ */
+function system_update_6050() {
+  $ret = array();
+  cache_clear_all('router:', 'cache_menu', TRUE);
+  return $ret;
+}
+
+/**
+ * @} End of "defgroup updates-6.x-extra"
  * The next series of updates should start at 7000.
  */
+

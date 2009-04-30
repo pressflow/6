@@ -1,5 +1,5 @@
 <?php
-// $Id: taxonomy.module,v 1.414.2.6 2009/02/16 10:44:09 goba Exp $
+// $Id: taxonomy.module,v 1.414.2.8 2009/04/27 11:49:05 goba Exp $
 
 /**
  * @file
@@ -96,7 +96,6 @@ function taxonomy_link($type, $node = NULL) {
  * @return
  *   An internal Drupal path.
  */
-
 function taxonomy_term_path($term) {
   $vocabulary = taxonomy_vocabulary_load($term->vid);
   if ($vocabulary->module != 'taxonomy' && $path = module_invoke($vocabulary->module, 'term_path', $term)) {
@@ -1226,7 +1225,7 @@ function taxonomy_rss_item($node) {
   $output = array();
   foreach ($node->taxonomy as $term) {
     $output[] = array('key'   => 'category',
-                      'value' => check_plain($term->name),
+                      'value' => $term->name,
                       'attributes' => array('domain' => url('taxonomy/term/'. $term->tid, array('absolute' => TRUE))));
   }
   return $output;

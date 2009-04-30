@@ -1,5 +1,5 @@
 <?php
-// $Id: cache.inc,v 1.17 2008/01/29 11:36:06 goba Exp $
+// $Id: cache.inc,v 1.17.2.1 2009/04/27 14:23:58 goba Exp $
 
 /**
  * Return data from the persistent cache. Data may be stored as either plain text or as serialized data.
@@ -15,10 +15,10 @@ function cache_get($cid, $table = 'cache') {
   global $user;
 
   // Garbage collection necessary when enforcing a minimum cache lifetime
-  $cache_flush = variable_get('cache_flush', 0);
+  $cache_flush = variable_get('cache_flush_'. $table, 0);
   if ($cache_flush && ($cache_flush + variable_get('cache_lifetime', 0) <= time())) {
     // Reset the variable immediately to prevent a meltdown in heavy load situations.
-    variable_set('cache_flush', 0);
+    variable_set('cache_flush_'. $table, 0);
     // Time to flush old cache data
     db_query("DELETE FROM {". $table ."} WHERE expire != %d AND expire <= %d", CACHE_PERMANENT, $cache_flush);
   }
@@ -149,16 +149,16 @@ function cache_clear_all($cid = NULL, $table = NULL, $wildcard = FALSE) {
       // cached data that was cached before the timestamp.
       $user->cache = time();
 
-      $cache_flush = variable_get('cache_flush', 0);
+      $cache_flush = variable_get('cache_flush_'. $table, 0);
       if ($cache_flush == 0) {
         // This is the first request to clear the cache, start a timer.
-        variable_set('cache_flush', time());
+        variable_set('cache_flush_'. $table, time());
       }
       else if (time() > ($cache_flush + variable_get('cache_lifetime', 0))) {
         // Clear the cache for everyone, cache_flush_delay seconds have
         // passed since the first request to clear the cache.
         db_query("DELETE FROM {". $table ."} WHERE expire != %d AND expire < %d", CACHE_PERMANENT, time());
-        variable_set('cache_flush', 0);
+        variable_set('cache_flush_'. $table, 0);
       }
     }
     else {

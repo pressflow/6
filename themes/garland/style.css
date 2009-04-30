@@ -1,4 +1,4 @@
-/* $Id: style.css,v 1.38.2.1 2008/02/05 09:27:26 goba Exp $ */
+/* $Id: style.css,v 1.38.2.2 2009/04/27 14:20:53 goba Exp $ */
 
 /**
  * Garland, for Drupal 6.x
@@ -659,7 +659,7 @@ ul.secondary li.active a {
  */
 .node {
   border-bottom: 1px solid #e9eff3;
-  margin: -1.5em -26px 1.5em;
+  margin: 0 -26px 1.5em;
   padding: 1.5em 26px;
 }
 

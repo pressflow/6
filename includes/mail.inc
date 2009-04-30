@@ -1,5 +1,5 @@
 <?php
-// $Id: mail.inc,v 1.8.2.4 2008/10/06 11:04:08 dries Exp $
+// $Id: mail.inc,v 1.8.2.6 2009/04/27 11:07:43 goba Exp $
 
 /**
  * Compose and optionally send an e-mail message.
@@ -70,7 +70,7 @@
  * @param $params
  *   Optional parameters to build the e-mail.
  * @param $from
- *   Sets From, Reply-To, Return-Path and Error-To to this value, if given.
+ *   Sets From to this value, if given.
  * @param $send
  *   Send the message directly, without calling drupal_mail_send() manually.
  * @return
@@ -105,10 +105,10 @@ function drupal_mail($module, $key, $to, $language, $params = array(), $from = N
     // To prevent e-mail from looking like spam, the addresses in the Sender and
     // Return-Path headers should have a domain authorized to use the originating
     // SMTP server. Errors-To is redundant, but shouldn't hurt.
-    $headers['From'] = $headers['Reply-To'] = $headers['Sender'] = $headers['Return-Path'] = $headers['Errors-To'] = $default_from;
+    $headers['From'] = $headers['Sender'] = $headers['Return-Path'] = $headers['Errors-To'] = $default_from;
   }
   if ($from) {
-    $headers['From'] = $headers['Reply-To'] = $from;
+    $headers['From'] = $from;
   }
   $message['headers'] = $headers;
 
@@ -132,7 +132,7 @@ function drupal_mail($module, $key, $to, $language, $params = array(), $from = N
     // Log errors
     if (!$message['result']) {
       watchdog('mail', 'Error sending e-mail (from %from to %to).', array('%from' => $message['from'], '%to' => $message['to']), WATCHDOG_ERROR);
-      drupal_set_message(t('Unable to send e-mail. Please contact the site admin, if the problem persists.'), 'error');
+      drupal_set_message(t('Unable to send e-mail. Please contact the site administrator if the problem persists.'), 'error');
     }
   }
 
