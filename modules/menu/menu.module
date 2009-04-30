@@ -1,5 +1,5 @@
 <?php
-// $Id: menu.module,v 1.157.2.5 2009/02/25 13:15:40 goba Exp $
+// $Id: menu.module,v 1.157.2.6 2009/04/27 12:50:13 goba Exp $
 
 /**
  * @file
@@ -256,8 +256,7 @@ function _menu_parents_recurse($tree, $menu_name, $indent, &$options, $exclude, 
  * Reset a system-defined menu item.
  */
 function menu_reset_item($item) {
-  $router = menu_router_build();
-  $new_item = _menu_link_build($router[$item['router_path']]);
+  $new_item = _menu_link_build(menu_get_item($item['router_path']));
   foreach (array('mlid', 'has_children') as $key) {
     $new_item[$key] = $item[$key];
   }

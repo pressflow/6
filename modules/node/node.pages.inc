@@ -1,5 +1,5 @@
 <?php
-// $Id: node.pages.inc,v 1.28.2.3 2008/11/10 10:18:54 goba Exp $
+// $Id: node.pages.inc,v 1.28.2.4 2009/04/27 11:35:01 goba Exp $
 
 /**
  * @file
@@ -79,6 +79,8 @@ function node_object_prepare(&$node) {
   }
   else {
     $node->date = format_date($node->created, 'custom', 'Y-m-d H:i:s O');
+    // Remove the log message from the original node object.
+    $node->log = NULL;
   }
   // Always use the default revision setting.
   $node->revision = in_array('revision', $node_options);
@@ -159,6 +161,7 @@ function node_form(&$form_state, $node) {
     $form['revision_information']['log'] = array(
       '#type' => 'textarea',
       '#title' => t('Log message'),
+      '#default_value' => (isset($node->log) ? $node->log : ''),
       '#rows' => 2,
       '#description' => t('An explanation of the additions or updates being made to help other authors understand your motivations.'),
     );

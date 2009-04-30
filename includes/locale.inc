@@ -1,5 +1,5 @@
 <?php
-// $Id: locale.inc,v 1.174.2.7 2009/01/06 15:36:51 goba Exp $
+// $Id: locale.inc,v 1.174.2.8 2009/04/08 02:54:00 dries Exp $
 
 /**
  * @file
@@ -2433,7 +2433,7 @@ function _locale_get_predefined_list() {
     "se" => array("Northern Sami"),
     "sg" => array("Sango"),
     "sh" => array("Serbo-Croatian"),
-    "si" => array("Singhalese"),
+    "si" => array("Sinhala", "සිංහල"),
     "sk" => array("Slovak", "Slovenčina"),
     "sl" => array("Slovenian", "Slovenščina"),
     "sm" => array("Samoan"),

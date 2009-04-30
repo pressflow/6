@@ -1,4 +1,4 @@
-/* $Id: update.css,v 1.3.2.1 2008/02/05 09:59:21 goba Exp $ */
+/* $Id: update.css,v 1.3.2.2 2009/04/29 17:17:20 goba Exp $ */
 
 .update .project {
   font-weight: bold;
@@ -54,6 +54,10 @@
 
 .current-version, .new-version {
   direction: ltr; /* Note: version numbers should always be LTR. */
+}
+
+.update tr.unknown {
+  background: #ddd;
 }
 
 table.update,
