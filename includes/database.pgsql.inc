@@ -1,5 +1,5 @@
 <?php
-// $Id: database.pgsql.inc,v 1.68.2.3 2008/11/17 10:31:41 goba Exp $
+// $Id: database.pgsql.inc,v 1.68.2.4 2009/03/30 13:04:06 goba Exp $
 
 /**
  * @file
@@ -474,7 +474,7 @@ function db_type_map() {
     'blob:big' => 'bytea',
     'blob:normal' => 'bytea',
 
-    'datetime:normal' => 'timestamp',
+    'datetime:normal' => 'timestamp without time zone',
 
     'serial:tiny' => 'serial',
     'serial:small' => 'serial',

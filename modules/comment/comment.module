@@ -1,5 +1,5 @@
 <?php
-// $Id: comment.module,v 1.617.2.4 2009/01/06 17:34:54 goba Exp $
+// $Id: comment.module,v 1.617.2.6 2009/04/05 12:04:52 dries Exp $
 
 /**
  * @file
@@ -1051,7 +1051,9 @@ function comment_render($node, $cid = 0) {
       $output .= comment_form_box(array('nid' => $nid), t('Post new comment'));
     }
 
-    $output = theme('comment_wrapper', $output, $node);
+    if ($output) {
+      $output = theme('comment_wrapper', $output, $node);
+    }
   }
 
   return $output;
@@ -1523,7 +1525,7 @@ function _comment_form_submit(&$comment_values) {
     // 2) Strip out all HTML tags
     // 3) Convert entities back to plain-text.
     // Note: format is checked by check_markup().
-    $comment_values['subject'] = trim(truncate_utf8(decode_entities(strip_tags(check_markup($comment_values['comment'], $comment_values['format']))), 29, TRUE));
+    $comment_values['subject'] = truncate_utf8(trim(decode_entities(strip_tags(check_markup($comment_values['comment'], $comment_values['format'])))), 29, TRUE);
     // Edge cases where the comment body is populated only by HTML tags will
     // require a default subject.
     if ($comment_values['subject'] == '') {
