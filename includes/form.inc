@@ -2373,7 +2373,7 @@ function form_clean_id($id = NULL, $flush = FALSE) {
  *   foreach ($results as $result) {
  *     $items[] = t('Loaded node %title.', array('%title' => $result));
  *   }
- *   $_SESSION['my_batch_results'] = $items;
+ *   drupal_session_set('my_batch_results', $items);
  * }
  * @endcode
  */

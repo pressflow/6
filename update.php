@@ -288,9 +288,9 @@ function update_finished($success, $results, $operations) {
   // clear the caches in case the data has been updated.
   drupal_flush_all_caches();
 
-  $_SESSION['update_results'] = $results;
-  $_SESSION['update_success'] = $success;
-  $_SESSION['updates_remaining'] = $operations;
+  drupal_set_message('update_results', $results);
+  drupal_set_message('update_success', $success);
+  drupal_set_message('updates_remaining', $operations);
 }
 
 function update_results_page() {
