@@ -1181,7 +1181,7 @@ function drupal_bootstrap($phase) {
 }
 
 function _drupal_bootstrap($phase) {
-  global $conf;
+  global $conf, $user;
 
   switch ($phase) {
 
@@ -1247,7 +1247,7 @@ function _drupal_bootstrap($phase) {
       if (!is_object($cache) || $cache_mode != CACHE_AGGRESSIVE) {
         // Load module handling.
         require_once './includes/module.inc';
-        bootstrap_invoke_all('init');
+        bootstrap_invoke_all('boot');
       }
       // If there is a cached page, display it.
       if (is_object($cache)) {
