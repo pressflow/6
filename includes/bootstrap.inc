@@ -1,5 +1,5 @@
 <?php
-// $Id: bootstrap.inc,v 1.206.2.12 2009/04/30 00:13:30 goba Exp $
+// $Id: bootstrap.inc,v 1.206.2.11 2009/02/25 13:49:54 dries Exp $
 
 /**
  * @file
@@ -1057,14 +1057,7 @@ function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NO
 function drupal_set_message($message = NULL, $type = 'status', $repeat = TRUE) {
   if ($message) {
     if (!isset($_SESSION['messages'])) {
-      // Check for the existence of drupal_set_session() because
-      // messages may be set during installation.
-      if (function_exists('drupal_set_session')) {
-        drupal_set_session('messages', array());
-      }
-      else {
-        $_SESSION['messages'] = array();
-      }
+      drupal_set_session('messages', array());
     }
 
     if (!isset($_SESSION['messages'][$type])) {
