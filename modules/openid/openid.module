@@ -162,6 +162,10 @@ function openid_begin($claimed_id, $return_to = '', $form_values = array()) {
     return;
   }
 
+  if (empty($_SESSION['openid'])) {
+    drupal_set_session('openid', array());
+  }
+  
   // Store discovered information in the users' session so we don't have to rediscover.
   $_SESSION['openid']['service'] = $services[0];
   // Store the claimed id

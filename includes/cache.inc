@@ -25,6 +25,10 @@ function cache_get($cid, $table = 'cache') {
 
   $cache = db_fetch_object(db_query("SELECT data, created, headers, expire, serialized FROM {". $table ."} WHERE cid = '%s'", $cid));
   if (isset($cache->data)) {
+    if (isset($cache->headers)) {
+      $cache->headers = unserialize($cache->headers);
+    }
+
     // If the data is permanent or we're not enforcing a minimum cache lifetime
     // always return the cached data.
     if ($cache->expire == CACHE_PERMANENT || !variable_get('cache_lifetime', 0)) {
@@ -99,7 +103,9 @@ function cache_get($cid, $table = 'cache') {
  * @param $headers
  *   A string containing HTTP header information for cached pages.
  */
-function cache_set($cid, $data, $table = 'cache', $expire = CACHE_PERMANENT, $headers = NULL) {
+function cache_set($cid, $data, $table = 'cache', $expire = CACHE_PERMANENT, $headers = array()) {
+  $headers = serialize($headers);
+  
   $serialized = 0;
   if (is_object($data) || is_array($data)) {
     $data = serialize($data);

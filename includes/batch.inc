@@ -338,7 +338,7 @@ function _batch_finished() {
     // We get here if $form['#redirect'] was FALSE, or if the form is a
     // multi-step form. We save the final $form_state value to be retrieved
     // by drupal_get_form, and we redirect to the originating page.
-    $_SESSION['batch_form_state'] = $_batch['form_state'];
+    drupal_set_session('batch_form_state', $_batch['form_state']);
     drupal_goto($_batch['source_page']);
   }
 }

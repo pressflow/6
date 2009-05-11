@@ -546,32 +546,41 @@ function variable_del($name) {
 /**
  * Retrieve the current page from the cache.
  *
- * Note: we do not serve cached pages when status messages are waiting (from
- * a redirected form submission which was completed).
+ * Note: we do not serve cached pages to authenticated users, or to anonymous
+ * users when $_SESSION is non-empty. $_SESSION may contain status messages
+ * from a form submission, the contents of a shopping cart, or other user-
+ * specific content that should not be cached and displayed to other users.
  *
- * @param $status_only
- *   When set to TRUE, retrieve the status of the page cache only
- *   (whether it was started in this request or not).
+ * @param $retrieve
+ *   If TRUE, look up and return the current page in the cache, or start output
+ *   buffering if the conditions for caching are satisfied. If FALSE, only
+ *   return a boolean value indicating whether the current request may be
+ *   cached. Default of TRUE added to maximize Drupal 5 compatibility.
+ * @return
+ *   The cache object, if the page was found in the cache; TRUE if the page was
+ *   not found, but output buffering was started in order to possibly cache the
+ *   current request; FALSE if the page was not found, and the current request
+ *   may not be cached (e.g. because it belongs to an authenticated user). If
+ *   $retrieve is TRUE, only return either TRUE or FALSE.
  */
-function page_get_cache($status_only = FALSE) {
-  static $status = FALSE;
+function page_get_cache($retrieve = TRUE) {
   global $user, $base_root;
+  static $ob_started = FALSE;
 
-  if ($status_only) {
-    return $status;
+  if ($user->uid || ($_SERVER['REQUEST_METHOD'] != 'GET' && $_SERVER['REQUEST_METHOD'] != 'HEAD') || count(drupal_get_messages(NULL, FALSE)) || $_SERVER['SERVER_SOFTWARE'] === 'PHP CLI') {
+    return FALSE;
   }
-  $cache = NULL;
-
-  if (!$user->uid && $_SERVER['REQUEST_METHOD'] == 'GET' && count(drupal_set_message()) == 0 && $_SERVER['SERVER_SOFTWARE'] !== 'PHP CLI' && !isset($_COOKIE['NO_CACHE'])) {
+  if ($retrieve) {
     $cache = cache_get($base_root . request_uri(), 'cache_page');
-
-    if (empty($cache)) {
+    if ($cache) {
+      return $cache;
+    }
+    else {
       ob_start();
-      $status = TRUE;
+      $ob_started = TRUE;
     }
   }
-
-  return $cache;
+  return $ob_started;
 }
 
 /**
@@ -619,90 +628,260 @@ function drupal_load($type, $name) {
 }
 
 /**
+ * Set an HTTP response header for the current page.
+ *
+ * Note: When sending a Content-Type header, always include a 'charset' type,
+ * too. This is necessary to avoid security bugs (e.g. UTF-7 XSS).
+ *
+ * @param $name
+ *   The HTTP header name, or a status code followed by a reason phrase, e.g.
+ *   "404 Not Found".
+ * @param $value
+ *   The HTTP header value; if omitted, the specified header is unset.
+ * @param $append
+ *   Whether to append the value to an existing header or to replace it.
+ */
+function drupal_set_header($name = NULL, $value = NULL, $append = FALSE) {
+  // The headers as name/value pairs.
+  static $headers = array();
+
+  if (!isset($name)) {
+    return $headers;
+  }
+
+  // Save status codes using the special key ":status".
+  if (preg_match('/^\d{3} /', $name)) {
+    $value = $name;
+    $name = $name_lower = ':status';
+  }
+  else {
+    $name_lower = strtolower($name);
+  }
+  _drupal_set_preferred_header_name($name);
+
+  if (!isset($value)) {
+    $headers[$name_lower] = FALSE;
+  }
+  elseif (isset($headers[$name_lower]) && $append) {
+    // Multiple headers with identical names may be combined using comma (RFC
+    // 2616, section 4.2).
+    $headers[$name_lower] .= ',' . $value;
+  }
+  else {
+    $headers[$name_lower] = $value;
+  }
+  drupal_send_headers(array($name => $headers[$name_lower]), TRUE);
+}
+
+/**
+ * Get the HTTP response headers for the current page.
+ *
+ * @param $name
+ *   An HTTP header name. If omitted, all headers are returned as name/value
+ *   pairs. If an array value is FALSE, the header has been unset.
+ * @return
+ *   A string containing the header value, or FALSE if the header has been set,
+ *   or NULL if the header has not been set.
+ */
+function drupal_get_header($name = NULL) {
+  $headers = drupal_set_header();
+  if (isset($name)) {
+    $name = strtolower($name);
+    return isset($headers[$name]) ? $headers[$name] : NULL;
+  }
+  else {
+    return $headers;
+  }
+}
+
+/**
+ * Header names are case-insensitive, but for maximum compatibility they should
+ * follow "common form" (see RFC 2617, section 4.2).
+ */
+function _drupal_set_preferred_header_name($name = NULL) {
+  static $header_names = array();
+
+  if (!isset($name)) {
+    return $header_names;
+  }
+  $header_names[strtolower($name)] = $name;
+}
+
+/**
+ * Send the HTTP response headers previously set using drupal_set_header().
+ * Add default headers, unless they have been replaced or unset using
+ * drupal_set_header().
+ *
+ * @param $default_headers
+ *   An array of headers as name/value pairs.
+ * @param $single
+ *   If TRUE and headers have already be sent, send only the specified header.
+ */
+function drupal_send_headers($default_headers = array(), $only_default = FALSE) {
+  static $headers_sent = FALSE;
+  $headers = drupal_get_header();
+  if ($only_default && $headers_sent) {
+    $headers = array();
+  }
+  $headers_sent = TRUE;
+
+  $header_names = _drupal_set_preferred_header_name();
+  foreach ($default_headers as $name => $value) {
+    $name_lower = strtolower($name);
+    if (!isset($headers[$name_lower])) {
+      $headers[$name_lower] = $value;
+      $header_names[$name_lower] = $name;
+    }
+  }
+  foreach ($headers as $name_lower => $value) {
+    if ($name_lower == ':status') {
+      header($_SERVER['SERVER_PROTOCOL'] . ' ' . $value);
+    }
+    // Skip headers that have been unset.
+    elseif ($value) {
+      header($header_names[$name_lower] . ': ' . $value);
+    }
+  }
+}
+
+/**
  * Set HTTP headers in preparation for a page response.
  *
- * Authenticated users are always given a 'no-cache' header, and will
- * fetch a fresh page on every request.  This prevents authenticated
- * users seeing locally cached pages that show them as logged out.
+ * Authenticated users are always given a 'no-cache' header, and will fetch a
+ * fresh page on every request. This prevents authenticated users from seeing
+ * locally cached pages.
+ *
+ * Also give each page a unique ETag. This will force clients to include both
+ * an If-Modified-Since header and an If-None-Match header when doing
+ * conditional requests for the page (required by RFC 2616, section 13.3.4),
+ * making the validation more robust. This is a workaround for a bug in Mozilla
+ * Firefox that is triggered when Drupal's caching is enabled and the user
+ * accesses Drupal via an HTTP proxy (see
+ * https://bugzilla.mozilla.org/show_bug.cgi?id=269303): When an authenticated
+ * user requests a page, and then logs out and requests the same page again,
+ * Firefox may send a conditional request based on the page that was cached
+ * locally when the user was logged in. If this page did not have an ETag
+ * header, the request only contains an If-Modified-Since header. The date will
+ * be recent, because with authenticated users the Last-Modified header always
+ * refers to the time of the request. If the user accesses Drupal via a proxy
+ * server, and the proxy already has a cached copy of the anonymous page with an
+ * older Last-Modified date, the proxy may respond with 304 Not Modified, making
+ * the client think that the anonymous and authenticated pageviews are
+ * identical.
  *
  * @see page_set_cache()
  */
 function drupal_page_header() {
-  global $user;
- 
-  // Set a cookie if the user is logged in, so the reverse proxy would
-  // pass through the request. This requires a rule in the reverse proxy's
-  // configuration. See settings.php for details.
-  if ($user->uid && !isset($_COOKIE['LOGGED_IN'])) {
-    setcookie('LOGGED_IN', 'Y', $_SERVER['REQUEST_TIME'] + ini_get('session.cookie_lifetime'), '/');
-  }     
+  static $headers_sent = FALSE;
+  if ($headers_sent) {
+    return TRUE;
+  }
+  $headers_sent = TRUE;
 
-  header("Last-Modified: ". gmdate("D, d M Y H:i:s") ." GMT");
-  header("Cache-Control: store, no-cache, must-revalidate");
-  header("Cache-Control: post-check=0, pre-check=0", FALSE);
+  $default_headers = array(
+    'Expires' => 'Sun, 11 Mar 1984 12:00:00 GMT',
+    'Last-Modified' => gmdate(DATE_RFC1123, $_SERVER['REQUEST_TIME']),
+    'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
+    'ETag' => '"' . $_SERVER['REQUEST_TIME'] . '"',
+  );
+  drupal_send_headers($default_headers);
 }
 
 /**
  * Set HTTP headers in preparation for a cached page response.
  *
- * The general approach here is that anonymous users can keep a local
- * cache of the page, but must revalidate it on every request.  Then,
- * they are given a '304 Not Modified' response as long as they stay
- * logged out and the page has not been modified.
+ * The headers allow as much as possible in proxies and browsers without any
+ * particular knowledge about the pages. Modules can override these headers
+ * using drupal_set_header().
  *
+ * If the request is conditional (using If-Modified-Since and If-None-Match),
+ * and the conditions match those currently in the cache, a 304 Not Modified
+ * response is sent.
  */
-function drupal_page_cache_header($cache) {
-  // Set default values:
-  $last_modified = gmdate('D, d M Y H:i:s', $cache->created) .' GMT';
-  $etag = '"'. md5($last_modified) .'"';
+function drupal_page_cache_header(stdClass $cache) {
+  // Negotiate whether to use compression.
+  $page_compression = variable_get('page_compression', TRUE) && extension_loaded('zlib');
+  $return_compressed = $page_compression && isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE;
 
-  if (variable_get('reverse_proxy', 0)) {
-    // Optimize the headers for anonymous users when we have a reverse proxy such as Squid
-    $lifetime = variable_get('cache_lifetime', 300);
-    header('Expires: Sun, 11 Mar 1985 12:00:00 GMT');
-    $age = abs($_SERVER['REQUEST_TIME'] - $cache->created);
-    header('Cache-Control: public, max-age=0');
-    header('Cache-Control: public, s-maxage=' . max(0, $lifetime - $age));
-  }
-  else {
-    // See if the client has provided the required HTTP headers:
-    $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? stripslashes($_SERVER['HTTP_IF_MODIFIED_SINCE']) : FALSE;
-    $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : FALSE;
+  // Get headers set in hook_boot(). Keys are lower-case.
+  $hook_boot_headers = drupal_get_header();
 
-    if ($if_modified_since && $if_none_match
-        && $if_none_match == $etag // etag must match
-        && $if_modified_since == $last_modified) {  // if-modified-since must match
-      header('HTTP/1.1 304 Not Modified');
-      // All 304 responses must send an etag if the 200 response for the same object contained an etag
-      header("Etag: $etag");
-      exit();
+  // Headers generated in this function, that may be replaced or unset using
+  // drupal_set_headers(). Keys are mixed-case.
+  $default_headers = array();
+
+  foreach ($cache->headers as $name => $value) {
+    // In the case of a 304 response, certain headers must be sent, and the
+    // remaining may not (see RFC 2616, section 10.3.5). Do not override
+    // headers set in hook_boot().
+    $name_lower = strtolower($name);
+    if (in_array($name_lower, array('content-location', 'expires', 'cache-control', 'vary')) && !isset($hook_boot_headers[$name_lower])) {
+      drupal_set_header($name, $value);
+      unset($cache->headers[$name]);
     }
-    // Use the old header which does not get cached
-    header('Expires: Sun, 19 Nov 1978 05:00:00 GMT');
-    header('Cache-Control: must-revalidate');
   }
 
-  // Send appropriate response:
-  header("Last-Modified: $last_modified");
-  header("ETag: $etag");
+  // If a cache is served from a HTTP proxy without hitting the web server,
+  // the boot and exit hooks cannot be fired, so only allow caching in
+  // proxies with aggressive caching. If the client send a session cookie, do
+  // not bother caching the page in a public proxy, because the cached copy
+  // will only be served to that particular user due to Vary: Cookie, unless
+  // the Vary header has been replaced or unset in hook_boot() (see below).
+  $max_age = variable_get('cache', CACHE_NONE) == CACHE_AGGRESSIVE && (!isset($_COOKIE[session_name()]) || isset($hook_boot_headers['vary'])) ? variable_get('cache_lifetime', 0) : 0;
+  $default_headers['Cache-Control'] = 'public, max-age=' . $max_age;
 
-  if (variable_get('page_compression', TRUE)) {
-    // Determine if the browser accepts gzipped data.
-    if (@strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') === FALSE && function_exists('gzencode')) {
-      // Strip the gzip header and run uncompress.
-      $cache->data = gzinflate(substr(substr($cache->data, 10), 0, -8));
-    }
-    elseif (function_exists('gzencode')) {
+  // Entity tag should change if the output changes.
+  $etag = '"' . $cache->created . '-' . intval($return_compressed) . '"';
+  header('Etag: ' . $etag);
+
+  // See if the client has provided the required HTTP headers.
+  $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) : FALSE;
+  $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : FALSE;
+
+  if ($if_modified_since && $if_none_match
+      && $if_none_match == $etag // etag must match
+      && $if_modified_since == $cache->created) {  // if-modified-since must match
+    header($_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified');
+    drupal_send_headers($default_headers);
+    return;
+  }
+
+  // Send the remaining headers.
+  foreach ($cache->headers as $name => $value) {
+    drupal_set_header($name, $value);
+  }
+
+  $default_headers['Last-Modified'] = gmdate(DATE_RFC1123, $cache->created);
+
+  // HTTP/1.0 proxies does not support the Vary header, so prevent any caching
+  // by sending an Expires date in the past. HTTP/1.1 clients ignores the
+  // Expires header if a Cache-Control: max-age= directive is specified (see RFC
+  // 2616, section 14.9.3).
+  $default_headers['Expires'] = 'Sun, 11 Mar 1984 12:00:00 GMT';
+
+  drupal_send_headers($default_headers);
+
+  // Allow HTTP proxies to cache pages for anonymous users without a session
+  // cookie. The Vary header is used to indicates the set of request-header
+  // fields that fully determines whether a cache is permitted to use the
+  // response to reply to a subsequent request for a given URL without
+  // revalidation. If a Vary header has been set in hook_boot(), it is assumed
+  // that the module knows how to cache the page.
+  if (!isset($hook_boot_headers['vary']) && !variable_get('omit_vary_cookie', FALSE)) {
+    header('Vary: Cookie');
+  }
+
+  if ($page_compression) {
+    header('Vary: Accept-Encoding', FALSE);
+    // If page_compression is enabled, the cache contains gzipped data.
+    if ($return_compressed) {
       header('Content-Encoding: gzip');
     }
-  }
-
-  // Send the original request's headers. We send them one after
-  // another so PHP's header() function can deal with duplicate
-  // headers.
-  $headers = explode("\n", $cache->headers);
-  foreach ($headers as $header) {
-    header($header);
+    else {
+      // The client does not support compression, so unzip the data in the
+      // cache. Strip the gzip header and run uncompress.
+      $cache->data = gzinflate(substr(substr($cache->data, 10), 0, -8));
+    }
   }
 
   print $cache->data;
@@ -879,7 +1058,7 @@ function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NO
 function drupal_set_message($message = NULL, $type = 'status', $repeat = TRUE) {
   if ($message) {
     if (!isset($_SESSION['messages'])) {
-      $_SESSION['messages'] = array();
+      drupal_set_session('messages', array());
     }
 
     if (!isset($_SESSION['messages'][$type])) {
@@ -1003,7 +1182,7 @@ function drupal_bootstrap($phase) {
 }
 
 function _drupal_bootstrap($phase) {
-  global $conf;
+  global $conf, $user;
 
   switch ($phase) {
 
@@ -1046,23 +1225,38 @@ function _drupal_bootstrap($phase) {
     case DRUPAL_BOOTSTRAP_SESSION:
       require_once variable_get('session_inc', './includes/session.inc');
       session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy_sid', 'sess_gc');
-      session_start();
+      // If a session cookie exists, initialize the session. Otherwise the
+      // session is only started on demand in drupal_session_start(), making
+      // anonymous users not use a session cookie unless something is stored in
+      // $_SESSION. This allows HTTP proxies to cache anonymous pageviews.
+      if (isset($_COOKIE[session_name()])) {
+        drupal_session_start();
+      }
+      else {
+        $user = drupal_anonymous_user();
+      }
       break;
 
     case DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE:
       // Initialize configuration variables, using values from settings.php if available.
       $conf = variable_init(isset($conf) ? $conf : array());
+
       $cache_mode = variable_get('cache', CACHE_DISABLED);
       // Get the page from the cache.
-      $cache = $cache_mode == CACHE_DISABLED ? '' : page_get_cache();
-      // If the skipping of the bootstrap hooks is not enforced, call hook_boot.
-      if (!$cache || $cache_mode != CACHE_AGGRESSIVE) {
+      $cache = $cache_mode == CACHE_DISABLED ? FALSE : page_get_cache(TRUE);
+      // If the skipping of the bootstrap hooks is not enforced, call hook_init.
+      if (!is_object($cache) || $cache_mode != CACHE_AGGRESSIVE) {
         // Load module handling.
         require_once './includes/module.inc';
         bootstrap_invoke_all('boot');
       }
       // If there is a cached page, display it.
-      if ($cache) {
+      if (is_object($cache)) {
+        // Destroy empty anonymous sessions.
+        if (drupal_session_is_started() && empty($_SESSION)) {
+          session_destroy();
+        }
+        header('X-Drupal-Cache: HIT');
         drupal_page_cache_header($cache);
         // If the skipping of the bootstrap hooks is not enforced, call hook_exit.
         if ($cache_mode != CACHE_AGGRESSIVE) {
@@ -1071,8 +1265,20 @@ function _drupal_bootstrap($phase) {
         // We are done.
         exit;
       }
+  
       // Prepare for non-cached page workflow.
-      drupal_page_header();
+  
+      // If the session has not already been started and output buffering is
+      // not enabled, the HTTP headers must be sent now, including the session
+      // cookie. If output buffering is enabled, the session may be started
+      // at any time using drupal_session_start().
+      if ($cache === FALSE) {
+        drupal_page_header();
+        drupal_session_start();
+      }
+      else {
+        header('X-Drupal-Cache: MISS');
+      }
       break;
 
     case DRUPAL_BOOTSTRAP_LANGUAGE:

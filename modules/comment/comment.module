@@ -1666,9 +1666,9 @@ function comment_controls_submit($form, &$form_state) {
     $user = $account;
   }
   else {
-    $_SESSION['comment_mode'] = $mode;
-    $_SESSION['comment_sort'] = $order;
-    $_SESSION['comment_comments_per_page'] = $comments_per_page;
+    drupal_set_session('comment_mode', $mode);
+    drupal_set_session('comment_sort', $order);
+    drupal_set_session('comment_comments_per_page', $comments_per_page);
   }
 }
 
