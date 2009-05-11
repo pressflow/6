@@ -781,7 +781,7 @@ function drupal_page_header() {
     'Expires' => 'Sun, 11 Mar 1984 12:00:00 GMT',
     'Last-Modified' => gmdate(DATE_RFC1123, $_SERVER['REQUEST_TIME']),
     'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
-    'ETag' => '"' . REQUEST_TIME . '"',
+    'ETag' => '"' . $_SERVER['REQUEST_TIME'] . '"',
   );
   drupal_send_headers($default_headers);
 }
