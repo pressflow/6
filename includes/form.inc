@@ -1,5 +1,5 @@
 <?php
-// $Id: form.inc,v 1.265.2.23 2009/04/27 14:41:11 goba Exp $
+// $Id: form.inc,v 1.265.2.24 2009/05/13 18:22:29 goba Exp $
 
 /**
  * @defgroup forms Form builder functions
@@ -624,12 +624,6 @@ function drupal_redirect_form($form, $redirect = NULL) {
   }
   if (!isset($goto) || ($goto !== FALSE)) {
     if (isset($goto)) {
-      // Remove any fake destination set by drupal_not_found() or
-      // drupal_access_denied() so that we can properly redirect from those
-      // pages.
-      if (isset($_REQUEST['destination']) && $_REQUEST['destination'] == $_GET['q']) {
-        unset($_REQUEST['destination']);
-      }
       if (is_array($goto)) {
         call_user_func_array('drupal_goto', $goto);
       }
