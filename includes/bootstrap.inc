@@ -1058,7 +1058,12 @@ function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NO
 function drupal_set_message($message = NULL, $type = 'status', $repeat = TRUE) {
   if ($message) {
     if (!isset($_SESSION['messages'])) {
-      drupal_set_session('messages', array());
+      if (function_exists('drupal_set_session')) {
+        drupal_set_session('messages', array());
+      }
+      else {
+        $_SESSION['messages'] = array();
+      }
     }
 
     if (!isset($_SESSION['messages'][$type])) {
