@@ -783,7 +783,7 @@ function drupal_page_header() {
   $headers_sent = TRUE;
 
   $default_headers = array(
-    'Expires' => 'Sun, 11 Mar 1984 12:00:00 GMT',
+    'Expires' => 'Sun, 19 Nov 1978 05:00:00 GMT',
     'Last-Modified' => gmdate(DATE_RFC1123, $_SERVER['REQUEST_TIME']),
     'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
     'ETag' => '"' . $_SERVER['REQUEST_TIME'] . '"',
