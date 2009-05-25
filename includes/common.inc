@@ -2617,7 +2617,7 @@ function page_set_cache() {
       // compressed and nothing left to do but to store it.
     }
     if ($cache_page && $cache->data) {
-      cache_set($cache->cid, $cache->data, 'cache_page', $cache->expire, $cache->headers);
+      cache_set($cache->cid, $cache->data, 'cache_page', $cache->expire, serialize($cache->headers));
     }
     drupal_page_cache_header($cache);
   }

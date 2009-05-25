@@ -571,6 +571,11 @@ function page_get_cache($retrieve = TRUE) {
   }
   if ($retrieve) {
     $cache = cache_get($base_root . request_uri(), 'cache_page');
+    
+    if (isset($cache->headers)) {
+      $cache->headers = unserialize($cache->headers);
+    }
+    
     if ($cache) {
       return $cache;
     }
