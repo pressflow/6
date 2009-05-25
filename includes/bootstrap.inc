@@ -1,5 +1,5 @@
 <?php
-// $Id: bootstrap.inc,v 1.206.2.12 2009/04/30 00:13:30 goba Exp $
+// $Id: bootstrap.inc,v 1.206.2.11 2009/02/25 13:49:54 dries Exp $
 
 /**
  * @file
@@ -572,6 +572,11 @@ function page_get_cache($retrieve = TRUE) {
   }
   if ($retrieve) {
     $cache = cache_get($base_root . request_uri(), 'cache_page');
+    
+    if (isset($cache->headers)) {
+      $cache->headers = unserialize($cache->headers);
+    }
+    
     if ($cache) {
       return $cache;
     }
