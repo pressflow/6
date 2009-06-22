@@ -1286,6 +1286,13 @@ function system_performance_settings() {
     '#options' => $period,
     '#description' => t('On high-traffic sites, it may be necessary to enforce a minimum cache lifetime. The minimum cache lifetime is the minimum amount of time that will elapse before the cache is emptied and recreated, and is applied to both page and block caches. A larger minimum cache lifetime offers better performance, but users will not see new content for a longer period of time.')
   );
+  $form['page_cache']['page_cache_max_age'] = array(
+    '#type' => 'select',
+    '#title' => t('Page cache maximum age'),
+    '#default_value' => variable_get('page_cache_max_age', 0),
+    '#options' => $period,
+    '#description' => t('Internal and external page caches will not deliver cached paged older than this setting.')
+  );
   $form['page_cache']['page_compression'] = array(
     '#type' => 'radios',
     '#title' => t('Page compression'),
