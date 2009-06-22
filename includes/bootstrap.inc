@@ -1430,3 +1430,98 @@ function ip_address() {
 
   return $ip_address;
 }
+
+/**
+ * Propagate $_SESSION and set session cookie if not already set. This function
+ * should be called before writing to $_SESSION, usually via
+ * drupal_set_session().
+ *
+ * @param $start
+ *   If FALSE, the session is not actually started. This is only used by
+ *   drupal_session_is_started().
+ * @return
+ *   TRUE if session has already been started, or FALSE if it has not.
+ */
+function drupal_session_start($start = TRUE) {
+  global $user;
+  static $started = FALSE;
+  if ($start && !$started) {
+    $started = TRUE;
+
+    // If the user had no session previously, save the user object and the
+    // session data set previously in this request as they will be overriden
+    // by sess_start().
+    if (!isset($_COOKIE[session_name()])) {
+      $saved_user = $user;
+      $saved_session = (array) $_SESSION;
+    }
+
+    // Start the session.
+    session_start();
+
+    // Restore session data.
+    if (!isset($_COOKIE[session_name()])) {
+      $user = $saved_user;
+      $_SESSION += $saved_session;
+    }
+  }
+  return $started;
+}
+
+/**
+ * Return whether a session has been started and the $_SESSION variable is
+ * available.
+ */
+function drupal_session_is_started() {
+  $result = drupal_session_start(FALSE);
+  return $result;
+}
+
+/**
+ * Write the session.
+ */
+function drupal_session_write() {
+  if (!drupal_session_is_started() && !empty($_SESSION)) {
+    drupal_session_start();
+  }
+
+  session_write_close();
+}
+
+/**
+ * Get a session variable.
+ *
+ * @param $name
+ *   The name of the variable to get. If not supplied, all variables are returned.
+ * @return
+ *   The value of the variable, or FALSE if the variable is not set.
+ */
+function drupal_get_session($name = NULL) {
+  if (is_null($name)) {
+    return $_SESSION;
+  }
+  elseif (isset($_SESSION[$name])) {
+    return $_SESSION[$name];
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Set a session variable. The variable becomes accessible via $_SESSION[$name]
+ * in the current and later requests. If there is no active PHP session prior
+ * to the call, one is started automatically.
+ *
+ * Anonymous users generate less server load if their $_SESSION variable is
+ * empty, so unused entries should be unset using unset($_SESSION['foo']).
+ *
+ * @param $name
+ *   The name of the variable to set.
+ * @param $value
+ *   The value to set.
+ */
+function drupal_set_session($name, $value) {
+  drupal_session_start();
+  $_SESSION[$name] = $value;
+}
