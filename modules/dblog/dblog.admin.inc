@@ -317,16 +317,13 @@ function dblog_filter_form_submit($form, &$form_state) {
   switch ($op) {
     case t('Filter'):
       foreach ($filters as $name => $filter) {
-        if (empty($_SESSION['dblog_overview_filter'])) {
-          drupal_set_session('dblog_overview_filter', array());
-        }
         if (isset($form_state['values'][$name])) {
           $_SESSION['dblog_overview_filter'][$name] = $form_state['values'][$name];
         }
       }
       break;
     case t('Reset'):
-      drupal_set_session('dblog_overview_filter', array());
+      $_SESSION['dblog_overview_filter'] = array();
       break;
   }
   return 'admin/reports/dblog';

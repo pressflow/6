@@ -323,9 +323,6 @@ function node_filter_form_submit($form, &$form_state) {
         $flat_options = form_options_flatten($filters[$filter]['options']);
 
         if (isset($flat_options[$form_state['values'][$filter]])) {
-          if (empty($_SESSION['node_overview_filter'])) {
-            drupal_set_session('node_overview_filter', array());
-          }
           $_SESSION['node_overview_filter'][] = array($filter, $form_state['values'][$filter]);
         }
       }
@@ -334,7 +331,7 @@ function node_filter_form_submit($form, &$form_state) {
       array_pop($_SESSION['node_overview_filter']);
       break;
     case t('Reset'):
-      drupal_set_session($_SESSION['node_overview_filter'], array());
+      $_SESSION['node_overview_filter'] = array();
       break;
   }
 }

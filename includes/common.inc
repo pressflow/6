@@ -314,11 +314,9 @@ function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response
     module_invoke_all('exit', $url);
   }
 
-  if (drupal_session_is_started()) {
-    // Even though session_write_close() is registered as a shutdown function,
-    // we need all session data written to the database before redirecting.
-    session_write_close();
-  }
+  // Even though session_write_close() is registered as a shutdown function,
+  // we need all session data written to the database before redirecting.
+  drupal_session_write();
 
   header('Location: '. $url, TRUE, $http_response_code);
 
@@ -1565,13 +1563,8 @@ function l($text, $path, $options = array()) {
 function drupal_page_footer() {
   global $user;
 
-  // Destroy empty anonymous sessions if possible.
-  if (!headers_sent() && drupal_session_is_started() && empty($_SESSION) && !$user->uid) {
-    session_destroy();
-  }
-  elseif (!empty($_SESSION) && !drupal_session_is_started()) {
-    watchdog('session', '$_SESSION is non-empty yet no code has called drupal_session_start().', array(), WATCHDOG_NOTICE);
-  }
+  // Write the session, and open one if needed.
+  drupal_session_write();
 
   if (variable_get('cache', CACHE_DISABLED) != CACHE_DISABLED) {
     page_set_cache();
@@ -2589,12 +2582,15 @@ function _drupal_bootstrap_full() {
 function page_set_cache() {
   global $user, $base_root;
 
-  if (page_get_cache(FALSE)) {
+  if (page_is_cacheable()) {
     $cache_page = TRUE;
+
+    $cache_lifetime = variable_get('page_cache_lifetime', 0);
+
     $cache = (object) array(
       'cid' => $base_root . request_uri(),
       'data' => ob_get_clean(),
-      'expire' => CACHE_TEMPORARY,
+      'expire' => $cache_lifetime > 0 ? $cache_lifetime : CACHE_TEMPORARY,
       'created' => $_SERVER['REQUEST_TIME'],
       'headers' => array(),
     );
@@ -2620,11 +2616,6 @@ function page_set_cache() {
       cache_set($cache->cid, $cache->data, 'cache_page', $cache->expire, serialize($cache->headers));
     }
     drupal_page_cache_header($cache);
-  }
-  else {
-    // If output buffering was enabled during bootstrap, and the headers were
-    // not sent in the DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE phase, send them now.
-    drupal_page_header();
   }
 }
 
