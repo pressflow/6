@@ -17,11 +17,6 @@ function sess_close() {
 function sess_read($key) {
   global $user;
 
-  // Write and Close handlers are called after destructing objects since PHP 5.0.5
-  // Thus destructors can use sessions but session handler can't use objects.
-  // So we are moving session closure before destructing objects.
-  register_shutdown_function('session_write_close');
-
   // Handle the case of first time visitors and clients that don't store cookies (eg. web crawlers).
   if (!isset($_COOKIE[session_name()])) {
     $user = drupal_anonymous_user();
@@ -93,10 +88,27 @@ function sess_write($key, $value) {
  *   TRUE if session has already been started, or FALSE if it has not.
  */
 function drupal_session_start($start = TRUE) {
+  global $user;
   static $started = FALSE;
   if ($start && !$started) {
     $started = TRUE;
+
+    // If the user had no session previously, save the user object and the
+    // session data set previously in this request as they will be overriden
+    // by sess_start().
+    if (!isset($_COOKIE[session_name()])) {
+      $saved_user = $user;
+      $saved_session = (array) $_SESSION;
+    }
+
+    // Start the session.
     session_start();
+
+    // Restore session data.
+    if (!isset($_COOKIE[session_name()])) {
+      $user = $saved_user;
+      $_SESSION += $saved_session;
+    }
   }
   return $started;
 }
@@ -106,7 +118,19 @@ function drupal_session_start($start = TRUE) {
  * available.
  */
 function drupal_session_is_started() {
-  return drupal_session_start(FALSE);
+  $result = drupal_session_start(FALSE);
+  return $result;
+}
+
+/**
+ * Write the session.
+ */
+function drupal_session_write() {
+  if (!drupal_session_is_started() && !empty($_SESSION)) {
+    drupal_session_start();
+  }
+
+  session_write_close();
 }
 
 /**

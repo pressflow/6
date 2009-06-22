@@ -551,41 +551,39 @@ function variable_del($name) {
  * from a form submission, the contents of a shopping cart, or other user-
  * specific content that should not be cached and displayed to other users.
  *
- * @param $retrieve
- *   If TRUE, look up and return the current page in the cache, or start output
- *   buffering if the conditions for caching are satisfied. If FALSE, only
- *   return a boolean value indicating whether the current request may be
- *   cached. Default of TRUE added to maximize Drupal 5 compatibility.
  * @return
- *   The cache object, if the page was found in the cache; TRUE if the page was
- *   not found, but output buffering was started in order to possibly cache the
- *   current request; FALSE if the page was not found, and the current request
- *   may not be cached (e.g. because it belongs to an authenticated user). If
- *   $retrieve is TRUE, only return either TRUE or FALSE.
+ *   The cache object, if the page was found in the cache.
  */
-function page_get_cache($retrieve = TRUE) {
+function page_get_cache() {
   global $user, $base_root;
-  static $ob_started = FALSE;
 
-  if ($user->uid || ($_SERVER['REQUEST_METHOD'] != 'GET' && $_SERVER['REQUEST_METHOD'] != 'HEAD') || count(drupal_get_messages(NULL, FALSE)) || $_SERVER['SERVER_SOFTWARE'] === 'PHP CLI') {
-    return FALSE;
-  }
-  if ($retrieve) {
+  if (page_is_cacheable()) {
     $cache = cache_get($base_root . request_uri(), 'cache_page');
-    
+
+    // Unserialize the cached page headers
     if (isset($cache->headers)) {
       $cache->headers = unserialize($cache->headers);
     }
-    
+
     if ($cache) {
       return $cache;
     }
-    else {
-      ob_start();
-      $ob_started = TRUE;
-    }
   }
-  return $ob_started;
+}
+
+function page_is_cacheable($force = NULL) {
+  static $forced_cache = TRUE;
+  if (isset($force)) {
+    $forced_cache = $force;
+  }
+
+  $result = $forced_cache
+    && !drupal_session_is_started()
+    && ($_SERVER['REQUEST_METHOD'] == 'GET' || $_SERVER['REQUEST_METHOD'] == 'HEAD')
+    && !count(drupal_get_messages(NULL, FALSE))
+    && $_SERVER['SERVER_SOFTWARE'] !== 'PHP CLI';
+
+  return $result;
 }
 
 /**
@@ -784,7 +782,6 @@ function drupal_page_header() {
   $headers_sent = TRUE;
 
   $default_headers = array(
-    'Expires' => 'Sun, 11 Mar 1984 12:00:00 GMT',
     'Last-Modified' => gmdate(DATE_RFC1123, $_SERVER['REQUEST_TIME']),
     'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
     'ETag' => '"' . $_SERVER['REQUEST_TIME'] . '"',
@@ -832,7 +829,7 @@ function drupal_page_cache_header(stdClass $cache) {
   // not bother caching the page in a public proxy, because the cached copy
   // will only be served to that particular user due to Vary: Cookie, unless
   // the Vary header has been replaced or unset in hook_boot() (see below).
-  $max_age = variable_get('cache', CACHE_NONE) == CACHE_AGGRESSIVE && (!isset($_COOKIE[session_name()]) || isset($hook_boot_headers['vary'])) ? variable_get('cache_lifetime', 0) : 0;
+  $max_age = variable_get('cache', CACHE_NONE) == CACHE_AGGRESSIVE && (!isset($_COOKIE[session_name()]) || isset($hook_boot_headers['vary'])) ? variable_get('page_cache_max_age', 0) : 0;
   $default_headers['Cache-Control'] = 'public, max-age=' . $max_age;
 
   // Entity tag should change if the output changes.
@@ -858,7 +855,7 @@ function drupal_page_cache_header(stdClass $cache) {
 
   $default_headers['Last-Modified'] = gmdate(DATE_RFC1123, $cache->created);
 
-  // HTTP/1.0 proxies does not support the Vary header, so prevent any caching
+  // HTTP/1.0 proxies do not support the Vary header, so prevent any caching
   // by sending an Expires date in the past. HTTP/1.1 clients ignores the
   // Expires header if a Cache-Control: max-age= directive is specified (see RFC
   // 2616, section 14.9.3).
@@ -1245,6 +1242,10 @@ function _drupal_bootstrap($phase) {
       else {
         $user = drupal_anonymous_user();
       }
+
+      // Register a shutdown handler to decide if we need to register a session.
+      register_shutdown_function('drupal_session_write');
+
       break;
 
     case DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE:
@@ -1253,19 +1254,22 @@ function _drupal_bootstrap($phase) {
 
       $cache_mode = variable_get('cache', CACHE_DISABLED);
       // Get the page from the cache.
-      $cache = $cache_mode == CACHE_DISABLED ? FALSE : page_get_cache(TRUE);
+      if ($cache_mode != CACHE_DISABLED) {
+        $cache = page_get_cache();
+      }
+      else {
+        $cache = FALSE;
+      }
+
       // If the skipping of the bootstrap hooks is not enforced, call hook_init.
       if (!is_object($cache) || $cache_mode != CACHE_AGGRESSIVE) {
         // Load module handling.
         require_once './includes/module.inc';
         bootstrap_invoke_all('boot');
       }
+
       // If there is a cached page, display it.
       if (is_object($cache)) {
-        // Destroy empty anonymous sessions.
-        if (drupal_session_is_started() && empty($_SESSION)) {
-          session_destroy();
-        }
         header('X-Drupal-Cache: HIT');
         drupal_page_cache_header($cache);
         // If the skipping of the bootstrap hooks is not enforced, call hook_exit.
@@ -1276,19 +1280,13 @@ function _drupal_bootstrap($phase) {
         exit;
       }
   
-      // Prepare for non-cached page workflow.
-  
-      // If the session has not already been started and output buffering is
-      // not enabled, the HTTP headers must be sent now, including the session
-      // cookie. If output buffering is enabled, the session may be started
-      // at any time using drupal_session_start().
-      if ($cache === FALSE) {
-        drupal_page_header();
-        drupal_session_start();
-      }
-      else {
+      if (!$cache && page_is_cacheable()) {
         header('X-Drupal-Cache: MISS');
       }
+
+      // Prepare for non-cached page workflow.
+      ob_start();
+      drupal_page_header();
       break;
 
     case DRUPAL_BOOTSTRAP_LANGUAGE:
