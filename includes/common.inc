@@ -316,7 +316,7 @@ function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response
 
   // Even though session_write_close() is registered as a shutdown function,
   // we need all session data written to the database before redirecting.
-  drupal_session_write();
+  drupal_session_commit();
 
   header('Location: '. $url, TRUE, $http_response_code);
 
@@ -1564,7 +1564,7 @@ function drupal_page_footer() {
   global $user;
 
   // Write the session, and open one if needed.
-  drupal_session_write();
+  drupal_session_commit();
 
   if (variable_get('cache', CACHE_DISABLED) != CACHE_DISABLED) {
     page_set_cache();
@@ -2582,7 +2582,7 @@ function _drupal_bootstrap_full() {
 function page_set_cache() {
   global $user, $base_root;
 
-  if (page_is_cacheable()) {
+  if (drupal_page_is_cacheable()) {
     $cache_page = TRUE;
 
     $cache_lifetime = variable_get('page_cache_lifetime', 0);

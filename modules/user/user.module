@@ -271,7 +271,7 @@ function user_save($account, $array = array(), $category = 'account') {
     if (!empty($array['pass'])) {
       sess_destroy_uid($account->uid);
       if ($account->uid == $GLOBALS['user']->uid) {
-        sess_regenerate();
+        drupal_session_regenerate();
       }
     }
 
@@ -1371,7 +1371,7 @@ function user_authenticate_finalize(&$edit) {
 
   // Regenerate the session ID to prevent against session fixation attacks.
   if (drupal_session_is_started()) {
-    sess_regenerate();
+    drupal_session_regenerate();
   }
   else {
     // Start a new session.
