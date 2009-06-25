@@ -1370,7 +1370,7 @@ function user_authenticate_finalize(&$edit) {
   db_query("UPDATE {users} SET login = %d WHERE uid = %d", $user->login, $user->uid);
 
   // Regenerate the session ID to prevent against session fixation attacks.
-  if (drupal_session_is_started()) {
+  if (drupal_session_started()) {
     drupal_session_regenerate();
   }
   else {

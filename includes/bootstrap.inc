@@ -581,7 +581,7 @@ function drupal_page_is_cacheable($force = NULL) {
   }
 
   $result = $forced_cache
-    && !drupal_session_is_started()
+    && !drupal_session_started()
     && ($_SERVER['REQUEST_METHOD'] == 'GET' || $_SERVER['REQUEST_METHOD'] == 'HEAD')
     && !count(drupal_get_messages(NULL, FALSE))
     && $_SERVER['SERVER_SOFTWARE'] !== 'PHP CLI';
@@ -1456,7 +1456,7 @@ function drupal_session_initialize() {
  *
  * @param $start
  *   If FALSE, the session is not actually started. This is only used by
- *   drupal_session_is_started().
+ *   drupal_session_started().
  * @return
  *   TRUE if session has already been started, or FALSE if it has not.
  */
@@ -1484,15 +1484,6 @@ function drupal_session_start($start = TRUE) {
     }
   }
   return $started;
-}
-
-/**
- * Return whether a session has been started and the $_SESSION variable is
- * available.
- */
-function drupal_session_is_started() {
-  $result = drupal_session_start(FALSE);
-  return $result;
 }
 
 /**
@@ -1556,44 +1547,6 @@ function drupal_session_regenerate() {
   if (isset($old_session_id)) {
     db_query('UPDATE {sessions} SET sid = "%s" WHERE sid = "%s"', session_id(), $old_session_id);
   }
-}
-
-/**
- * Get a session variable.
- *
- * @param $name
- *   The name of the variable to get. If not supplied, all variables are returned.
- * @return
- *   The value of the variable, or FALSE if the variable is not set.
- */
-function drupal_get_session($name = NULL) {
-  if (is_null($name)) {
-    return $_SESSION;
-  }
-  elseif (isset($_SESSION[$name])) {
-    return $_SESSION[$name];
-  }
-  else {
-    return FALSE;
-  }
-}
-
-/**
- * Set a session variable. The variable becomes accessible via $_SESSION[$name]
- * in the current and later requests. If there is no active PHP session prior
- * to the call, one is started automatically.
- *
- * Anonymous users generate less server load if their $_SESSION variable is
- * empty, so unused entries should be unset using unset($_SESSION['foo']).
- *
- * @param $name
- *   The name of the variable to set.
- * @param $value
- *   The value to set.
- */
-function drupal_set_session($name, $value) {
-  drupal_session_start();
-  $_SESSION[$name] = $value;
 }
 
 /**
