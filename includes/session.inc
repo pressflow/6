@@ -154,21 +154,8 @@ function sess_gc($lifetime) {
 }
 
 /**
- * Determine whether to save session data of the current request.
- *
- * This function allows the caller to temporarily disable writing of session data,
- * should the request end while performing potentially dangerous operations, such as
- * manipulating the global $user object.  See http://drupal.org/node/218104 for usage
- *
- * @param $status
- *   Disables writing of session data when FALSE, (re-)enables writing when TRUE.
- * @return
- *   FALSE if writing session data has been disabled. Otherwise, TRUE.
+ * Renamed to drupal_save_session(). Stub kept here for API compatibility.
  */
 function session_save_session($status = NULL) {
-  static $save_session = TRUE;
-  if (isset($status)) {
-    $save_session = $status;
-  }
-  return ($save_session);
+  return drupal_save_session($status);
 }
