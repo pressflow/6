@@ -1450,40 +1450,19 @@ function drupal_session_initialize() {
 }
 
 /**
- * Propagate $_SESSION and set session cookie if not already set. This function
- * should be called before writing to $_SESSION, usually via
- * drupal_set_session().
- *
- * @param $start
- *   If FALSE, the session is not actually started. This is only used by
- *   drupal_session_started().
- * @return
- *   TRUE if session has already been started, or FALSE if it has not.
+ * Forcefully start a session, preserving already set session data.
  */
-function drupal_session_start($start = TRUE) {
-  global $user;
-  static $started = FALSE;
-  if ($start && !$started) {
-    $started = TRUE;
-
-    // If the user had no session previously, save the user object and the
-    // session data set previously in this request as they will be overriden
-    // by sess_start().
-    if (!isset($_COOKIE[session_name()])) {
-      $saved_user = $user;
-      $saved_session = (array) $_SESSION;
-    }
-
-    // Start the session.
+function drupal_session_start() {
+  if (!drupal_session_started()) {
+    // Save current session data before starting it, as PHP will destroy it.
+    $session_data = isset($_SESSION) ? $_SESSION : NULL;
     session_start();
-
+    drupal_session_started(TRUE);
     // Restore session data.
-    if (!isset($_COOKIE[session_name()])) {
-      $user = $saved_user;
-      $_SESSION += $saved_session;
+    if (!empty($session_data)) {
+      $_SESSION += $session_data;
     }
   }
-  return $started;
 }
 
 /**
