@@ -1,5 +1,5 @@
 <?php
-// $Id: form.inc,v 1.265.2.24 2009/05/13 18:22:29 goba Exp $
+// $Id: form.inc,v 1.265.2.25 2009/05/26 08:18:46 goba Exp $
 
 /**
  * @defgroup forms Form builder functions
@@ -1624,7 +1624,7 @@ function password_confirm_validate($form, &$form_state) {
   $pass1 = trim($form['pass1']['#value']);
   if (!empty($pass1)) {
     $pass2 = trim($form['pass2']['#value']);
-    if ($pass1 != $pass2) {
+    if (strcmp($pass1, $pass2)) {
       form_error($form, t('The specified passwords do not match.'));
     }
   }

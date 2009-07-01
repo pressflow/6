@@ -1,5 +1,5 @@
 <?php
-// $Id: user.install,v 1.5.2.1 2009/01/06 15:46:38 goba Exp $
+// $Id: user.install,v 1.5.2.2 2009/07/01 20:51:56 goba Exp $
 
 /**
  * Implementation of hook_schema().
@@ -190,6 +190,13 @@ function user_schema() {
         'not null' => TRUE,
         'default' => '',
         'description' => "User's signature.",
+      ),
+      'signature_format' => array(
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The {filter_formats}.format of the signature.',
       ),
       'created' => array(
         'type' => 'int',

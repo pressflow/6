@@ -1,5 +1,5 @@
 <?php
-// $Id: pager.inc,v 1.63 2007/12/06 09:58:30 goba Exp $
+// $Id: pager.inc,v 1.63.2.1 2009/07/01 20:51:55 goba Exp $
 
 /**
  * @file
@@ -85,7 +85,7 @@ function pager_query($query, $limit = 10, $element = 0, $count_query = NULL) {
 function pager_get_querystring() {
   static $string = NULL;
   if (!isset($string)) {
-    $string = drupal_query_string_encode($_REQUEST, array_merge(array('q', 'page'), array_keys($_COOKIE)));
+    $string = drupal_query_string_encode($_REQUEST, array_merge(array('q', 'page', 'pass'), array_keys($_COOKIE)));
   }
   return $string;
 }
