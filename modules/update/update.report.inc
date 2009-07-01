@@ -1,5 +1,5 @@
 <?php
-// $Id: update.report.inc,v 1.10.2.3 2009/04/29 17:17:21 goba Exp $
+// $Id: update.report.inc,v 1.10.2.4 2009/06/09 11:08:32 goba Exp $
 
 /**
  * @file
@@ -48,6 +48,7 @@ function theme_update_report($data) {
         $icon = theme('image', 'misc/watchdog-ok.png', t('ok'), t('ok'));
         break;
       case UPDATE_UNKNOWN:
+      case UPDATE_NOT_FETCHED:
         $class = 'unknown';
         $icon = theme('image', 'misc/watchdog-warning.png', t('warning'), t('warning'));
         break;

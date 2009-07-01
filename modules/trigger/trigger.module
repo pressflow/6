@@ -1,5 +1,5 @@
 <?php
-// $Id: trigger.module,v 1.13.2.2 2009/03/30 11:53:09 goba Exp $
+// $Id: trigger.module,v 1.13.2.3 2009/06/08 16:34:57 goba Exp $
 
 /**
  * @file
@@ -313,10 +313,10 @@ function trigger_comment($a1, $op) {
  * Implementation of hook_cron().
  */
 function trigger_cron() {
-  $aids = _trigger_get_hook_aids('cron');
+  $aids = _trigger_get_hook_aids('cron', 'run');
   $context = array(
     'hook' => 'cron',
-    'op' => '',
+    'op' => 'run',
   );
   // Cron does not act on any specific object.
   $object = NULL;

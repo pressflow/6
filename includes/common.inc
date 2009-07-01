@@ -1,5 +1,5 @@
 <?php
-// $Id: common.inc,v 1.756.2.52 2009/05/13 19:11:04 goba Exp $
+// $Id: common.inc,v 1.756.2.57 2009/07/01 20:51:55 goba Exp $
 
 /**
  * @file
@@ -481,6 +481,16 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
   // If the server url has a user then attempt to use basic authentication
   if (isset($uri['user'])) {
     $defaults['Authorization'] = 'Authorization: Basic '. base64_encode($uri['user'] . (!empty($uri['pass']) ? ":". $uri['pass'] : ''));
+  }
+
+  // If the database prefix is being used by SimpleTest to run the tests in a copied
+  // database then set the user-agent header to the database prefix so that any
+  // calls to other Drupal pages will run the SimpleTest prefixed database. The
+  // user-agent is used to ensure that multiple testing sessions running at the
+  // same time won't interfere with each other as they would if the database
+  // prefix were stored statically in a file or database variable.
+  if (preg_match("/simpletest\d+/", $GLOBALS['db_prefix'], $matches)) {
+    $defaults['User-Agent'] = 'User-Agent: ' . $matches[0];
   }
 
   foreach ($headers as $header => $value) {
@@ -1846,7 +1856,9 @@ function drupal_get_css($css = NULL) {
     }
 
     if ($is_writable && $preprocess_css) {
-      $filename = md5(serialize($types) . $query_string) .'.css';
+      // Prefix filename to prevent blocking by firewalls which reject files
+      // starting with "ad*".
+      $filename = 'css_'. md5(serialize($types) . $query_string) .'.css';
       $preprocess_file = drupal_build_css_cache($types, $filename);
       $output .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. base_path() . $preprocess_file .'" />'."\n";
     }
@@ -2194,7 +2206,9 @@ function drupal_get_js($scope = 'header', $javascript = NULL) {
 
   // Aggregate any remaining JS files that haven't already been output.
   if ($is_writable && $preprocess_js && count($files) > 0) {
-    $filename = md5(serialize($files) . $query_string) .'.js';
+    // Prefix filename to prevent blocking by firewalls which reject files
+    // starting with "ad*".
+    $filename = 'js_'. md5(serialize($files) . $query_string) .'.js';
     $preprocess_file = drupal_build_js_cache($files, $filename);
     $preprocessed .= '<script type="text/javascript" src="'. base_path() . $preprocess_file .'"></script>'."\n";
   }
@@ -3669,7 +3683,8 @@ function drupal_flush_all_caches() {
 function _drupal_flush_css_js() {
   $string_history = variable_get('css_js_query_string', '00000000000000000000');
   $new_character = $string_history[0];
-  $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  // Not including 'q' to allow certain JavaScripts to re-use query string.
+  $characters = 'abcdefghijklmnoprstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   while (strpos($string_history, $new_character) !== FALSE) {
     $new_character = $characters[mt_rand(0, strlen($characters) - 1)];
   }

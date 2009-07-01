@@ -1,5 +1,5 @@
 <?php
-// $Id: system.install,v 1.238.2.14 2009/04/27 12:50:13 goba Exp $
+// $Id: system.install,v 1.238.2.15 2009/07/01 20:51:56 goba Exp $
 
 /**
  * Test and report Drupal installation requirements.
@@ -2561,6 +2561,39 @@ function system_update_6049() {
 function system_update_6050() {
   $ret = array();
   cache_clear_all('router:', 'cache_menu', TRUE);
+  return $ret;
+}
+
+/**
+ * Create a signature_format column.
+ */
+function system_update_6051() {
+  $ret = array();
+
+  if (!db_column_exists('users', 'signature_format')) {
+
+    // Set future input formats to FILTER_FORMAT_DEFAULT to ensure a safe default
+    // when incompatible modules insert into the users table. An actual format
+    // will be assigned when users save their signature.
+
+    $schema = array(
+      'type' => 'int',
+      'size' => 'small',
+      'not null' => TRUE,
+      'default' => FILTER_FORMAT_DEFAULT,
+      'description' => 'The {filter_formats}.format of the signature.',
+    );
+
+    db_add_field($ret, 'users', 'signature_format', $schema);
+
+    // Set the format of existing signatures to the current default input format.
+    if ($current_default_filter = variable_get('filter_default_format', 0)) {
+      $ret[] = update_sql("UPDATE {users} SET signature_format = ". $current_default_filter);
+    }
+
+    drupal_set_message("User signatures no longer inherit comment input formats. Each user's signature now has its own associated format that can be selected on the user's account page. Existing signatures have been set to your site's default input format.");
+  }
+
   return $ret;
 }
 
