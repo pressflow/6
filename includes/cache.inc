@@ -1,5 +1,5 @@
 <?php
-// $Id: cache.inc,v 1.17.2.1 2009/04/27 14:23:58 goba Exp $
+// $Id: cache.inc,v 1.17.2.2 2009/05/26 08:10:33 goba Exp $
 
 /**
  * Return data from the persistent cache. Data may be stored as either plain text or as serialized data.
@@ -155,7 +155,7 @@ function cache_clear_all($cid = NULL, $table = NULL, $wildcard = FALSE) {
         variable_set('cache_flush_'. $table, time());
       }
       else if (time() > ($cache_flush + variable_get('cache_lifetime', 0))) {
-        // Clear the cache for everyone, cache_flush_delay seconds have
+        // Clear the cache for everyone, cache_lifetime seconds have
         // passed since the first request to clear the cache.
         db_query("DELETE FROM {". $table ."} WHERE expire != %d AND expire < %d", CACHE_PERMANENT, time());
         variable_set('cache_flush_'. $table, 0);

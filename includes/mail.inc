@@ -1,5 +1,5 @@
 <?php
-// $Id: mail.inc,v 1.8.2.6 2009/04/27 11:07:43 goba Exp $
+// $Id: mail.inc,v 1.8.2.7 2009/06/18 12:15:44 goba Exp $
 
 /**
  * Compose and optionally send an e-mail message.
@@ -45,7 +45,7 @@
  *     switch($key) {
  *       case 'notice':
  *         $message['subject'] = t('Notification from !site', $variables, $language->language);
- *         $message['body'] = t("Dear !username\n\nThere is new content available on the site.", $variables, $language->language);
+ *         $message['body'][] = t("Dear !username\n\nThere is new content available on the site.", $variables, $language->language);
  *         break;
  *     }
  *   }

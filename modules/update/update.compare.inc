@@ -1,5 +1,5 @@
 <?php
-// $Id: update.compare.inc,v 1.8.2.3 2009/04/29 18:43:11 goba Exp $
+// $Id: update.compare.inc,v 1.8.2.5 2009/06/09 11:08:32 goba Exp $
 
 /**
  * @file
@@ -38,6 +38,8 @@ function update_get_projects() {
       // Still empty, so we have to rebuild the cache.
       _update_process_info_list($projects, module_rebuild_cache(), 'module');
       _update_process_info_list($projects, system_theme_data(), 'theme');
+      // Allow other modules to alter projects before fetching and comparing.
+      drupal_alter('update_projects', $projects);
       // Cache the site's project data for at most 1 hour.
       _update_cache_set('update_project_projects', $projects, time() + 3600);
     }
@@ -301,6 +303,11 @@ function update_calculate_project_data($available) {
               'data' => t('This project is no longer supported, and is no longer available for download. Disabling everything included by this project is strongly recommended!'),
             );
             break;
+          case 'not-fetched':
+            $projects[$project]['status'] = UPDATE_NOT_FETCHED;
+            $projects[$project]['reason'] = t('Failed to fetch available update data');
+            break;
+
           default:
             // Assume anything else (e.g. 'published') is valid and we should
             // perform the rest of the logic in this function.

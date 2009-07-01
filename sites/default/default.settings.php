@@ -1,5 +1,5 @@
 <?php
-// $Id: default.settings.php,v 1.8.2.1 2008/08/13 06:52:36 dries Exp $
+// $Id: default.settings.php,v 1.8.2.2 2009/06/09 10:44:55 goba Exp $
 
 /**
  * @file
@@ -142,6 +142,7 @@ ini_set('session.cache_limiter',    'none');
 ini_set('session.cookie_lifetime',  2000000);
 ini_set('session.gc_maxlifetime',   200000);
 ini_set('session.save_handler',     'user');
+ini_set('session.use_cookies',      1);
 ini_set('session.use_only_cookies', 1);
 ini_set('session.use_trans_sid',    0);
 ini_set('url_rewriter.tags',        '');
