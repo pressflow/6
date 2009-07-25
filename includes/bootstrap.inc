@@ -833,7 +833,7 @@ function drupal_page_cache_header(stdClass $cache) {
   // not bother caching the page in a public proxy, because the cached copy
   // will only be served to that particular user due to Vary: Cookie, unless
   // the Vary header has been replaced or unset in hook_boot() (see below).
-  $max_age = variable_get('cache', CACHE_NONE) == CACHE_AGGRESSIVE && (!isset($_COOKIE[session_name()]) || isset($hook_boot_headers['vary'])) ? variable_get('page_cache_max_age', 0) : 0;
+  $max_age = variable_get('cache', CACHE_DISABLED) == CACHE_AGGRESSIVE && (!isset($_COOKIE[session_name()]) || isset($hook_boot_headers['vary'])) ? variable_get('page_cache_max_age', 0) : 0;
   $default_headers['Cache-Control'] = 'public, max-age=' . $max_age;
 
   // Entity tag should change if the output changes.
