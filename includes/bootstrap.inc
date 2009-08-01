@@ -654,6 +654,18 @@ function drupal_set_header($name = NULL, $value = NULL, $append = FALSE) {
   if (!isset($name)) {
     return $headers;
   }
+  
+  // Support the Drupal 6 header API
+  if (!isset($value)) {
+    if (strpos($name, ':') !== FALSE) {
+      $parts = explode(':', $name);
+      $name = trim($parts[0]);
+      $value = trim($parts[1]);
+    }
+  }
+  if (substr($name, 0, 7) == 'HTTP/1.') {
+    $name = substr($name, 9);
+  }
 
   // Save status codes using the special key ":status".
   if (preg_match('/^\d{3} /', $name)) {
