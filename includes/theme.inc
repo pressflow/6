@@ -1,5 +1,5 @@
 <?php
-// $Id: theme.inc,v 1.415.2.19 2009/02/25 21:02:16 goba Exp $
+// $Id: theme.inc,v 1.415.2.24 2009/06/18 12:04:04 goba Exp $
 
 /**
  * @file
@@ -687,6 +687,10 @@ function theme() {
   }
   // restore path_to_theme()
   $theme_path = $temp;
+  // Add final markup to the full page.
+  if ($hook == 'page' || $hook == 'book_export_html') {
+    $output = drupal_final_markup($output);
+  }
   return $output;
 }
 
@@ -698,11 +702,16 @@ function theme() {
 function drupal_discover_template($paths, $suggestions, $extension = '.tpl.php') {
   global $theme_engine;
 
+  // Remove slashes or null to prevent files from being included from
+  // an unexpected location (especially on Windows servers).
+  $extension = str_replace(array("/", "\\", "\0"), '', $extension);
+
   // Loop through all paths and suggestions in FIFO order.
   $suggestions = array_reverse($suggestions);
   $paths = array_reverse($paths);
   foreach ($suggestions as $suggestion) {
     if (!empty($suggestion)) {
+      $suggestion = str_replace(array("/", "\\", "\0"), '', $suggestion);
       foreach ($paths as $path) {
         if (file_exists($file = $path .'/'. $suggestion . $extension)) {
           return $file;
@@ -1623,7 +1632,7 @@ function theme_username($object) {
     $output .= ' ('. t('not verified') .')';
   }
   else {
-    $output = variable_get('anonymous', t('Anonymous'));
+    $output = check_plain(variable_get('anonymous', t('Anonymous')));
   }
 
   return $output;
@@ -1811,8 +1820,8 @@ function template_preprocess_page(&$variables) {
   $variables['primary_links']     = theme_get_setting('toggle_primary_links') ? menu_primary_links() : array();
   $variables['secondary_links']   = theme_get_setting('toggle_secondary_links') ? menu_secondary_links() : array();
   $variables['search_box']        = (theme_get_setting('toggle_search') ? drupal_get_form('search_theme_form') : '');
-  $variables['site_name']         = (theme_get_setting('toggle_name') ? variable_get('site_name', 'Drupal') : '');
-  $variables['site_slogan']       = (theme_get_setting('toggle_slogan') ? variable_get('site_slogan', '') : '');
+  $variables['site_name']         = (theme_get_setting('toggle_name') ? filter_xss_admin(variable_get('site_name', 'Drupal')) : '');
+  $variables['site_slogan']       = (theme_get_setting('toggle_slogan') ? filter_xss_admin(variable_get('site_slogan', '')) : '');
   $variables['css']               = drupal_add_css();
   $variables['styles']            = drupal_get_css();
   $variables['scripts']           = drupal_get_js();
@@ -1868,7 +1877,7 @@ function template_preprocess_page(&$variables) {
   $suggestion = 'page';
   $suggestions = array();
   while ($arg = arg($i++)) {
-    $arg = str_replace(array('/', '\\', '\0'), '', $arg);
+    $arg = str_replace(array("/", "\\", "\0"), '', $arg);
     $suggestions[] = $suggestion .'-'. $arg;
     if (!is_numeric($arg)) {
       $suggestion .= '-'. $arg;

@@ -1,5 +1,5 @@
 <?php
-// $Id: comment.module,v 1.617.2.4 2009/01/06 17:34:54 goba Exp $
+// $Id: comment.module,v 1.617.2.8 2009/07/01 20:51:55 goba Exp $
 
 /**
  * @file
@@ -936,7 +936,7 @@ function comment_render($node, $cid = 0) {
 
     if ($cid && is_numeric($cid)) {
       // Single comment view.
-      $query = 'SELECT c.cid, c.pid, c.nid, c.subject, c.comment, c.format, c.timestamp, c.name, c.mail, c.homepage, u.uid, u.name AS registered_name, u.signature, u.picture, u.data, c.status FROM {comments} c INNER JOIN {users} u ON c.uid = u.uid WHERE c.cid = %d';
+      $query = 'SELECT c.cid, c.pid, c.nid, c.subject, c.comment, c.format, c.timestamp, c.name, c.mail, c.homepage, u.uid, u.name AS registered_name, u.signature, u.signature_format, u.picture, u.data, c.status FROM {comments} c INNER JOIN {users} u ON c.uid = u.uid WHERE c.cid = %d';
       $query_args = array($cid);
       if (!user_access('administer comments')) {
         $query .= ' AND c.status = %d';
@@ -957,7 +957,7 @@ function comment_render($node, $cid = 0) {
     else {
       // Multiple comment view
       $query_count = 'SELECT COUNT(*) FROM {comments} c WHERE c.nid = %d';
-      $query = 'SELECT c.cid as cid, c.pid, c.nid, c.subject, c.comment, c.format, c.timestamp, c.name, c.mail, c.homepage, u.uid, u.name AS registered_name, u.signature, u.picture, u.data, c.thread, c.status FROM {comments} c INNER JOIN {users} u ON c.uid = u.uid WHERE c.nid = %d';
+      $query = 'SELECT c.cid as cid, c.pid, c.nid, c.subject, c.comment, c.format, c.timestamp, c.name, c.mail, c.homepage, u.uid, u.name AS registered_name, u.signature, u.signature_format, u.picture, u.data, c.thread, c.status FROM {comments} c INNER JOIN {users} u ON c.uid = u.uid WHERE c.nid = %d';
 
       $query_args = array($nid);
       if (!user_access('administer comments')) {
@@ -1051,7 +1051,9 @@ function comment_render($node, $cid = 0) {
       $output .= comment_form_box(array('nid' => $nid), t('Post new comment'));
     }
 
-    $output = theme('comment_wrapper', $output, $node);
+    if ($output) {
+      $output = theme('comment_wrapper', $output, $node);
+    }
   }
 
   return $output;
@@ -1466,7 +1468,7 @@ function comment_form_add_preview($form, &$form_state) {
   $output = '';
 
   if ($edit['pid']) {
-    $comment = db_fetch_object(db_query('SELECT c.*, u.uid, u.name AS registered_name, u.signature, u.picture, u.data FROM {comments} c INNER JOIN {users} u ON c.uid = u.uid WHERE c.cid = %d AND c.status = %d', $edit['pid'], COMMENT_PUBLISHED));
+    $comment = db_fetch_object(db_query('SELECT c.*, u.uid, u.name AS registered_name, u.signature, u.signature_format, u.picture, u.data FROM {comments} c INNER JOIN {users} u ON c.uid = u.uid WHERE c.cid = %d AND c.status = %d', $edit['pid'], COMMENT_PUBLISHED));
     $comment = drupal_unpack($comment);
     $comment->name = $comment->uid ? $comment->registered_name : $comment->name;
     $output .= theme('comment_view', $comment, $node);
@@ -1523,7 +1525,7 @@ function _comment_form_submit(&$comment_values) {
     // 2) Strip out all HTML tags
     // 3) Convert entities back to plain-text.
     // Note: format is checked by check_markup().
-    $comment_values['subject'] = trim(truncate_utf8(decode_entities(strip_tags(check_markup($comment_values['comment'], $comment_values['format']))), 29, TRUE));
+    $comment_values['subject'] = truncate_utf8(trim(decode_entities(strip_tags(check_markup($comment_values['comment'], $comment_values['format'])))), 29, TRUE);
     // Edge cases where the comment body is populated only by HTML tags will
     // require a default subject.
     if ($comment_values['subject'] == '') {
@@ -1539,7 +1541,9 @@ function comment_form_submit($form, &$form_state) {
   _comment_form_submit($form_state['values']);
   if ($cid = comment_save($form_state['values'])) {
     $node = node_load($form_state['values']['nid']);
-    $page = comment_new_page_count($node->comment_count, 1, $node);
+    // Add 1 to existing $node->comment count to include new comment being added.
+    $comment_count = $node->comment_count + 1;
+    $page = comment_new_page_count($comment_count, 1, $node);
     $form_state['redirect'] = array('node/'. $node->nid, $page, "comment-$cid");
     return;
   }
@@ -1774,14 +1778,14 @@ function theme_comment_thread_expanded($comment, $node) {
 function theme_comment_post_forbidden($node) {
   global $user;
   static $authenticated_post_comments;
-  
+
   if (!$user->uid) {
     if (!isset($authenticated_post_comments)) {
       // We only output any link if we are certain, that users get permission
       // to post comments by logging in. We also locally cache this information.
       $authenticated_post_comments = array_key_exists(DRUPAL_AUTHENTICATED_RID, user_roles(TRUE, 'post comments') + user_roles(TRUE, 'post comments without approval'));
     }
-    
+
     if ($authenticated_post_comments) {
       // We cannot use drupal_get_destination() because these links
       // sometimes appear on /node and taxonomy listing pages.

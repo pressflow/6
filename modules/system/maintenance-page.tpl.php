@@ -1,5 +1,5 @@
 <?php
-// $Id: maintenance-page.tpl.php,v 1.2 2008/01/24 09:42:51 goba Exp $
+// $Id: maintenance-page.tpl.php,v 1.2.2.1 2009/04/30 00:13:31 goba Exp $
 
 /**
  * @file maintenance-page.tpl.php
@@ -19,8 +19,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="<?php print $language->language ?>" lang="<?php print $language->language ?>" dir="<?php print $language->dir ?>">
 
 <head>
-  <title><?php print $head_title; ?></title>
   <?php print $head; ?>
+  <title><?php print $head_title; ?></title>
   <?php print $styles; ?>
   <?php print $scripts; ?>
   <script type="text/javascript"><?php /* Needed to avoid Flash of Unstyled Content in IE */ ?> </script>

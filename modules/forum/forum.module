@@ -1,5 +1,5 @@
 <?php
-// $Id: forum.module,v 1.448.2.5 2008/10/24 19:07:47 dries Exp $
+// $Id: forum.module,v 1.448.2.7 2009/06/03 18:27:48 goba Exp $
 
 /**
  * @file
@@ -468,19 +468,11 @@ function forum_form(&$node, $form_state) {
   return $form;
 }
 
-function forum_link_alter(&$links, $node) {
-  foreach ($links as $module => $link) {
-    if (strstr($module, 'taxonomy_term')) {
-      // Link back to the forum and not the taxonomy term page. We'll only
-      // do this if the taxonomy term in question belongs to forums.
-      $tid = str_replace('taxonomy/term/', '', $link['href']);
-      $vid = variable_get('forum_nav_vocabulary', '');
-      $term = taxonomy_get_term($tid);
-      if ($term->vid == $vid) {
-        $links[$module]['href'] = str_replace('taxonomy/term', 'forum', $link['href']);
-      }
-    }
-  }
+/**
+ * Implementation of hook_term_path().
+ */
+function forum_term_path($term) {
+  return 'forum/'. $term->tid;
 }
 
 /**
@@ -687,11 +679,11 @@ function template_preprocess_forums(&$variables) {
     if (empty($forum_types)) {
       // The user is logged-in; but denied access to create any new forum content type.
       if ($user->uid) {
-        $forum_types['disallowed'] = array('title' => t('You are not allowed to post new content in forum.'));
+        $forum_types['disallowed'] = array('title' => t('You are not allowed to post new content in the forum.'));
       }
       // The user is not logged-in; and denied access to create any new forum content type.
       else {
-        $forum_types['login'] = array('title' => t('<a href="@login">Login</a> to post new content in forum.', array('@login' => url('user/login', array('query' => drupal_get_destination())))), 'html' => TRUE);
+        $forum_types['login'] = array('title' => t('<a href="@login">Login</a> to post new content in the forum.', array('@login' => url('user/login', array('query' => drupal_get_destination())))), 'html' => TRUE);
       }
     }
     $variables['links'] = $forum_types;

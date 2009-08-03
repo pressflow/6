@@ -1,5 +1,5 @@
 <?php
-// $Id: statistics.pages.inc,v 1.2 2007/10/20 21:57:50 goba Exp $
+// $Id: statistics.pages.inc,v 1.2.2.1 2009/04/27 12:08:29 goba Exp $
 
 /**
  * @file
@@ -15,7 +15,7 @@ function statistics_node_tracker() {
         array('data' => t('User'), 'field' => 'u.name'),
         array('data' => t('Operations')));
 
-    $result = pager_query('SELECT a.aid, a.timestamp, a.url, a.uid, u.name FROM {accesslog} a LEFT JOIN {users} u ON a.uid = u.uid WHERE a.path LIKE \'node/%d%%\''. tablesort_sql($header), 30, 0, NULL, $node->nid);
+    $result = pager_query("SELECT a.aid, a.timestamp, a.url, a.uid, u.name FROM {accesslog} a LEFT JOIN {users} u ON a.uid = u.uid WHERE a.path = 'node/%d' OR a.path LIKE 'node/%d/%%'". tablesort_sql($header), 30, 0, NULL, $node->nid, $node->nid);
     $rows = array();
     while ($log = db_fetch_object($result)) {
       $rows[] = array(

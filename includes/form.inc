@@ -1,5 +1,5 @@
 <?php
-// $Id: form.inc,v 1.265.2.19 2009/02/22 18:12:46 goba Exp $
+// $Id: form.inc,v 1.265.2.25 2009/05/26 08:18:46 goba Exp $
 
 /**
  * @defgroup forms Form builder functions
@@ -756,7 +756,10 @@ function form_execute_handlers($type, &$form, &$form_state) {
 
   foreach ($handlers as $function) {
     if (function_exists($function))  {
-      if ($type == 'submit' && ($batch =& batch_get())) {
+      // Check to see if a previous _submit handler has set a batch, but 
+      // make sure we do not react to a batch that is already being processed 
+      // (for instance if a batch operation performs a drupal_execute()).
+      if ($type == 'submit' && ($batch =& batch_get()) && !isset($batch['current_set'])) {
         // Some previous _submit handler has set a batch. We store the call
         // in a special 'control' batch set, for execution at the correct
         // time during the batch processing workflow.
@@ -1621,7 +1624,7 @@ function password_confirm_validate($form, &$form_state) {
   $pass1 = trim($form['pass1']['#value']);
   if (!empty($pass1)) {
     $pass2 = trim($form['pass2']['#value']);
-    if ($pass1 != $pass2) {
+    if (strcmp($pass1, $pass2)) {
       form_error($form, t('The specified passwords do not match.'));
     }
   }

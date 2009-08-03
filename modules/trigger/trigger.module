@@ -1,5 +1,5 @@
 <?php
-// $Id: trigger.module,v 1.13.2.1 2008/04/09 21:11:51 goba Exp $
+// $Id: trigger.module,v 1.13.2.3 2009/06/08 16:34:57 goba Exp $
 
 /**
  * @file
@@ -240,7 +240,7 @@ function trigger_nodeapi(&$node, $op, $a3, $a4) {
       }
       // Since we know about the node, we pass that info along to the action.
       $context['node'] = $node;
-      $result = actions_do($aid, $objects[$action_info['type']], $context, $a4, $a4);
+      $result = actions_do($aid, $objects[$action_info['type']], $context, $a3, $a4);
     }
     else {
       actions_do($aid, $node, $context, $a3, $a4);
@@ -313,10 +313,10 @@ function trigger_comment($a1, $op) {
  * Implementation of hook_cron().
  */
 function trigger_cron() {
-  $aids = _trigger_get_hook_aids('cron');
+  $aids = _trigger_get_hook_aids('cron', 'run');
   $context = array(
     'hook' => 'cron',
-    'op' => '',
+    'op' => 'run',
   );
   // Cron does not act on any specific object.
   $object = NULL;

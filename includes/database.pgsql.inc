@@ -1,5 +1,5 @@
 <?php
-// $Id: database.pgsql.inc,v 1.68.2.3 2008/11/17 10:31:41 goba Exp $
+// $Id: database.pgsql.inc,v 1.68.2.5 2009/06/09 10:53:52 goba Exp $
 
 /**
  * @file
@@ -474,7 +474,7 @@ function db_type_map() {
     'blob:big' => 'bytea',
     'blob:normal' => 'bytea',
 
-    'datetime:normal' => 'timestamp',
+    'datetime:normal' => 'timestamp without time zone',
 
     'serial:tiny' => 'serial',
     'serial:small' => 'serial',
@@ -910,9 +910,20 @@ function db_change_field(&$ret, $table, $field, $field_new, $spec, $new_keys = a
   $not_null = isset($spec['not null']) ? $spec['not null'] : FALSE;
   unset($spec['not null']);
 
+  if (!array_key_exists('size', $spec)) {
+    $spec['size'] = 'normal';
+  }
   db_add_field($ret, $table, "$field_new", $spec);
 
-  $ret[] = update_sql("UPDATE {". $table ."} SET $field_new = ". $field ."_old");
+  // We need to type cast the new column to best transfer the data
+  // db_type_map will return possiblities that are not 'cast-able'
+  // such as serial - they must be made 'int' instead.
+  $map =  db_type_map();
+  $typecast = $map[$spec['type'] .':'. $spec['size']];
+  if (in_array($typecast, array('serial', 'bigserial', 'numeric'))) {
+    $typecast = 'int';
+  }
+  $ret[] = update_sql('UPDATE {'. $table .'} SET '. $field_new .' = CAST('. $field .'_old AS '. $typecast .')');
 
   if ($not_null) {
     $ret[] = update_sql("ALTER TABLE {". $table ."} ALTER $field_new SET NOT NULL");

@@ -1,5 +1,5 @@
 <?php
-// $Id: file.inc,v 1.121.2.5 2008/10/20 09:42:31 goba Exp $
+// $Id: file.inc,v 1.121.2.7 2009/06/09 10:37:38 goba Exp $
 
 /**
  * @file
@@ -463,8 +463,8 @@ function file_space_used($uid = NULL) {
  * @param $validators
  *   An optional, associative array of callback functions used to validate the
  *   file. The keys are function names and the values arrays of callback
- *   parameters which will be passed in after the user and file objects. The
- *   functions should return an array of error messages, an empty array
+ *   parameters which will be passed in after the file object. The
+ *   functions should return an array of error messages; an empty array
  *   indicates that the file passed validation. The functions will be called in
  *   the order specified.
  * @param $dest
@@ -640,7 +640,7 @@ function file_validate_extensions($file, $extensions) {
  * @param $file_limit
  *   An integer specifying the maximum file size in bytes. Zero indicates that
  *   no limit should be enforced.
- * @param $$user_limit
+ * @param $user_limit
  *   An integer specifying the maximum number of bytes the user is allowed. Zero
  *   indicates that no limit should be enforced.
  * @return
@@ -657,8 +657,8 @@ function file_validate_size($file, $file_limit = 0, $user_limit = 0) {
       $errors[] = t('The file is %filesize exceeding the maximum file size of %maxsize.', array('%filesize' => format_size($file->filesize), '%maxsize' => format_size($file_limit)));
     }
 
-    $total_size = file_space_used($user->uid) + $file->filesize;
-    if ($user_limit && $total_size > $user_limit) {
+    // Save a query by only calling file_space_used() when a limit is provided.
+    if ($user_limit && (file_space_used($user->uid) + $file->filesize) > $user_limit) {
       $errors[] = t('The file is %filesize which would exceed your disk quota of %quota.', array('%filesize' => format_size($file->filesize), '%quota' => format_size($user_limit)));
     }
   }

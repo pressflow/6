@@ -1,5 +1,5 @@
 <?php
-// $Id: forum.pages.inc,v 1.2 2007/07/26 06:48:03 dries Exp $
+// $Id: forum.pages.inc,v 1.2.2.1 2009/07/01 20:51:55 goba Exp $
 
 /**
  * @file
@@ -10,6 +10,11 @@
  * Menu callback; prints a forum listing.
  */
 function forum_page($tid = 0) {
+  if (!is_numeric($tid)) {
+    return MENU_NOT_FOUND;
+  }
+  $tid = (int)$tid;
+
   $topics = '';
   $forum_per_page = variable_get('forum_per_page', 25);
   $sortby = variable_get('forum_order', 1);
