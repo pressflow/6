@@ -1521,7 +1521,13 @@ function drupal_session_regenerate() {
   // Set the session cookie "httponly" flag to reduce the risk of session
   // stealing via XSS.
   extract(session_get_cookie_params());
-  session_set_cookie_params($lifetime, $path, $domain, $secure, TRUE);
+
+  if (version_compare(PHP_VERSION, '5.2.0') === 1) {
+    session_set_cookie_params($lifetime, $path, $domain, $secure, TRUE);
+  }
+  else {
+    session_set_cookie_params($lifetime, $path, $domain, $secure);
+  }
 
   if (drupal_session_started()) {
     $old_session_id = session_id();
