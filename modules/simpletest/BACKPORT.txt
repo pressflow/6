@@ -1,4 +1,4 @@
-$Id: BACKPORT.txt,v 1.1.2.5 2009/04/23 05:39:52 boombatower Exp $
+$Id: BACKPORT.txt,v 1.1.2.6 2009/09/05 13:34:10 boombatower Exp $
 
 AUTHOR
 ------
@@ -41,7 +41,7 @@ SimpleTest module (simpletest.module)
 
 SimpleTest installer (simpletest.install)
 -----------------------------------------
-  * Added update hooks.
+  * Added update hook.
   * Added requirements check for configuration file modifications.
 
 JavaScript (simpletest.js)

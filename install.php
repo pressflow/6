@@ -17,7 +17,7 @@ define('MAINTENANCE_MODE', 'install');
  *   The installation phase we should proceed to.
  */
 function install_main() {
-  if (preg_match("/^simpletest\d+$/", $_SERVER['HTTP_USER_AGENT'])) {
+  if (strpos($_SERVER['HTTP_USER_AGENT'], 'simpletest') !== FALSE) {
     header('HTTP/1.1 403 Forbidden');
     exit;
   }
