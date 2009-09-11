@@ -1,6 +1,7 @@
 <?php
-// $Id: run-tests.sh,v 1.1.2.4 2009/04/23 05:39:52 boombatower Exp $
-// Core: Id: run-tests.sh,v 1.26 2009/04/13 12:23:26 dries Exp
+// $Id: run-tests.sh,v 1.1.2.5 2009/09/05 13:34:10 boombatower Exp $
+// Core: Id: run-tests.sh,v 1.35 2009/08/17 19:14:41 webchick Exp
+
 /**
  * @file
  * Backport of Drupal 7 run-tests.sh with modifications, see BACKPORT.txt.
@@ -17,15 +18,19 @@ define('SIMPLETEST_SCRIPT_COLOR_EXCEPTION', 33); // Brown.
 // Set defaults and get overrides.
 list($args, $count) = simpletest_script_parse_args();
 
-simpletest_script_init();
-
 if ($args['help'] || $count == 0) {
   simpletest_script_help();
   exit;
 }
 
 if ($args['execute-batch']) {
+  // Masquerade as Apache for running tests.
+  simpletest_script_init("Apache");
   simpletest_script_execute_batch();
+}
+else {
+  // Run administrative functions as CLI.
+  simpletest_script_init("PHP CLI");
 }
 
 // Bootstrap to perform initial validation or other operations.
@@ -49,8 +54,11 @@ if ($args['clean']) {
 }
 
 // Load SimpleTest files.
-$all_tests = simpletest_get_all_tests();
-$groups = simpletest_categorize_tests($all_tests);
+$groups = simpletest_test_get_all();
+$all_tests = array();
+foreach ($groups as $group => $tests) {
+  $all_tests = array_merge($all_tests, array_keys($tests));
+}
 $test_list = array();
 
 if ($args['list']) {
@@ -59,8 +67,8 @@ if ($args['list']) {
   echo   "-------------------------------\n\n";
   foreach ($groups as $group => $tests) {
     echo $group . "\n";
-    foreach ($tests as $class_name => $info) {
-      echo " - " . $info['name'] . ' (' . $class_name . ')' . "\n";
+    foreach ($tests as $class => $info) {
+      echo " - " . $info['name'] . ' (' . $class . ')' . "\n";
     }
   }
   exit;
@@ -68,7 +76,8 @@ if ($args['list']) {
 
 $test_list = simpletest_script_get_test_list();
 
-// If not in 'safe mode', increase the maximum execution time.
+// Try to allocate unlimited time to run the tests.
+//drupal_set_time_limit(0);
 if (!ini_get('safe_mode')) {
   set_time_limit(0);
 }
@@ -82,6 +91,12 @@ $test_id = db_last_insert_id('simpletest_test_id', 'test_id');
 
 // Execute tests.
 simpletest_script_command($args['concurrency'], $test_id, implode(",", $test_list));
+
+// Retrieve the last database prefix used for testing and the last test class
+// that was run from. Use the information to read the lgo file in case any
+// fatal errors caused the test to crash.
+list($last_prefix, $last_test_class) = simpletest_last_test_get($test_id);
+simpletest_log_read($test_id, $last_prefix, $last_test_class);
 
 // Display results before database is cleared.
 simpletest_script_reporter_display_results();
@@ -137,7 +152,8 @@ All arguments are long options.
   <test1>[,<test2>[,<test3> ...]]
 
               One or more tests to be run. By default, these are interpreted
-              as the names of test groups as shown at ?q=admin/build/testing.
+              as the names of test groups as shown at 
+              ?q=admin/build/testing.
               These group names typically correspond to module names like "User"
               or "Profile" or "System", but there is also a group "XML-RPC".
               If --class is specified then these are interpreted as the names of
@@ -230,7 +246,7 @@ function simpletest_script_parse_args() {
 /**
  * Initialize script variables and perform general setup requirements.
  */
-function simpletest_script_init() {
+function simpletest_script_init($server_software) {
   global $args, $php;
 
   $host = 'localhost';
@@ -264,7 +280,7 @@ function simpletest_script_init() {
   $_SERVER['HTTP_HOST'] = $host;
   $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
   $_SERVER['SERVER_ADDR'] = '127.0.0.1';
-  $_SERVER['SERVER_SOFTWARE'] = 'Apache';
+  $_SERVER['SERVER_SOFTWARE'] = $server_software;
   $_SERVER['SERVER_NAME'] = 'localhost';
   $_SERVER['REQUEST_URI'] = $path .'/';
   $_SERVER['REQUEST_METHOD'] = 'GET';
@@ -346,7 +362,11 @@ function simpletest_script_execute_batch() {
  * Run a single test (assume a Drupal bootstrapped environment).
  */
 function simpletest_script_run_one_test($test_id, $test_class) {
-  simpletest_get_all_tests();
+  // Drupal 6.
+  require_once drupal_get_path('module', 'simpletest') . '/drupal_web_test_case.php';
+  $classes = simpletest_test_get_all_classes();
+  require_once $classes[$test_class]['file'];
+  
   $test = new $test_class($test_id);
   $test->run();
   $info = $test->getInfo();
@@ -397,11 +417,12 @@ function simpletest_script_get_test_list() {
     elseif ($args['file']) {
       $files = array();
       foreach ($args['test_names'] as $file) {
+//        $files[drupal_realpath($file)] = 1;
         $files[realpath($file)] = 1;
       }
 
       // Check for valid class names.
-      foreach ($all_tests as $class_name => $info) {
+      foreach ($all_tests as $class_name) {
         $refclass = new ReflectionClass($class_name);
         $file = $refclass->getFileName();
         if (isset($files[$file])) {
