@@ -1,4 +1,5 @@
-/* $Id: simpletest.css,v 1.1.6.3 2009/02/08 02:35:39 boombatower Exp $ */
+/* $Id: simpletest.css,v 1.1.6.4 2009/09/05 13:34:10 boombatower Exp $
+/* Core: Id: simpletest.css,v 1.6 2009/08/04 06:47:00 webchick Exp */
 
 /* Addon for the simpletest module */
 #simpletest {
@@ -6,7 +7,7 @@
 
 /* Test Table */
 #simpletest-form-table th.select-all {
-  width: 50px;
+  width: 25px;
 }
 
 th.simpletest_test {
@@ -57,6 +58,14 @@ tr.simpletest-exception.odd {
 
 tr.simpletest-exception.even {
   background: #f5e742;
+}
+
+tr.simpletest-debug.odd {
+  background: #eeeeee;
+}
+
+tr.simpletest-debug.even {
+  background: #ffffff;
 }
 
 div.simpletest-image {

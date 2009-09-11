@@ -52,13 +52,14 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
     if (!$this->inCURL()) {
       $this->drupalGet('node');
       $this->assertTrue($this->drupalGetHeader('Date'), t('An HTTP header was received.'));
-      $this->assertTitle(variable_get('site_name', 'Drupal'), t('Site title matches.'));
+      $this->assertTitle(variable_get('site_name', 'Pressflow'), t('Site title matches.'));
       $this->assertNoTitle('Foo', t('Site title does not match.'));
       // Make sure that we are locked out of the installer when prefixing
       // using the user-agent header. This is an important security check.
       global $base_url;
 
       $this->drupalGet($base_url . '/install.php', array('external' => TRUE));
+      $this->pass(print_r($this->drupalGetHeaders(TRUE), 1));
       $this->assertResponse(403, 'Cannot access install.php with a "simpletest" user-agent header.');
 
       $this->drupalLogin($this->drupalCreateUser());
@@ -206,15 +207,14 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
    */
   function getTestResults() {
     $results = array();
-
     if ($this->parse()) {
       if ($fieldset = $this->getResultFieldSet()) {
         // Code assumes this is the only test in group.
         $results['summary'] = $this->asText($fieldset->div);
-        $results['name'] = $this->asText($fieldset->fieldset->legend);
+        $results['name'] = $this->asText($fieldset->legend);
 
         $results['assertions'] = array();
-        $tbody = $fieldset->fieldset->table->tbody;
+        $tbody = $fieldset->table->tbody;
         foreach ($tbody->tr as $row) {
           $assertion = array();
           $assertion['message'] = $this->asText($row->td[0]);
@@ -240,7 +240,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
     $fieldsets = $this->xpath('//fieldset');
     $info = $this->getInfo();
     foreach ($fieldsets as $fieldset) {
-      if ($fieldset->legend == $info['group']) {
+      if ($fieldset->legend == $info['name']) {
         return $fieldset;
       }
     }

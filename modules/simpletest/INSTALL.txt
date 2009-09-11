@@ -1,4 +1,4 @@
-$Id: INSTALL.txt,v 1.6.4.15 2009/03/23 03:36:21 boombatower Exp $
+$Id: INSTALL.txt,v 1.6.4.16 2009/09/05 13:34:10 boombatower Exp $
 
 AUTHOR
 ------
@@ -10,44 +10,24 @@ The php-curl library is required for SimpleTest to function.
 
 INSTALLATION
 ------------
-1. Add the following code to the bottom of your site's settings.php file. If
-   you are running Windows make sure you encode the file with the UNIX
-   standard.
-
-   $GLOBALS['simpletest_installed'] = TRUE;
-   if (preg_match("/^simpletest\d+$/", $_SERVER['HTTP_USER_AGENT'])) {
-     $db_prefix = $_SERVER['HTTP_USER_AGENT'];
-   }
+1. Apply the D6-core-simpletest.patch file to the Drupal 6 core.
 
 2. (Optional)
-   It is hightly recommonded, but not neccessary, that you add the following
-   code to install.php at the beginning of install_main(). Should look like
-   7.x branch of Drupal core.
-
-   // The user agent header is used to pass a database prefix in the request when
-   // running tests. However, for security reasons, it is imperative that no
-   // installation be permitted using such a prefix.
-   if (preg_match("/^simpletest\d+$/", $_SERVER['HTTP_USER_AGENT'])) {
-     header($_SERVER['SERVER_PROTOCOL'] . ' 403 Forbidden');
-     exit;
-   }
-
-3. (Optional)
    Apply the "Show fatal errors in tests" batch to misc/drupal.js if you want
    the reason for test failure to be displayed on the batch API screen. The
    patch can be found at:
    http://drupal.org/files/issues/simpletest_drupal.js_.patch.
 
-4. (Optional)
+3. (Optional)
    Move/Copy the run-tests.sh file into the Drupal scripts folder. The script
    allows the tests to be run from the command line.
 
-5. Go to Administer >> Site building >> Modules (admin/build/modules) and
+4. Go to Administer >> Site building >> Modules (admin/build/modules) and
    enable the SimpleTest module.
 
-6. Go to Administer >> Site building >> Testing (admin/build/testing) to
+5. Go to Administer >> Site building >> Testing (admin/build/testing) to
    begin using the module.
 
-7. (Optional)
+6. (Optional)
    Go to Administer >> Help >> SimpleTest (admin/help/simpletest)
    for more information on how to use the SimpleTest module.
