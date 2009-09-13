@@ -551,7 +551,6 @@ class DrupalUnitTestCase extends DrupalTestCase {
 
   function setUp() {
     global $db_prefix, $conf;
-
     // Store necessary current values before switching to prefixed database.
     $this->originalPrefix = $db_prefix;
     $this->originalFileDirectory = file_directory_path();
@@ -1082,6 +1081,8 @@ class DrupalWebTestCase extends DrupalTestCase {
     // Generate temporary prefixed database to ensure that tests have a clean starting point.
 //    $db_prefix_new = Database::getConnection()->prefixTables('{simpletest' . mt_rand(1000, 1000000) . '}');
     $db_prefix_new = $db_prefix . 'simpletest' . mt_rand(1000, 1000000);
+    // Workaround to insure we init the theme layer before going into $prefix land; helps run-test.sh function.
+    $this->pass(t('Starting run with db_prefix %prefix', array('%prefix' => $db_prefix_new)));
 //    db_update('simpletest_test_id')
 //      ->fields(array('last_prefix' => $db_prefix_new))
 //      ->condition('test_id', $this->testId)
