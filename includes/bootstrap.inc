@@ -1234,6 +1234,7 @@ function _drupal_bootstrap($phase) {
       // The user agent header is used to pass a database prefix in the request when
       // running tests. However, for security reasons, it is imperative that we
       // validate we ourselves made the request.
+      $GLOBALS['simpletest_installed'] = TRUE;
       if (isset($_SERVER['HTTP_USER_AGENT']) && (strpos($_SERVER['HTTP_USER_AGENT'], "simpletest") !== FALSE) && !drupal_valid_test_ua($_SERVER['HTTP_USER_AGENT'])) {
         header($_SERVER['SERVER_PROTOCOL'] . ' 403 Forbidden');
         exit;

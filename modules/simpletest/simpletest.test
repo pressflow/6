@@ -1,6 +1,7 @@
 <?php
-// $Id: simpletest.test,v 1.1.2.11 2009/04/23 05:39:51 boombatower Exp $
-// Core: Id: simpletest.test,v 1.17 2009/03/31 01:49:53 webchick Exp
+// $Id: simpletest.test,v 1.1.2.16 2009/09/14 23:22:56 boombatower Exp $
+// Core: Id: simpletest.test,v 1.31 2009/09/01 17:40:27 webchick Exp
+
 /**
  * @file
  * Backport of Drupal 7 simpletest.test with modifications, see BACKPORT.txt.
@@ -22,12 +23,12 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
 
   public static function getInfo() {
     return array(
-      'name' => t('SimpleTest functionality'),
-      'description' => t('Test SimpleTest\'s web interface: check that the intended tests were
+      'name' => 'SimpleTest functionality',
+      'description' => 'Test SimpleTest\'s web interface: check that the intended tests were
                           run and ensure that test reports display the intended results. Also
                           test SimpleTest\'s internal browser and API\'s both explicitly and
-                          implicitly.'),
-      'group' => t('SimpleTest')
+                          implicitly.',
+      'group' => 'SimpleTest'
     );
   }
 
@@ -52,6 +53,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
     if (!$this->inCURL()) {
       $this->drupalGet('node');
       $this->assertTrue($this->drupalGetHeader('Date'), t('An HTTP header was received.'));
+//      $this->assertTitle(t('Welcome to @site-name | @site-name', array('@site-name' => variable_get('site_name', 'Drupal'))), t('Site title matches.'));
       $this->assertTitle(variable_get('site_name', 'Pressflow'), t('Site title matches.'));
       $this->assertNoTitle('Foo', t('Site title does not match.'));
       // Make sure that we are locked out of the installer when prefixing
@@ -59,7 +61,6 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
       global $base_url;
 
       $this->drupalGet($base_url . '/install.php', array('external' => TRUE));
-      $this->pass(print_r($this->drupalGetHeaders(TRUE), 1));
       $this->assertResponse(403, 'Cannot access install.php with a "simpletest" user-agent header.');
 
       $this->drupalLogin($this->drupalCreateUser());
@@ -92,6 +93,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
       // Run twice so test_ids can be accumulated.
       for ($i = 0; $i < 2; $i++) {
         // Run this test from web interface.
+//        $this->drupalGet('admin/config/development/testing');
         $this->drupalGet('admin/build/testing');
 
         $edit = array();
@@ -129,6 +131,8 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
 
     // Generates a warning inside a PHP function.
     array_key_exists(NULL, NULL);
+
+    debug('Foo', 'Debug');
   }
 
   /**
@@ -159,6 +163,11 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
     // the function name 'array_key_exists'.
     $this->assertAssertion('array_key_exists', 'Warning', 'Fail', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
 
+    $this->assertAssertion("Debug: 'Foo'", 'Debug', 'Fail', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
+
+//    $this->assertEqual('6 passes, 2 fails, 2 exceptions, and 1 debug message', $this->childTestResults['summary'], 'Stub test summary is correct');
+    $this->assertEqual('8 passes, 2 fails, 2 exceptions, and 1 debug message', $this->childTestResults['summary'], 'Stub test summary is correct');
+
     $this->test_ids[] = $test_id = $this->getTestIdFromResults();
     $this->assertTrue($test_id, t('Found test ID in results.'));
   }
@@ -167,7 +176,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
    * Fetch the test id from the test results.
    */
   function getTestIdFromResults() {
-    foreach($this->childTestResults['assertions'] as $assertion) {
+    foreach ($this->childTestResults['assertions'] as $assertion) {
       if (preg_match('@^Test ID is ([0-9]*)\.$@', $assertion['message'], $matches)) {
         return $matches[1];
       }
@@ -210,7 +219,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
     if ($this->parse()) {
       if ($fieldset = $this->getResultFieldSet()) {
         // Code assumes this is the only test in group.
-        $results['summary'] = $this->asText($fieldset->div);
+        $results['summary'] = $this->asText($fieldset->div[1]);
         $results['name'] = $this->asText($fieldset->legend);
 
         $results['assertions'] = array();
@@ -222,7 +231,8 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
           $assertion['file'] = $this->asText($row->td[2]);
           $assertion['line'] = $this->asText($row->td[3]);
           $assertion['function'] = $this->asText($row->td[4]);
-          $ok_url = (url('misc/watchdog-ok.png') == 'misc/watchdog-ok.png') ? 'misc/watchdog-ok.png' : (base_path() . 'misc/watchdog-ok.png');
+//          $ok_url = file_create_url('misc/watchdog-ok.png');
+          $ok_url = '/misc/watchdog-ok.png';
           $assertion['status'] = ($row->td[5]->img['src'] == $ok_url) ? 'Pass' : 'Fail';
           $results['assertions'][] = $assertion;
         }
@@ -240,7 +250,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
     $fieldsets = $this->xpath('//fieldset');
     $info = $this->getInfo();
     foreach ($fieldsets as $fieldset) {
-      if ($fieldset->legend == $info['name']) {
+      if ($this->asText($fieldset->legend) == $info['name']) {
         return $fieldset;
       }
     }
@@ -268,23 +278,102 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
    * @return The test is being run from inside a CURL request.
    */
   function inCURL() {
-    return preg_match("/^simpletest\d+/", $_SERVER['HTTP_USER_AGENT']);
+    return isset($_SERVER['HTTP_USER_AGENT']) && preg_match("/^simpletest\d+/", $_SERVER['HTTP_USER_AGENT']);
   }
+}
 
-  /*
-   * Drupal 6.
+class SimpleTestMailCaptureTestCase extends DrupalWebTestCase {
+  /**
+   * Implement getInfo().
    */
-
-  function testUserAccess()
-  {
-    $user = $this->drupalCreateUser(array('administer unit tests'));
-    $this->assertTrue(user_access('administer unit tests', $user), 'user_access() check successfull.');
+  public static function getInfo() {
+    return array(
+      'name' => 'SimpleTest e-mail capturing',
+      'description' => 'Test the SimpleTest e-mail capturing logic, the assertMail assertion and the drupalGetMails function.',
+      'group' => 'SimpleTest',
+    );
   }
 
-  function testUserAccessCache()
-  {
-    $user = $this->drupalCreateUser(array('administer nodes'));
-    $this->assertTrue(user_access('administer nodes', $user), 'user_access() cache has been cleaned');
+  /**
+   * Test to see if the wrapper function is executed correctly.
+   */
+  function testMailSend() {
+    // Create an e-mail.
+    $subject = $this->randomString(64);
+    $body = $this->randomString(128);
+    $message = array(
+      'id' => 'drupal_mail_test',
+      'headers' => array('Content-type'=> 'text/html'),
+      'subject' => $subject,
+      'to' => 'foobar@example.com',
+      'body' => $body,
+    );
 
+    // Before we send the e-mail, drupalGetMails should return an empty array.
+    $captured_emails = $this->drupalGetMails();
+    $this->assertEqual(count($captured_emails), 0, t('The captured e-mails queue is empty.'), t('E-mail'));
+
+    // Send the e-mail.
+//    $response = drupal_mail_sending_system('simpletest', 'drupal_mail_test')->mail($message);
+    $response = drupal_mail('simpletest', 'drupal_mail_test', $message['to'], language_default(), $message, NULL, TRUE);
+
+    // Ensure that there is one e-mail in the captured e-mails array.
+    $captured_emails = $this->drupalGetMails();
+    $this->assertEqual(count($captured_emails), 1, t('One e-mail was captured.'), t('E-mail'));
+
+    // Assert that the e-mail was sent by iterating over the message properties
+    // and ensuring that they are captured intact.
+    foreach($message as $field => $value) {
+      $this->assertMail($field, $value, t('The e-mail was sent and the value for property @field is intact.', array('@field' => $field)), t('E-mail'));
+    }
+
+    // Send additional e-mails so more than one e-mail is captured.
+    for ($index = 0; $index < 5; $index++) {
+      $message = array(
+        'id' => 'drupal_mail_test_' . $index,
+        'headers' => array('Content-type'=> 'text/html'),
+        'subject' => $this->randomString(64),
+        'to' => $this->randomName(32) . '@example.com',
+        'body' => $this->randomString(512),
+      );
+//      drupal_mail_sending_system('drupal_mail_test', $index)->mail($message);
+      $response = drupal_mail('simpletest', 'drupal_mail_test', $message['to'], language_default(), $message, NULL, TRUE);
+    }
+
+    // There should now be 6 e-mails captured.
+    $captured_emails = $this->drupalGetMails();
+    $this->assertEqual(count($captured_emails), 6, t('All e-mails were captured.'), t('E-mail'));
+
+    // Test different ways of getting filtered e-mails via drupalGetMails().
+    $captured_emails = $this->drupalGetMails(array('id' => 'drupal_mail_test'));
+    $this->assertEqual(count($captured_emails), 1, t('Only one e-mail is returned when filtering by id.'), t('E-mail'));
+    $captured_emails = $this->drupalGetMails(array('id' => 'drupal_mail_test', 'subject' => $subject));
+    $this->assertEqual(count($captured_emails), 1, t('Only one e-mail is returned when filtering by id and subject.'), t('E-mail'));
+    $captured_emails = $this->drupalGetMails(array('id' => 'drupal_mail_test', 'subject' => $subject, 'from' => 'this_was_not_used@example.com'));
+    $this->assertEqual(count($captured_emails), 0, t('No e-mails are returned when querying with an unused from address.'), t('E-mail'));
+
+    // Send the last e-mail again, so we can confirm that the drupalGetMails-filter
+    // correctly returns all e-mails with a given property/value.
+//    drupal_mail_sending_system('drupal_mail_test', $index)->mail($message);
+    $response = drupal_mail('simpletest', $index, $message['to'], language_default(), $message, NULL, TRUE);
+    $captured_emails = $this->drupalGetMails(array('id' => 'drupal_mail_test_4'));
+    $this->assertEqual(count($captured_emails), 2, t('All e-mails with the same id are returned when filtering by id.'), t('E-mail'));
   }
+}
+
+/**
+ * Capture e-mail message during testing.
+ *
+ * Code copied from TestingMailSystem in mail.sending.inc (Drupal 7). Placed in
+ * this file to ensure no loaded until in testing mode, to ensure no conflicts
+ * with other implementations like devel.
+ *
+ * @param $message
+ *   An e-mail message.
+ */
+function drupal_mail_wrapper(array $message) {
+  $captured_emails = variable_get('drupal_test_email_collector', array());
+  $captured_emails[] = $message;
+  variable_set('drupal_test_email_collector', $captured_emails);
+  return TRUE;
 }

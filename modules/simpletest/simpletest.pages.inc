@@ -1,5 +1,5 @@
 <?php
-// $Id: simpletest.pages.inc,v 1.1.2.1 2009/09/05 13:34:10 boombatower Exp $
+// $Id: simpletest.pages.inc,v 1.1.2.2 2009/09/14 22:37:35 boombatower Exp $
 
 /**
  * @file
@@ -114,7 +114,8 @@ function theme_simpletest_test_table($table) {
 
     $row[] = '&nbsp;';
 
-    $rows[] = array('data' => $row, 'class' => array('simpletest-group'));
+//    $rows[] = array('data' => $row, 'class' => array('simpletest-group'));
+    $rows[] = array('data' => $row, 'class' => 'simpletest-group');
 
     // Add individual tests to group.
     $current_js = array(

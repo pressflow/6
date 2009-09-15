@@ -1,5 +1,5 @@
 <?php
-// $Id: drupal_web_test_case.php,v 1.2.2.3.2.39 2009/09/05 13:34:10 boombatower Exp $
+// $Id: drupal_web_test_case.php,v 1.2.2.3.2.43 2009/09/14 23:22:56 boombatower Exp $
 // Core: Id: drupal_web_test_case.php,v 1.146 2009/08/31 18:30:26 webchick Exp $
 
 /**
@@ -551,6 +551,7 @@ class DrupalUnitTestCase extends DrupalTestCase {
 
   function setUp() {
     global $db_prefix, $conf;
+
     // Store necessary current values before switching to prefixed database.
     $this->originalPrefix = $db_prefix;
     $this->originalFileDirectory = file_directory_path();
@@ -1081,8 +1082,11 @@ class DrupalWebTestCase extends DrupalTestCase {
     // Generate temporary prefixed database to ensure that tests have a clean starting point.
 //    $db_prefix_new = Database::getConnection()->prefixTables('{simpletest' . mt_rand(1000, 1000000) . '}');
     $db_prefix_new = $db_prefix . 'simpletest' . mt_rand(1000, 1000000);
-    // Workaround to insure we init the theme layer before going into $prefix land; helps run-test.sh function.
-    $this->pass(t('Starting run with db_prefix %prefix', array('%prefix' => $db_prefix_new)));
+
+    // Workaround to insure we init the theme layer before going into prefixed
+    // environment. (Drupal 6)
+    $this->pass(t('Starting run with db_prefix %prefix', array('%prefix' => $db_prefix_new)), 'System');
+
 //    db_update('simpletest_test_id')
 //      ->fields(array('last_prefix' => $db_prefix_new))
 //      ->condition('test_id', $this->testId)
@@ -1165,7 +1169,8 @@ class DrupalWebTestCase extends DrupalTestCase {
 //    $language = language_default();
 
     // Use the test mail class instead of the default mail handler class.
-    variable_set('mail_sending_system', array('default-system' => 'TestingMailSystem'));
+//    variable_set('mail_sending_system', array('default-system' => 'TestingMailSystem'));
+    variable_set('smtp_library', drupal_get_path('module', 'simpletest') . '/simpletest.test');
 
     // Use temporary files directory with the same prefix as the database.
 //    $public_files_directory  = $this->originalFileDirectory . '/' . $db_prefix;
@@ -1997,7 +2002,8 @@ class DrupalWebTestCase extends DrupalTestCase {
 
     foreach ($captured_emails as $message) {
       foreach ($filter as $key => $value) {
-        if (!isset($message[$key]) || $message[$key] != $value) {
+//        if (!isset($message[$key]) || $message[$key] != $value) {
+        if (!isset($message['params'][$key]) || $message['params'][$key] != $value) {
           continue 2;
         }
       }
@@ -2551,7 +2557,8 @@ class DrupalWebTestCase extends DrupalTestCase {
   protected function assertMail($name, $value = '', $message = '') {
     $captured_emails = variable_get('drupal_test_email_collector', array());
     $email = end($captured_emails);
-    return $this->assertTrue($email && isset($email[$name]) && $email[$name] == $value, $message, t('E-mail'));
+//    return $this->assertTrue($email && isset($email[$name]) && $email[$name] == $value, $message, t('E-mail'));
+    return $this->assertTrue($email && isset($email['params'][$name]) && $email['params'][$name] == $value, $message, t('E-mail'));
   }
 
   /**

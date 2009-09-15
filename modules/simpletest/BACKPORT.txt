@@ -1,4 +1,4 @@
-$Id: BACKPORT.txt,v 1.1.2.6 2009/09/05 13:34:10 boombatower Exp $
+$Id: BACKPORT.txt,v 1.1.2.7 2009/09/14 23:03:27 boombatower Exp $
 
 AUTHOR
 ------
@@ -22,10 +22,6 @@ CVS ID with the prefix "Core: ".
 DrupalWebTestCase
 -----------------
 Document as described above.
-
-Error/Exception handling (simpletest.function.inc)
----------------------------------------------
-The necessary core error/exception handling function from common.inc.
 
 SimpleTest module (simpletest.module)
 -------------------------------------

@@ -1,5 +1,5 @@
 <?php
-// $Id: simpletest.module,v 1.33.2.4.2.18 2009/09/05 13:34:10 boombatower Exp $
+// $Id: simpletest.module,v 1.33.2.4.2.20 2009/09/14 20:34:30 boombatower Exp $
 // Core: Id: simpletest.module,v 1.71 2009/08/24 00:14:21 webchick Exp
 
 /**
@@ -407,7 +407,8 @@ function simpletest_test_get_all_classes() {
   $files = module_rebuild_cache();
   foreach ($files as $file) {
     $directory = dirname($file->filename);
-    $test_files = file_scan_directory($directory, '\.test$');
+    $test_files = file_scan_directory($directory, '\.test$', array('.', '..', 'CVS'), FALSE, FALSE);
+    $test_files += file_scan_directory($directory . '/tests', '\.test$');
 
     foreach ($test_files as $test_file) {
       $pre = get_declared_classes();
@@ -497,7 +498,7 @@ function simpletest_get_like_tables($base_table = 'simpletest', $count = FALSE) 
   global $db_url, $db_prefix;
   $url = parse_url(is_array($db_url) ? $db_url['default'] : $db_url);
   $database = substr($url['path'], 1);
-  $result = db_query("SELECT table_name FROM information_schema.tables WHERE table_schema = '$database' AND table_name LIKE '$db_prefix$base_table%'");
+  $result = db_query("SELECT table_name FROM information_schema.tables WHERE (table_schema = '$database' OR table_catalog = '$database') AND table_name LIKE '$db_prefix$base_table%'");
   $schema = drupal_get_schema_unprocessed('simpletest');
 
   $tables = array();
