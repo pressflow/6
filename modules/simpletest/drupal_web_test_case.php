@@ -1,5 +1,5 @@
 <?php
-// $Id: drupal_web_test_case.php,v 1.2.2.3.2.39 2009/09/05 13:34:10 boombatower Exp $
+// $Id: drupal_web_test_case.php,v 1.2.2.3.2.43 2009/09/14 23:22:56 boombatower Exp $
 // Core: Id: drupal_web_test_case.php,v 1.146 2009/08/31 18:30:26 webchick Exp $
 
 /**
@@ -1082,6 +1082,11 @@ class DrupalWebTestCase extends DrupalTestCase {
     // Generate temporary prefixed database to ensure that tests have a clean starting point.
 //    $db_prefix_new = Database::getConnection()->prefixTables('{simpletest' . mt_rand(1000, 1000000) . '}');
     $db_prefix_new = $db_prefix . 'simpletest' . mt_rand(1000, 1000000);
+
+    // Workaround to insure we init the theme layer before going into prefixed
+    // environment. (Drupal 6)
+    $this->pass(t('Starting run with db_prefix %prefix', array('%prefix' => $db_prefix_new)), 'System');
+
 //    db_update('simpletest_test_id')
 //      ->fields(array('last_prefix' => $db_prefix_new))
 //      ->condition('test_id', $this->testId)
@@ -1155,46 +1160,22 @@ class DrupalWebTestCase extends DrupalTestCase {
 
     // Restore necessary variables.
     variable_set('install_profile', 'default');
-//    variable_set('install_task', 'done');
     variable_set('install_task', 'profile-finished');
     variable_set('clean_url', $clean_url_original);
     variable_set('site_mail', 'simpletest@example.com');
-//    // Set up English language.
-//    unset($GLOBALS['conf']['language_default']);
-//    $language = language_default();
-
-    // Use the test mail class instead of the default mail handler class.
-    variable_set('mail_sending_system', array('default-system' => 'TestingMailSystem'));
+    variable_set('smtp_library', drupal_get_path('module', 'simpletest') . '/simpletest.test');
 
     // Use temporary files directory with the same prefix as the database.
-//    $public_files_directory  = $this->originalFileDirectory . '/' . $db_prefix;
-//    $private_files_directory = $public_files_directory . '/private';
     $directory = $this->originalFileDirectory . '/' . $db_prefix;
 
     // Set path variables
-//    variable_set('file_public_path', $public_files_directory);
-//    variable_set('file_private_path', $private_files_directory);
     variable_set('file_directory_path', $directory);
 
     // Create the directories
-//    $directory = file_directory_path('public');
-//    file_prepare_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
-//    file_prepare_directory($private_files_directory, FILE_CREATE_DIRECTORY);
     file_check_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
 
-//    drupal_set_time_limit($this->timeLimit);
     set_time_limit($this->timeLimit);
   }
-
-//  /**
-//   * This method is called by DrupalWebTestCase::setUp, and preloads the
-//   * registry from the testing site to cut down on the time it takes to
-//   * setup a clean environment for the current test run.
-//   */
-//  protected function preloadRegistry() {
-//    db_query('INSERT INTO {registry} SELECT * FROM ' . $this->originalPrefix . 'registry');
-//    db_query('INSERT INTO {registry_file} SELECT * FROM ' . $this->originalPrefix . 'registry_file');
-//  }
 
   /**
    * Refresh the in-memory set of variables. Useful after a page request is made
@@ -1211,7 +1192,6 @@ class DrupalWebTestCase extends DrupalTestCase {
   protected function refreshVariables() {
     global $conf;
     cache_clear_all('variables', 'cache');
-//    $conf = variable_initialize();
     $conf = variable_init();
   }
 
@@ -1237,7 +1217,6 @@ class DrupalWebTestCase extends DrupalTestCase {
 
     if (preg_match('/simpletest\d+/', $db_prefix)) {
       // Delete temporary files directory.
-//      file_unmanaged_delete_recursive(file_directory_path());
       simpletest_clean_temporary_directory(file_directory_path());
 
       // Remove all prefixed tables (all the tables in the schema).
@@ -1252,7 +1231,6 @@ class DrupalWebTestCase extends DrupalTestCase {
 
       // Return the user to the original one.
       $user = $this->originalUser;
-//      drupal_save_session(TRUE);
       session_save_session(TRUE);
 
       // Bring back default language. (Drupal 6)
@@ -1268,20 +1246,10 @@ class DrupalWebTestCase extends DrupalTestCase {
       // Reload module list and implementations to ensure that test module hooks
       // aren't called after tests.
       module_list(TRUE);
-//      module_implements('', FALSE, TRUE);
       module_implements('', '', TRUE);
-
-      // Reset the Field API.
-//      field_cache_clear();
 
       // Rebuild caches.
       $this->refreshVariables();
-
-//      // Reset language.
-//      $language = $this->originalLanguage;
-//      if ($this->originalLanguageDefault) {
-//        $GLOBALS['conf']['language_default'] = $this->originalLanguageDefault;
-//      }
 
       // Close the CURL handler.
       $this->curlClose();
@@ -1996,7 +1964,7 @@ class DrupalWebTestCase extends DrupalTestCase {
 
     foreach ($captured_emails as $message) {
       foreach ($filter as $key => $value) {
-        if (!isset($message[$key]) || $message[$key] != $value) {
+        if (!isset($message['params'][$key]) || $message['params'][$key] != $value) {
           continue 2;
         }
       }
@@ -2550,7 +2518,7 @@ class DrupalWebTestCase extends DrupalTestCase {
   protected function assertMail($name, $value = '', $message = '') {
     $captured_emails = variable_get('drupal_test_email_collector', array());
     $email = end($captured_emails);
-    return $this->assertTrue($email && isset($email[$name]) && $email[$name] == $value, $message, t('E-mail'));
+    return $this->assertTrue($email && isset($email['params'][$name]) && $email['params'][$name] == $value, $message, t('E-mail'));
   }
 
   /**
@@ -2591,7 +2559,6 @@ class DrupalWebTestCase extends DrupalTestCase {
  */
 function simpletest_verbose($message, $original_file_directory = NULL, $test_class = NULL) {
   static $file_directory = NULL, $class = NULL, $id = 1;
-//  $verbose = &drupal_static(__FUNCTION__);
   static $verbose;
 
   // Will pass first time during setup phase, and when verbose is TRUE.
@@ -2610,7 +2577,6 @@ function simpletest_verbose($message, $original_file_directory = NULL, $test_cla
     $class = $test_class;
     $verbose = variable_get('simpletest_verbose', FALSE);
     $directory = $file_directory . '/simpletest/verbose';
-//    return file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
     return file_check_directory($directory, FILE_CREATE_DIRECTORY);
   }
   return FALSE;

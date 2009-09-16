@@ -1,7 +1,13 @@
-// $Id: CHANGELOG.txt,v 1.1.2.85 2009/09/05 13:45:01 boombatower Exp $
+// $Id: CHANGELOG.txt,v 1.1.2.97 2009/09/14 23:22:56 boombatower Exp $
 
-SimpleTest 6.x-2.9, xxxx-xx-xx (development version)
+SimpleTest 6.x-2.9, 2009-09-14
 ------------------------------
+- Changes:
+   * #576256: Theme laying needs to be initialized during setUp().
+   * Correct comment on previous workaround.
+   * #400296 by neilnz: Make simpletest_get_like_tables() work in MySQL and PostgreSQL.
+   * #573822: Update SimpleTestMailCaptureTestCase from simpletest.test.
+   * #577324 by Dave Reid: Module tests with extending submodule tests not included correctly.
 - Bugs:
    * #442890: HEAD info left in simpletest.info.
    * #474394 by RockyRoad: block.test should treat delta as string.
@@ -10,6 +16,12 @@ SimpleTest 6.x-2.9, xxxx-xx-xx (development version)
               installation to ensure non-standard directories are picked up.
    * #567422: Fresh backport of Drupal 7 SimpleTest.
    * #545228: Missing D7 constants.
+   * Remove simpletest.function.inc.
+   * Correct file_scan_directory() $mask parameter API change.
+   * Correct another 'class' atrribute as array().
+   * Update files.
+   * Changes to install.php included in D6 core patch.
+   * #577496: drupal_mail_wrapper() conflicts.
 
 SimpleTest 6.x-2.8, 2009-04-23
 ------------------------------

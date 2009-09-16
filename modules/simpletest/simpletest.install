@@ -1,5 +1,5 @@
 <?php
-// $Id: simpletest.install,v 1.4.2.3.2.17 2009/09/05 13:34:10 boombatower Exp $
+// $Id: simpletest.install,v 1.4.2.3.2.19 2009/09/14 22:32:11 boombatower Exp $
 // Core: Id: simpletest.install,v 1.26 2009/08/17 19:14:41 webchick Exp
 
 /**
@@ -15,8 +15,6 @@
 function simpletest_install() {
   drupal_install_schema('simpletest');
   // Check for files directory.
-//  $path = 'public://simpletest';
-//  if (file_prepare_directory($path, FILE_CREATE_DIRECTORY)) {
   $path = file_directory_path() . '/simpletest';
   if (file_check_directory($path, FILE_CREATE_DIRECTORY)) {
     // Generate binary and text test files.
@@ -39,16 +37,15 @@ function simpletest_install() {
 
     // Copy other test files for consistency.
     $original = drupal_get_path('module', 'simpletest') . '/files';
-    $files = file_scan_directory($original, '/(html|image|javascript|php|sql)-.*/');
+    $files = file_scan_directory($original, '(html|image|javascript|php|sql)-.*');
 
     // If there are more files in SimpleTest's files directory than the site's
     // files directory, restore all the files. This situation might occur when
     // an errant test deletes one or more files from the site's files
     // directory. It serves a convenience to developers so that they can get
     // the test files back easily.
-    if (count($files) > count(file_scan_directory($path, '/(html|image|javascript|php|sql)-.*/'))) {
+    if (count($files) > count(file_scan_directory($path, '(html|image|javascript|php|sql)-.*'))) {
       foreach ($files as $file) {
-//        file_unmanaged_copy($file->uri, $path, FILE_EXISTS_REPLACE);
         copy($file->filename, $path . '/' . $file->basename);
       }
       $generated = TRUE;
@@ -121,9 +118,8 @@ function simpletest_uninstall() {
 
   // Remove generated files.
   $path = file_directory_path() . '/simpletest';
-  $files = file_scan_directory($path, '/.*/');
+  $files = file_scan_directory($path, '.*');
   foreach ($files as $file) {
-//    file_unmanaged_delete($file->uri);
     unlink($file->filename);
   }
   rmdir($path);
@@ -180,10 +176,10 @@ function simpletest_requirements($phase) {
       'title' => $t('SimpleTest code addition'),
       'value' => t('Not-found'),
       'severity' => REQUIREMENT_ERROR,
-      'description' => $t('SimpleTest could not be installed. Must add code to the %settings file please see
+      'description' => $t('SimpleTest could not be installed. Must apply core patch, please see
                            <a href="@install">INSTALL.txt</a>.',
                            array('%settings' => realpath(conf_path() . '/settings.php'),
-                                 '@install' => url(drupal_get_path('module', 'simpletest') . '/INSTALL.txt')))
+                                 '@install' => drupal_get_path('module', 'simpletest') . '/INSTALL.txt')),
     );
   }
 

@@ -42,9 +42,9 @@ files[] = tests/block.test
 ; files[] = tests/unicode.test
 ; files[] = tests/xmlrpc.test
 
-; Information added by drupal.org packaging script on 2009-09-06
-version = "6.x-2.x-dev"
+; Information added by drupal.org packaging script on 2009-09-14
+version = "6.x-2.9"
 core = "6.x"
 project = "simpletest"
-datestamp = "1252196553"
+datestamp = "1252971974"
 
