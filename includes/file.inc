@@ -1,5 +1,5 @@
 <?php
-// $Id: file.inc,v 1.121.2.7 2009/06/09 10:37:38 goba Exp $
+// $Id: file.inc,v 1.121.2.9 2009/09/16 19:34:14 goba Exp $
 
 /**
  * @file
@@ -529,13 +529,6 @@ function file_save_upload($source, $validators = array(), $dest = FALSE, $replac
     $file->filepath = $_FILES['files']['tmp_name'][$source];
     $file->filemime = file_get_mimetype($file->filename);
 
-    // Rename potentially executable files, to help prevent exploits.
-    if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
-      $file->filemime = 'text/plain';
-      $file->filepath .= '.txt';
-      $file->filename .= '.txt';
-    }
-
     // If the destination is not provided, or is not writable, then use the
     // temporary directory.
     if (empty($dest) || file_check_path($dest) === FALSE) {
@@ -550,8 +543,22 @@ function file_save_upload($source, $validators = array(), $dest = FALSE, $replac
     $errors = array();
     foreach ($validators as $function => $args) {
       array_unshift($args, $file);
+      // Make sure $file is passed around by reference.
+      $args[0] = &$file;
       $errors = array_merge($errors, call_user_func_array($function, $args));
     }
+
+    // Rename potentially executable files, to help prevent exploits.
+    if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {      
+      $file->filemime = 'text/plain';
+      $file->filepath .= '.txt';
+      $file->filename .= '.txt';
+      // As the file may be named example.php.txt, we need to munge again to
+      // convert to example.php_.txt, then create the correct destination.
+      $file->filename = file_munge_filename($file->filename, $extensions);
+      $file->destination = file_destination(file_create_path($dest .'/'. $file->filename), $replace);
+    }
+
 
     // Check for validation errors.
     if (!empty($errors)) {

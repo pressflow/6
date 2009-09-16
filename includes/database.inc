@@ -1,5 +1,5 @@
 <?php
-// $Id: database.inc,v 1.92.2.5 2009/06/09 10:42:02 goba Exp $
+// $Id: database.inc,v 1.92.2.8 2009/09/14 10:49:34 goba Exp $
 
 /**
  * @file
@@ -32,11 +32,11 @@ define('DB_ERROR', 'a515ac9c2796ca0e23adbe92c68fc9fc');
  * For example, one might wish to return a list of the most recent 10 nodes
  * authored by a given user. Instead of directly issuing the SQL query
  * @code
- *   SELECT n.title, n.body, n.created FROM node n WHERE n.uid = $uid LIMIT 0, 10;
+ *   SELECT n.nid, n.title, n.created FROM node n WHERE n.uid = $uid LIMIT 0, 10;
  * @endcode
  * one would instead call the Drupal functions:
  * @code
- *   $result = db_query_range('SELECT n.title, n.body, n.created
+ *   $result = db_query_range('SELECT n.nid, n.title, n.created
  *     FROM {node} n WHERE n.uid = %d', $uid, 0, 10);
  *   while ($node = db_fetch_object($result)) {
  *     // Perform operations on $node->body, etc. here.
@@ -208,7 +208,19 @@ function _db_query_callback($match, $init = FALSE) {
 
   switch ($match[1]) {
     case '%d': // We must use type casting to int to convert FALSE/NULL/(TRUE?)
-      return (int) array_shift($args); // We don't need db_escape_string as numbers are db-safe
+      $value = array_shift($args);
+      // Do we need special bigint handling?
+      if ($value > PHP_INT_MAX) {
+        $precision = ini_get('precision');
+        @ini_set('precision', 16);
+        $value = sprintf('%.0f', $value);
+        @ini_set('precision', $precision);
+      }
+      else {
+        $value = (int) $value;
+      }
+      // We don't need db_escape_string as numbers are db-safe.
+      return $value;
     case '%s':
       return db_escape_string(array_shift($args));
     case '%n':
@@ -445,7 +457,7 @@ function db_escape_table($string) {
  *       specify '0' as the default value for a type 'int' field it
  *       will not work because '0' is a string containing the
  *       character "zero", not an integer.
- *     - 'length': The maximal length of a type 'varchar' or 'text'
+ *     - 'length': The maximal length of a type 'char', 'varchar' or 'text'
  *       field.  Ignored for other field types.
  *     - 'unsigned': A boolean indicating whether a type 'int', 'float'
  *       and 'numeric' only is signed or unsigned.  Defaults to

@@ -1,5 +1,5 @@
 <?php
-// $Id: user.module,v 1.892.2.14 2009/07/01 20:51:56 goba Exp $
+// $Id: user.module,v 1.892.2.18 2009/09/16 17:54:19 goba Exp $
 
 /**
  * @file
@@ -487,7 +487,7 @@ function user_access($string, $account = NULL, $reset = FALSE) {
     $perm = array();
   }
 
-  if (is_null($account)) {
+  if (!isset($account)) {
     $account = $user;
   }
 
@@ -618,7 +618,7 @@ function user_user($type, &$edit, &$account, $category = NULL) {
       '#weight' => 5,
       '#title' => t('History'),
     );
-    $account->content['summary']['member_for'] =  array(
+    $account->content['summary']['member_for'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('Member for'),
       '#value' => format_interval(time() - $account->created),
@@ -1605,7 +1605,7 @@ function user_delete($edit, $uid) {
   db_query('DELETE FROM {authmap} WHERE uid = %d', $uid);
   $variables = array('%name' => $account->name, '%email' => '<'. $account->mail .'>');
   watchdog('user', 'Deleted user: %name %email.', $variables, WATCHDOG_NOTICE);
-  module_invoke_all('user', 'delete', $edit, $account);
+  user_module_invoke('delete', $edit, $account);
 }
 
 /**
@@ -1929,8 +1929,12 @@ function user_help($path, $arg) {
 function _user_categories($account) {
   $categories = array();
 
+  // Only variables can be passed by reference workaround.
+  $null = NULL;
   foreach (module_list() as $module) {
-    if ($data = module_invoke($module, 'user', 'categories', NULL, $account, '')) {
+    $function = $module .'_user';
+    // $null and $account need to be passed by reference.
+    if (function_exists($function) && ($data = $function('categories', $null, $account, ''))) {
       $categories = array_merge($data, $categories);
     }
   }
@@ -2401,7 +2405,11 @@ function user_register() {
 
   // Display the registration form.
   if (!$admin) {
-    $form['user_registration_help'] = array('#value' => filter_xss_admin(variable_get('user_registration_help', '')));
+    $form['user_registration_help'] = array(
+      '#value' => filter_xss_admin(variable_get('user_registration_help', '')),
+      // Ensure that user registration help appears above profile fields.
+      '#weight' => -20,
+    );
   }
 
   // Merge in the default user edit fields.
@@ -2468,7 +2476,9 @@ function user_register_validate($form, &$form_state) {
 function _user_forms(&$edit, $account, $category, $hook = 'form') {
   $groups = array();
   foreach (module_list() as $module) {
-    if ($data = module_invoke($module, 'user', $hook, $edit, $account, $category)) {
+    $function = $module .'_user';
+    // $edit and $account need to be passed by reference.
+    if (function_exists($function) && ($data = $function($hook, $edit, $account, $category))) {
       $groups = array_merge_recursive($data, $groups);
     }
   }

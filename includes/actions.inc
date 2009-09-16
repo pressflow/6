@@ -1,5 +1,5 @@
 <?php
-// $Id: actions.inc,v 1.8.2.7 2009/02/16 14:34:30 goba Exp $
+// $Id: actions.inc,v 1.8.2.9 2009/08/10 10:39:49 goba Exp $
 
 /**
  * @file
@@ -112,6 +112,7 @@ function actions_do($action_ids, &$object, $context = NULL, $a1 = NULL, $a2 = NU
 /**
  * Discover all action functions by invoking hook_action_info().
  *
+ * @code
  * mymodule_action_info() {
  *   return array(
  *     'mymodule_functiondescription_action' => array(
@@ -125,6 +126,7 @@ function actions_do($action_ids, &$object, $context = NULL, $a1 = NULL, $a2 = NU
  *     )
  *   );
  * }
+ * @endcode
  *
  * The description is used in presenting possible actions to the user for
  * configuration. The type is used to present these actions in a logical
@@ -312,6 +314,9 @@ function actions_synchronize($actions_in_code = array(), $delete_orphans = FALSE
  *
  * @param $function
  *   The name of the function to be called when this action is performed.
+ * @param $type
+ *   The type of action, to describe grouping and/or context, e.g., 'node',
+ *   'user', 'comment', or 'system'.
  * @param $params
  *   An associative array with parameter names as keys and parameter values
  *   as values.

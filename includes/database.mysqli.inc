@@ -1,5 +1,5 @@
 <?php
-// $Id: database.mysqli.inc,v 1.54 2008/01/23 09:59:29 goba Exp $
+// $Id: database.mysqli.inc,v 1.54.2.1 2009/07/21 08:52:30 goba Exp $
 
 /**
  * @file
@@ -364,8 +364,16 @@ function db_column_exists($table, $column) {
  */
 function db_distinct_field($table, $field, $query) {
   $field_to_select = 'DISTINCT('. $table .'.'. $field .')';
-  // (?<!text) is a negative look-behind (no need to rewrite queries that already use DISTINCT).
-  return preg_replace('/(SELECT.*)(?:'. $table .'\.|\s)(?<!DISTINCT\()(?<!DISTINCT\('. $table .'\.)'. $field .'(.*FROM )/AUsi', '\1 '. $field_to_select .'\2', $query);
+  $matches = array();
+  if (preg_match('/^SELECT(.*?)FROM(.*)/is', $query, $matches)) {
+    $select = preg_replace(
+      '/((?:^|,)\s*)(?<!DISTINCT\()(?:'. $table .'\.)?'. $field .'(\s*(?:,|$))/is',
+      '\1'. $field_to_select .'\2', $matches[1], 1
+    );
+    
+    return 'SELECT'. $select .'FROM'.$matches[2];
+  }
+  return $query;
 }
 
 /**

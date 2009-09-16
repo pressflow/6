@@ -1,4 +1,4 @@
-// $Id: drupal.js,v 1.41.2.3 2008/06/25 09:06:57 goba Exp $
+// $Id: drupal.js,v 1.41.2.4 2009/07/21 08:59:10 goba Exp $
 
 var Drupal = Drupal || { 'settings': {}, 'behaviors': {}, 'themes': {}, 'locale': {} };
 
@@ -218,8 +218,9 @@ Drupal.unfreezeHeight = function () {
 };
 
 /**
- * Wrapper to address the mod_rewrite url encoding bug
- * (equivalent of drupal_urlencode() in PHP).
+ * Wrapper around encodeURIComponent() which avoids Apache quirks (equivalent of
+ * drupal_urlencode() in PHP). This function should only be used on paths, not
+ * on query string arguments.
  */
 Drupal.encodeURIComponent = function (item, uri) {
   uri = uri || location.href;

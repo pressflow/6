@@ -1,4 +1,4 @@
-// $Id: system.js,v 1.14.2.1 2008/02/07 18:23:30 goba Exp $
+// $Id: system.js,v 1.14.2.2 2009/07/21 08:59:12 goba Exp $
 
 /**
  * Internal function to check using Ajax if clean URLs can be enabled on the
@@ -102,7 +102,7 @@ Drupal.behaviors.dateTime = function(context) {
   // Attach keyup handler to custom format inputs.
   $('input.custom-format:not(.date-time-processed)', context).addClass('date-time-processed').keyup(function() {
     var input = $(this);
-    var url = Drupal.settings.dateTime.lookup +(Drupal.settings.dateTime.lookup.match(/\?q=/) ? "&format=" : "?format=") + Drupal.encodeURIComponent(input.val());
+    var url = Drupal.settings.dateTime.lookup +(Drupal.settings.dateTime.lookup.match(/\?q=/) ? "&format=" : "?format=") + encodeURIComponent(input.val());
     $.getJSON(url, function(data) {
       $("div.description span", input.parent()).html(data);
     });
