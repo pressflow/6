@@ -1,5 +1,5 @@
 <?php
-// $Id: taxonomy.module,v 1.414.2.11 2009/05/13 19:38:33 goba Exp $
+// $Id: taxonomy.module,v 1.414.2.12 2009/09/15 11:13:08 goba Exp $
 
 /**
  * @file
@@ -253,7 +253,7 @@ function taxonomy_del_vocabulary($vid) {
 }
 
 /**
- * Dynamicly check and update the hierarachy flag of a vocabulary.
+ * Dynamically check and update the hierarachy flag of a vocabulary.
  *
  * Checks the current parents of all terms in a vocabulary and updates the
  * vocabularies hierarchy setting to the lowest possible level. A hierarchy with

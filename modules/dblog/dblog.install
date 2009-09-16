@@ -1,5 +1,5 @@
 <?php
-// $Id: dblog.install,v 1.6.2.1 2009/01/06 15:46:36 goba Exp $
+// $Id: dblog.install,v 1.6.2.3 2009/09/14 08:19:24 goba Exp $
 
 /**
  * Implementation of hook_install().
@@ -75,10 +75,8 @@ function dblog_schema() {
         'description' => 'URL of the origin of the event.',
       ),
       'referer' => array(
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => TRUE,
-        'default' => '',
+        'type' => 'text',
+        'not null' => FALSE,
         'description' => 'URL of referring page.',
       ),
       'hostname' => array(
@@ -102,3 +100,21 @@ function dblog_schema() {
   return $schema;
 }
 
+/**
+ * @defgroup updates-6.x-extra Extra database logging updates for 6.x
+ * @{
+ */
+
+/**
+ * Allow longer referrers.
+ */
+function dblog_update_6000() {
+  $ret = array();
+  db_change_field($ret, 'watchdog', 'referer', 'referer', array('type' => 'text', 'not null' => FALSE));
+  return $ret;
+}
+
+/**
+ * @} End of "defgroup updates-6.x-extra"
+ * The next series of updates should start at 7000.
+ */

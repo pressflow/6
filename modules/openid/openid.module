@@ -1,5 +1,5 @@
 <?php
-// $Id: openid.module,v 1.19.2.6 2009/06/10 14:05:23 goba Exp $
+// $Id: openid.module,v 1.19.2.8 2009/09/16 19:34:14 goba Exp $
 
 /**
  * @file
@@ -113,7 +113,7 @@ function openid_form_alter(&$form, $form_state, $form_id) {
     );
     $form['openid.return_to'] = array('#type' => 'hidden', '#value' => url('openid/authenticate', array('absolute' => TRUE, 'query' => drupal_get_destination())));
   }
-  elseif ($form_id == 'user_register' && isset($_SESSION['openid'])) {
+  elseif ($form_id == 'user_register' && isset($_SESSION['openid']['values'])) {
     // We were unable to auto-register a new user. Prefill the registration
     // form with the values we have.
     $form['name']['#default_value'] = $_SESSION['openid']['values']['name'];
@@ -192,8 +192,8 @@ function openid_begin($claimed_id, $return_to = '', $form_values = array()) {
   }
 
   if (isset($services[0]['types']) && is_array($services[0]['types']) && in_array(OPENID_NS_2_0 .'/server', $services[0]['types'])) {
-    $identity = 'http://specs.openid.net/auth/2.0/identifier_select';
-  }  
+    $claimed_id = $identity = 'http://specs.openid.net/auth/2.0/identifier_select';
+  }
   $authn_request = openid_authentication_request($claimed_id, $identity, $return_to, $assoc_handle, $services[0]['version']);
 
   if ($services[0]['version'] == 2) {

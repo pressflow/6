@@ -1,5 +1,5 @@
 <?php
-// $Id: update.fetch.inc,v 1.7.2.6 2009/06/09 11:08:32 goba Exp $
+// $Id: update.fetch.inc,v 1.7.2.7 2009/07/21 08:59:12 goba Exp $
 
 /**
  * @file
@@ -114,10 +114,10 @@ function _update_build_fetch_url($project, $site_key = '') {
   if (!empty($site_key) && (strpos($project['project_type'], 'disabled') === FALSE)) {
     $url .= (strpos($url, '?') === TRUE) ? '&' : '?';
     $url .= 'site_key=';
-    $url .= drupal_urlencode($site_key);
+    $url .= rawurlencode($site_key);
     if (!empty($project['info']['version'])) {
       $url .= '&version=';
-      $url .= drupal_urlencode($project['info']['version']);
+      $url .= rawurlencode($project['info']['version']);
     }
   }
   return $url;

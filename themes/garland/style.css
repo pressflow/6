@@ -1,4 +1,4 @@
-/* $Id: style.css,v 1.38.2.2 2009/04/27 14:20:53 goba Exp $ */
+/* $Id: style.css,v 1.38.2.4 2009/09/14 13:10:47 goba Exp $ */
 
 /**
  * Garland, for Drupal 6.x
@@ -377,7 +377,7 @@ table .form-button, table .form-submit {
 }
 
 #wrapper #container #header h1 img {
-  padding-top: 16px;
+  padding-top: 14px;
   padding-right: 20px; /* LTR */
   float: left; /* LTR */
 }
@@ -643,6 +643,7 @@ ul.secondary li a, ul.secondary li.active a, ul.secondary li a:hover, ul.seconda
   text-decoration: none;
   position: relative;
   top: -1px;
+  display: inline-block;
 }
 ul.primary li.active a, ul.primary li.active a:link, ul.primary li.active a:visited, ul.primary li a:hover,
 ul.secondary li.active a, ul.secondary li.active a:link, ul.secondary li.active a:visited, ul.secondary li a:hover {

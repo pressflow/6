@@ -1,5 +1,5 @@
 <?php
-// $Id: system.install,v 1.238.2.15 2009/07/01 20:51:56 goba Exp $
+// $Id: system.install,v 1.238.2.18 2009/09/14 13:59:58 goba Exp $
 
 /**
  * Test and report Drupal installation requirements.
@@ -790,7 +790,8 @@ function system_schema() {
       ),
     'indexes' => array(
       'fit' => array('fit'),
-      'tab_parent' => array('tab_parent')
+      'tab_parent' => array('tab_parent'),
+      'tab_root_weight_title' => array(array('tab_root', 64), 'weight', 'title'),      
       ),
     'primary key' => array('path'),
     );
@@ -1063,6 +1064,7 @@ function system_schema() {
       array(
         'modules' => array(array('type', 12), 'status', 'weight', 'filename'),
         'bootstrap' => array(array('type', 12), 'status', 'bootstrap', 'weight', 'filename'),
+        'type_name' => array(array('type', 12), 'name'),
       ),
     );
 
@@ -2037,7 +2039,7 @@ function system_update_6027() {
     if ($module_blocks = module_invoke($module, 'block', 'list')) {
       foreach ($module_blocks as $delta => $block) {
         if (isset($block['cache'])) {
-          db_query("UPDATE {blocks} SET cache = %d WHERE module = '%s' AND delta = %d", $block['cache'], $module, $delta);
+          db_query("UPDATE {blocks} SET cache = %d WHERE module = '%s' AND delta = '%s'", $block['cache'], $module, $delta);
         }
       }
     }
@@ -2594,6 +2596,24 @@ function system_update_6051() {
     drupal_set_message("User signatures no longer inherit comment input formats. Each user's signature now has its own associated format that can be selected on the user's account page. Existing signatures have been set to your site's default input format.");
   }
 
+  return $ret;
+}
+
+/**
+ * Add a missing index on the {menu_router} table.
+ */
+function system_update_6052() {
+  $ret = array();
+  db_add_index($ret, 'menu_router', 'tab_root_weight_title', array(array('tab_root', 64), 'weight', 'title'));
+  return $ret;
+}
+
+/**
+ * Add a {system} index on type and name.
+ */
+function system_update_6053() {
+  $ret = array();
+  db_add_index($ret, 'system', 'type_name', array(array('type', 12), 'name'));
   return $ret;
 }
 

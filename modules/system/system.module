@@ -1,5 +1,5 @@
 <?php
-// $Id: system.module,v 1.585.2.38 2009/07/01 20:51:56 goba Exp $
+// $Id: system.module,v 1.585.2.44 2009/09/16 19:34:14 goba Exp $
 
 /**
  * @file
@@ -9,7 +9,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '6.13');
+define('VERSION', '6.14');
 
 /**
  * Core API compatibility.
@@ -81,6 +81,7 @@ function system_help($path, $arg) {
       $output .= '<p>'. t('It is important that <a href="@update-php">update.php</a> is run every time a module is updated to a newer version.', array('@update-php' => $base_url .'/update.php')) .'</p>';
       $output .= '<p>'. t('You can find all administration tasks belonging to a particular module on the <a href="@by-module">administration by module page</a>.', array('@by-module' => url('admin/by-module'))) .'</p>';
       $output .= '<p>'. t('To extend the functionality of your site, a number of <a href="@modules">contributed modules</a> are available.', array('@modules' => 'http://drupal.org/project/modules')) .'</p>';
+      $output .= '<p>'. t('To clear all caches, click the button on the <a href="@performance">Performance page</a>.', array('@performance' => url('admin/settings/performance', array('fragment' => 'edit-clear')))) .'</p>';
       return $output;
     case 'admin/build/modules/uninstall':
       return '<p>'. t('The uninstall process removes all data related to a module. To uninstall a module, you must first disable it. Not all modules support this feature.') .'</p>';
@@ -893,9 +894,14 @@ function _system_theme_data() {
     // Now that we've established all our master themes, go back and fill in
     // data for subthemes.
     foreach ($sub_themes as $key) {
-      $base_key = system_find_base_theme($themes, $key);
-      if (!$base_key) {
+      $themes[$key]->base_themes = system_find_base_themes($themes, $key);
+      // Don't proceed if there was a problem with the root base theme.
+      if (!current($themes[$key]->base_themes)) {
         continue;
+      }
+      $base_key = key($themes[$key]->base_themes);
+      foreach (array_keys($themes[$key]->base_themes) as $base_theme) {
+        $themes[$base_theme]->sub_themes[$key] = $themes[$key]->info['name'];
       }
       // Copy the 'owner' and 'engine' over if the top level theme uses a
       // theme engine.
@@ -918,6 +924,49 @@ function _system_theme_data() {
 }
 
 /**
+ * Find all the base themes for the specified theme.
+ *
+ * Themes can inherit templates and function implementations from earlier themes.
+ *
+ * @param $themes
+ *   An array of available themes.
+ * @param $key
+ *   The name of the theme whose base we are looking for.
+ * @param $used_keys
+ *   A recursion parameter preventing endless loops.
+ * @return
+ *   Returns an array of all of the theme's ancestors; the first element's value
+ *   will be NULL if an error occurred.
+ */
+function system_find_base_themes($themes, $key, $used_keys = array()) {
+  $base_key = $themes[$key]->info['base theme'];
+  // Does the base theme exist?
+  if (!isset($themes[$base_key])) {
+    return array($base_key => NULL);
+  }
+
+  $current_base_theme = array($base_key => $themes[$base_key]->info['name']);
+
+  // Is the base theme itself a child of another theme?
+  if (isset($themes[$base_key]->info['base theme'])) {
+    // Do we already know the base themes of this theme?
+    if (isset($themes[$base_key]->base_themes)) {
+      return $themes[$base_key]->base_themes + $current_base_theme;
+    }
+    // Prevent loops.
+    if (!empty($used_keys[$base_key])) {
+      return array($base_key => NULL);
+    }
+    $used_keys[$base_key] = TRUE;
+    return system_find_base_themes($themes, $base_key, $used_keys) + $current_base_theme;
+  }
+  // If we get here, then this is our parent theme.
+  return $current_base_theme;
+}
+
+/**
+ * This function has been deprecated in favor of system_find_base_themes().
+ *
  * Recursive function to find the top level base theme. Themes can inherit
  * templates and function implementations from earlier themes.
  *
@@ -1844,7 +1893,7 @@ function system_goto_action($object, $context) {
  */
 function _system_zonelist() {
   $timestamp = time();
-  $zonelist = array(-11, -10, -9.5, -9, -8, -7, -6, -5, -4, -3.5, -3, -2, -1, 0, 1, 2, 3, 3.5, 4, 5, 5.5, 5.75, 6, 6.5, 7, 8, 9, 9.5, 10, 10.5, 11, 11.5, 12, 12.75, 13, 14);
+  $zonelist = array(-11, -10, -9.5, -9, -8, -7, -6, -5, -4.5, -4, -3.5, -3, -2.5, -2, -1, 0, 1, 2, 3, 3.5, 4, 5, 5.5, 5.75, 6, 6.5, 7, 8, 9, 9.5, 10, 10.5, 11, 11.5, 12, 12.75, 13, 14);
   $zones = array();
   foreach ($zonelist as $offset) {
     $zone = $offset * 3600;
