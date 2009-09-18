@@ -711,11 +711,9 @@ class DrupalWebTestCase extends DrupalTestCase {
   protected function drupalCreateNode($settings = array()) {
     // Populate defaults array.
     $settings += array(
-//      'body'      => array(FIELD_LANGUAGE_NONE => array(array())),
       'body'      => $this->randomName(32),
       'title'     => $this->randomName(8),
       'comment'   => 2,
-//      'changed'   => REQUEST_TIME,
       'changed'   => time(),
       'format'    => FILTER_FORMAT_DEFAULT,
       'moderate'  => 0,
