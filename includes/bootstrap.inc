@@ -1563,7 +1563,7 @@ function drupal_session_regenerate() {
   }
 
   if (isset($old_session_id)) {
-    db_query('UPDATE {sessions} SET sid = "%s" WHERE sid = "%s"', session_id(), $old_session_id);
+    db_query("UPDATE {sessions} SET sid = '%s' WHERE sid = '%s'", session_id(), $old_session_id);
   }
 }
 
