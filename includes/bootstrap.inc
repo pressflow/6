@@ -591,7 +591,7 @@ function drupal_page_is_cacheable($force = NULL) {
     && !drupal_session_started()
     && ($_SERVER['REQUEST_METHOD'] == 'GET' || $_SERVER['REQUEST_METHOD'] == 'HEAD')
     && !count(drupal_get_messages(NULL, FALSE))
-    && $_SERVER['SERVER_SOFTWARE'] !== 'PHP CLI';
+    && !drupal_is_cli();
 
   return $result;
 }
@@ -1305,7 +1305,7 @@ function _drupal_bootstrap($phase) {
       }
 
       // Prepare for non-cached page workflow.
-      if ($_SERVER['SERVER_SOFTWARE'] !== 'PHP CLI') {
+      if (!drupal_is_cli()) {
         ob_start();
         drupal_page_header();
       }
@@ -1625,4 +1625,12 @@ function drupal_generate_test_ua($prefix) {
    $salt = uniqid('', TRUE);
    $check_string = $prefix . ';' . time() . ';' . $salt;
    return  $check_string . ';' . base64_encode(hash_hmac('sha1', $check_string, $key, TRUE));
+}
+
+/**
+ * Detect whether the current script is running in a command-line environment.
+ */
+function drupal_is_cli() {
+  return ((!isset($_SERVER['SERVER_SOFTWARE']) || $_SERVER['SERVER_SOFTWARE'] == 'PHP CLI')
+    && (php_sapi_name() == 'cli' || (is_numeric($_SERVER['argc']) && $_SERVER['argc'] > 0)));
 }
