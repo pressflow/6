@@ -1305,6 +1305,8 @@ function _drupal_bootstrap($phase) {
       }
 
       // Prepare for non-cached page workflow.
+      require_once variable_get('lock_inc', './includes/lock.inc');
+      lock_init();
       if (!drupal_is_cli()) {
         ob_start();
         drupal_page_header();
