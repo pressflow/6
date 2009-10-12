@@ -30,7 +30,7 @@ if ($args['execute-batch']) {
 }
 else {
   // Run administrative functions as CLI.
-  simpletest_script_init(NULL);
+  simpletest_script_init("PHP CLI");
 }
 
 // Bootstrap to perform initial validation or other operations.
@@ -98,8 +98,16 @@ simpletest_script_command($args['concurrency'], $test_id, implode(",", $test_lis
 list($last_prefix, $last_test_class) = simpletest_last_test_get($test_id);
 simpletest_log_read($test_id, $last_prefix, $last_test_class);
 
-// Display results before database is cleared.
-simpletest_script_reporter_display_results();
+if ($args['xml']) {
+  echo $args['xml'];
+  // Save results as xml before database is cleared.
+  simpletest_script_reporter_xml_results();
+
+}
+else {
+  // Display results before database is cleared.
+  simpletest_script_reporter_display_results();
+}
 
 // Cleanup our test results.
 simpletest_clean_results_table($test_id);
@@ -149,6 +157,9 @@ All arguments are long options.
 
   --verbose   Output detailed assertion messages in addition to summary.
 
+  --xml       Output verbose test results to a specified directory using the JUnit
+              test reporting format. Useful for integrating with Hudson.
+
   <test1>[,<test2>[,<test3> ...]]
 
               One or more tests to be run. By default, these are interpreted
@@ -194,7 +205,8 @@ function simpletest_script_parse_args() {
     'test_names' => array(),
     // Used internally.
     'test-id' => NULL,
-    'execute-batch' => FALSE
+    'execute-batch' => FALSE,
+    'xml' => '',
   );
 
   // Override with set values.
@@ -274,7 +286,7 @@ function simpletest_script_init($server_software) {
   if (!empty($args['url'])) {
     $parsed_url = parse_url($args['url']);
     $host = $parsed_url['host'] . (isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '');
-    $path = $parsed_url['path'];
+    $path = isset($parsed_url['path']) ? $parsed_url['path'] : '';
   }
 
   $_SERVER['HTTP_HOST'] = $host;
@@ -482,6 +494,88 @@ function simpletest_script_reporter_init() {
   echo "\n";
 }
 
+/*
+ * Display test results.
+ */
+function simpletest_script_reporter_xml_results() {
+  global $args, $test_id, $results_map;
+
+  echo "\n";
+  $end = timer_stop('run-tests');
+  echo "XML Test run duration: " . format_interval($end['time'] / 1000);
+  echo "\n";
+
+  //if ($args['verbose']) {
+    // Report results.
+    echo "Detailed test results:\n";
+    echo "----------------------\n";
+    echo "\n";
+
+
+    $results_map = array(
+      'pass' => 'Pass',
+      'fail' => 'Fail',
+      'exception' => 'Exception',
+    );
+
+    $results = db_query("SELECT * FROM {simpletest} WHERE test_id = %d ORDER BY test_class, message_id", $test_id);
+
+    $test_class = '';
+    $xml_files = array();
+
+
+    while ($result = db_fetch_object($results)) {
+      if (isset($results_map[$result->status])) {
+        if ($result->test_class != $test_class) {
+          // Display test class every time results are for new test class.
+          if (isset($xml_files[$test_class])) {
+            file_put_contents($args['xml'] . '/' . $test_class . '.xml', $xml_files[$test_class]['doc']->saveXML());
+            unset($xml_files[$test_class]);
+          }
+          $test_class = $result->test_class;
+          if (!isset($xml_files[$test_class])) {
+            $doc = new DomDocument('1.0');
+            $root = $doc->createElement('testsuite');
+            $root = $doc->appendChild($root);
+            $xml_files[$test_class] = array('doc' => $doc, 'suite' => $root);
+          }
+        }
+        // Save the result into the XML:
+        $case = $xml_files[$test_class]['doc']->createElement('testcase');
+        $case->setAttribute('classname', $test_class);
+        list($class, $name) = explode('->', $result->function, 2);
+        $case->setAttribute('name', $name);
+
+        if ($result->status == 'fail') {
+          $fail = $xml_files[$test_class]['doc']->createElement('failure');
+          $fail->setAttribute('type', 'failure');
+          $fail->setAttribute('message', $result->message_group);
+          $text = $xml_files[$test_class]['doc']->createTextNode($result->message);
+          $fail->appendChild($text);
+          $case->appendChild($fail);
+        }
+
+
+
+
+        $xml_files[$test_class]['suite']->appendChild($case);
+
+        //simpletest_script_format_result($result);
+      }
+    }
+
+    // Save the last one:
+    if (isset($xml_files[$test_class])) {
+      file_put_contents($args['xml'] . '/' . $test_class . '.xml', $xml_files[$test_class]['doc']->saveXML());
+      unset($xml_files[$test_class]);
+    }
+
+
+
+
+  //}
+}
+ 
 /**
  * Display test results.
  */
@@ -588,3 +682,4 @@ function simpletest_script_color_code($status) {
   }
   return 0; // Default formatting.
 }
+
