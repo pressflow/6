@@ -505,75 +505,64 @@ function simpletest_script_reporter_xml_results() {
   echo "XML Test run duration: " . format_interval($end['time'] / 1000);
   echo "\n";
 
-  //if ($args['verbose']) {
-    // Report results.
-    echo "Detailed test results:\n";
-    echo "----------------------\n";
-    echo "\n";
+  // Report results.
+  echo "Detailed test results:\n";
+  echo "----------------------\n";
+  echo "\n";
 
 
-    $results_map = array(
-      'pass' => 'Pass',
-      'fail' => 'Fail',
-      'exception' => 'Exception',
-    );
+  $results_map = array(
+    'pass' => 'Pass',
+    'fail' => 'Fail',
+    'exception' => 'Exception',
+  );
 
-    $results = db_query("SELECT * FROM {simpletest} WHERE test_id = %d ORDER BY test_class, message_id", $test_id);
+  $results = db_query("SELECT * FROM {simpletest} WHERE test_id = %d ORDER BY test_class, message_id", $test_id);
 
-    $test_class = '';
-    $xml_files = array();
+  $test_class = '';
+  $xml_files = array();
 
 
-    while ($result = db_fetch_object($results)) {
-      if (isset($results_map[$result->status])) {
-        if ($result->test_class != $test_class) {
-          // Display test class every time results are for new test class.
-          if (isset($xml_files[$test_class])) {
-            file_put_contents($args['xml'] . '/' . $test_class . '.xml', $xml_files[$test_class]['doc']->saveXML());
-            unset($xml_files[$test_class]);
-          }
-          $test_class = $result->test_class;
-          if (!isset($xml_files[$test_class])) {
-            $doc = new DomDocument('1.0');
-            $root = $doc->createElement('testsuite');
-            $root = $doc->appendChild($root);
-            $xml_files[$test_class] = array('doc' => $doc, 'suite' => $root);
-          }
+  while ($result = db_fetch_object($results)) {
+    if (isset($results_map[$result->status])) {
+      if ($result->test_class != $test_class) {
+        // Display test class every time results are for new test class.
+        if (isset($xml_files[$test_class])) {
+          file_put_contents($args['xml'] . '/' . $test_class . '.xml', $xml_files[$test_class]['doc']->saveXML());
+          unset($xml_files[$test_class]);
         }
-        // Save the result into the XML:
-        $case = $xml_files[$test_class]['doc']->createElement('testcase');
-        $case->setAttribute('classname', $test_class);
-        list($class, $name) = explode('->', $result->function, 2);
-        $case->setAttribute('name', $name);
-
-        if ($result->status == 'fail') {
-          $fail = $xml_files[$test_class]['doc']->createElement('failure');
-          $fail->setAttribute('type', 'failure');
-          $fail->setAttribute('message', $result->message_group);
-          $text = $xml_files[$test_class]['doc']->createTextNode($result->message);
-          $fail->appendChild($text);
-          $case->appendChild($fail);
+        $test_class = $result->test_class;
+        if (!isset($xml_files[$test_class])) {
+          $doc = new DomDocument('1.0');
+          $root = $doc->createElement('testsuite');
+          $root = $doc->appendChild($root);
+          $xml_files[$test_class] = array('doc' => $doc, 'suite' => $root);
         }
-
-
-
-
-        $xml_files[$test_class]['suite']->appendChild($case);
-
-        //simpletest_script_format_result($result);
       }
+      // Save the result into the XML:
+      $case = $xml_files[$test_class]['doc']->createElement('testcase');
+      $case->setAttribute('classname', $test_class);
+      list($class, $name) = explode('->', $result->function, 2);
+      $case->setAttribute('name', $name);
+
+      if ($result->status == 'fail') {
+        $fail = $xml_files[$test_class]['doc']->createElement('failure');
+        $fail->setAttribute('type', 'failure');
+        $fail->setAttribute('message', $result->message_group);
+        $text = $xml_files[$test_class]['doc']->createTextNode($result->message);
+        $fail->appendChild($text);
+        $case->appendChild($fail);
+      }
+
+      $xml_files[$test_class]['suite']->appendChild($case);
     }
+  }
 
-    // Save the last one:
-    if (isset($xml_files[$test_class])) {
-      file_put_contents($args['xml'] . '/' . $test_class . '.xml', $xml_files[$test_class]['doc']->saveXML());
-      unset($xml_files[$test_class]);
-    }
-
-
-
-
-  //}
+  // Save the last one:
+  if (isset($xml_files[$test_class])) {
+    file_put_contents($args['xml'] . '/' . $test_class . '.xml', $xml_files[$test_class]['doc']->saveXML());
+    unset($xml_files[$test_class]);
+  }
 }
  
 /**
@@ -682,4 +671,3 @@ function simpletest_script_color_code($status) {
   }
   return 0; // Default formatting.
 }
-
