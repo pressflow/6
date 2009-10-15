@@ -510,7 +510,6 @@ function simpletest_script_reporter_xml_results() {
   echo "----------------------\n";
   echo "\n";
 
-
   $results_map = array(
     'pass' => 'Pass',
     'fail' => 'Fail',
@@ -521,7 +520,6 @@ function simpletest_script_reporter_xml_results() {
 
   $test_class = '';
   $xml_files = array();
-
 
   while ($result = db_fetch_object($results)) {
     if (isset($results_map[$result->status])) {
