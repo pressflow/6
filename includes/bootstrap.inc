@@ -1453,6 +1453,9 @@ function ip_address() {
       // Tack direct client IP onto end of forwarded array.
       $forwarded[] = $ip_address;
       
+      // Trim the forwarded IPs.
+      $forwarded = array_map('trim', $forwarded);
+
       // Eliminate all trusted IPs.
       $untrusted = array_diff($forwarded, $reverse_proxy_addresses);
       
