@@ -135,7 +135,7 @@ function db_set_active($name = 'default') {
     if (is_array($db_url)) {
       $connect_url = array_key_exists($name, $db_url) ? $db_url[$name] : $db_url['default'];
       if (is_array($db_slave_url[$name])) {
-        $slave_index = mt_rand(0, count($db_slave_url[$name]));
+        $slave_index = mt_rand(0, count($db_slave_url[$name]) - 1);
         $slave_connect_url = $db_slave_url[$name][$slave_index];
       }
       else {
