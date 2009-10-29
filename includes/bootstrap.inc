@@ -1461,6 +1461,7 @@ function ip_address() {
       
       // The right-most IP is the most specific we can trust.
       $ip_address = array_pop($untrusted);
+    }
   }
 
   return $ip_address;
