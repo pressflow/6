@@ -1,5 +1,5 @@
 <?php
-// $Id: common.inc,v 1.756.2.69 2009/09/16 19:34:14 goba Exp $
+// $Id: common.inc,v 1.756.2.74 2009/12/16 20:47:10 goba Exp $
 
 /**
  * @file
@@ -617,7 +617,7 @@ function drupal_error_handler($errno, $message, $filename, $line, $context) {
     return;
   }
 
-  if ($errno & (E_ALL ^ E_NOTICE ^ E_DEPRECATED)) {
+  if ($errno & (E_ALL ^ E_DEPRECATED ^ E_NOTICE)) {
     $types = array(1 => 'error', 2 => 'warning', 4 => 'parse error', 8 => 'notice', 16 => 'core error', 32 => 'core warning', 64 => 'compile error', 128 => 'compile warning', 256 => 'user error', 512 => 'user warning', 1024 => 'user notice', 2048 => 'strict warning', 4096 => 'recoverable fatal error');
 
     // For database errors, we want the line number/file name of the place that
@@ -1110,7 +1110,7 @@ function format_xml_elements($array) {
           $output .= drupal_attributes($value['attributes']);
         }
 
-        if ($value['value'] != '') {
+        if (isset($value['value']) && $value['value'] != '') {
           $output .= '>'. (is_array($value['value']) ? format_xml_elements($value['value']) : check_plain($value['value'])) .'</'. $value['key'] .">\n";
         }
         else {
@@ -2009,8 +2009,7 @@ function drupal_load_stylesheet($file, $optimize = NULL) {
       // Perform some safe CSS optimizations.
       $contents = preg_replace('<
         \s*([@{}:;,]|\)\s|\s\()\s* |  # Remove whitespace around separators, but keep space around parentheses.
-        /\*([^*\\\\]|\*(?!/))+\*/ |   # Remove comments that are not CSS hacks.
-        [\n\r]                        # Remove line breaks.
+        /\*([^*\\\\]|\*(?!/))+\*/     # Remove comments that are not CSS hacks.
         >x', '\1', $contents);
     }
 
@@ -2662,7 +2661,7 @@ function page_set_cache() {
 function drupal_cron_run() {
   // Try to allocate enough time to run all the hook_cron implementations.
   if (function_exists('set_time_limit')) {
-    @set_time_limit($time_limit);
+    @set_time_limit(240);
   }
 
   // Fetch the cron semaphore

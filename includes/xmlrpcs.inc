@@ -1,5 +1,5 @@
 <?php
-// $Id: xmlrpcs.inc,v 1.24.2.1 2008/04/28 10:04:52 dries Exp $
+// $Id: xmlrpcs.inc,v 1.24.2.3 2009/12/07 11:36:28 goba Exp $
 
 /**
  * The main entry point for XML-RPC requests.
@@ -64,10 +64,13 @@ function xmlrpc_server($callbacks) {
   if ($xmlrpc_server->message->messagetype != 'methodCall') {
     xmlrpc_server_error(-32600, t('Server error. Invalid XML-RPC. Request must be a methodCall.'));
   }
+  if (!isset($xmlrpc_server->message->params)) {
+    $xmlrpc_server->message->params = array();
+  }
   xmlrpc_server_set($xmlrpc_server);
   $result = xmlrpc_server_call($xmlrpc_server, $xmlrpc_server->message->methodname, $xmlrpc_server->message->params);
 
-  if ($result->is_error) {
+  if (is_object($result) && !empty($result->is_error)) {
     xmlrpc_server_error($result);
   }
   // Encode the result

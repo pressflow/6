@@ -5,8 +5,8 @@ version = VERSION
 package = Core - optional
 core = 6.x
 
-; Information added by drupal.org packaging script on 2009-09-16
-version = "6.14"
+; Information added by drupal.org packaging script on 2009-12-16
+version = "6.15"
 project = "drupal"
-datestamp = "1253130027"
+datestamp = "1260996916"
 

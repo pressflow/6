@@ -1,5 +1,5 @@
 <?php
-// $Id: system.module,v 1.585.2.44 2009/09/16 19:34:14 goba Exp $
+// $Id: system.module,v 1.585.2.47 2009/12/16 20:47:10 goba Exp $
 
 /**
  * @file
@@ -9,7 +9,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '6.14');
+define('VERSION', '6.15');
 
 /**
  * Core API compatibility.
@@ -643,7 +643,7 @@ function system_admin_menu_block($item) {
     }
     // Prepare for sorting as in function _menu_tree_check_access().
     // The weight is offset so it is always positive, with a uniform 5-digits.
-    $content[(50000 + $item['weight']) .' '. $item['title'] .' '. $item['mlid']] = $item;
+    $content[(50000 + $item['weight']) .' '. drupal_strtolower($item['title']) .' '. $item['mlid']] = $item;
   }
   ksort($content);
   return $content;
