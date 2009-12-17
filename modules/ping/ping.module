@@ -1,5 +1,5 @@
 <?php
-// $Id: ping.module,v 1.52 2007/12/19 17:45:42 goba Exp $
+// $Id: ping.module,v 1.52.2.1 2009/11/06 07:46:22 goba Exp $
 
 /**
  * @file
@@ -28,7 +28,9 @@ function ping_cron() {
   global $base_url;
 
   if (variable_get('site_name', 0)) {
-    if (db_result(db_query("SELECT COUNT(*) FROM {node} WHERE status = 1 AND (created > '". variable_get('cron_last', time()) ."' OR changed > '". variable_get('cron_last', time()) ."')"))) {
+    $cron_last = variable_get('cron_last', time());
+    // Query changed first since usually changed >= created.
+    if (db_result(db_query('SELECT COUNT(*) FROM {node} WHERE status = 1 AND changed > %d', $cron_last)) || db_result(db_query('SELECT COUNT(*) FROM {node} WHERE status = 1 AND created > %d', $cron_last))) {
       _ping_notify(variable_get('site_name', ''), $base_url);
     }
   }

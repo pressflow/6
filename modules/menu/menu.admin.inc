@@ -1,9 +1,9 @@
 <?php
-// $Id: menu.admin.inc,v 1.26.2.4 2009/02/25 13:15:40 goba Exp $
+// $Id: menu.admin.inc,v 1.26.2.6 2009/12/16 20:47:10 goba Exp $
 
 /**
  * @file
- * Administrative page callbaks for menu module.
+ * Administrative page callbacks for menu module.
  */
 
 /**
@@ -15,6 +15,7 @@ function menu_overview_page() {
   while ($menu = db_fetch_array($result)) {
     $menu['href'] = 'admin/build/menu-customize/'. $menu['menu_name'];
     $menu['localized_options'] = array();
+    $menu['description'] = filter_xss_admin($menu['description']);
     $content[] = $menu;
   }
   return theme('admin_block_content', $content);

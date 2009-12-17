@@ -1,5 +1,5 @@
 <?php
-// $Id: system.install,v 1.238.2.18 2009/09/14 13:59:58 goba Exp $
+// $Id: system.install,v 1.238.2.19 2009/11/06 08:39:46 goba Exp $
 
 /**
  * Test and report Drupal installation requirements.
@@ -357,6 +357,11 @@ function system_install() {
   foreach ($modules as $module) {
     drupal_install_schema($module);
   }
+
+  // Clear out module list and hook implementation statics before calling
+  // system_theme_data().
+  module_list(TRUE, FALSE);
+  module_implements('', FALSE, TRUE);
 
   // Load system theme data appropriately.
   system_theme_data();
