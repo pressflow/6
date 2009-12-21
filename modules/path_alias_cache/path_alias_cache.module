@@ -120,7 +120,7 @@ function path_alias_cache_exit() {
 function path_alias_cache_cache_system_paths() {
   // Check if the system paths for this page were loaded from cache in this
   // request to avoid writing to cache on every request.
-  $cache = &path_alias_cache_static('drupal_lookup_path', array());
+  $cache = &path_alias_cache_static('path_alias_cache_lookup_path', array());
   if (!$cache['system_paths']) {
     // Generate a cache ID (cid) specifically for this page.
     $cid = $_GET['q'];
