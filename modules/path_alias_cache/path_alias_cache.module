@@ -106,7 +106,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
  * We use this to cache the paths on a page, for later requests.
  */
 function path_alias_cache_exit() {
-    path_alias_cache_cache_system_paths();
+  path_alias_cache_cache_system_paths();
 }
 
 /**
@@ -196,5 +196,3 @@ function path_alias_cache_path_alias_whitelist_rebuild() {
   return $whitelist;
 }
 
-
-?>
