@@ -6,7 +6,7 @@
  * This version of lookup_path is almost exactly what is in core, but adds a cache table.
  *
  */
-path_alias_cache_lookup_path($action, $path = '', $path_language = '') {
+function path_alias_cache_lookup_path($action, $path = '', $path_language = '') {
   global $language;
   $cache = &path_alias_cache_static(__FUNCTION__, array(
     'map' => array(),
