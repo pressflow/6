@@ -25,6 +25,42 @@ function drupal_init_path() {
 /**
  * Given an alias, return its Drupal system URL if one exists. Given a Drupal
  * system URL return one of its aliases if such a one exists. Otherwise,
+ * return FALSE. This function is a hook and modules can impliment lookup_path 
+ * to override the core behavior.
+ *
+ * @param $action
+ *   One of the following values:
+ *   - wipe: delete the alias cache.
+ *   - alias: return an alias for a given Drupal system path (if one exists).
+ *   - source: return the Drupal system URL for a path alias (if one exists).
+ * @param $path
+ *   The path to investigate for corresponding aliases or system URLs.
+ * @param $path_language
+ *   Optional language code to search the path with. Defaults to the page language.
+ *   If there's no path defined for that language it will search paths without
+ *   language.
+ *
+ * @return
+ *   Either a Drupal system path, an aliased path, or FALSE if no path was
+ *   found.
+ *  
+ */
+
+function drupal_lookup_path($action, $path = '', $path_language = '') {
+    $modules = module_implements('lookup_path');
+    if (count($modules) > 0) {
+        $retval = module_invoke($modules[0], 'lookup_path', $action, $path, $path_language);
+    } else {
+        $retval = _drupal_lookup_path_direct($action, $path, $path_language);
+    }
+    return $retval;
+}
+
+/**
+ * Internal function: The base path alias functionality as provided by Core.
+ *
+ * Given an alias, return its Drupal system URL if one exists. Given a Drupal
+ * system URL return one of its aliases if such a one exists. Otherwise,
  * return FALSE.
  *
  * @param $action
@@ -43,7 +79,7 @@ function drupal_init_path() {
  *   Either a Drupal system path, an aliased path, or FALSE if no path was
  *   found.
  */
-function drupal_lookup_path($action, $path = '', $path_language = '') {
+function _drupal_lookup_path_direct($action, $path = '', $path_language = '') {
   global $language;
   // $map is an array with language keys, holding arrays of Drupal paths to alias relations
   static $map = array(), $no_src = array(), $has_paths;
