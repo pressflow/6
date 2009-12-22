@@ -45,15 +45,24 @@ function drupal_init_path() {
  *   found.
  *  
  */
-
 function drupal_lookup_path($action, $path = '', $path_language = '') {
+  static $hook_module;
+  
+  if (!isset($hook_module)) {
     $modules = module_implements('lookup_path');
     if (count($modules) > 0) {
-        $retval = module_invoke($modules[0], 'lookup_path', $action, $path, $path_language);
+      $hook_module = $modules[0];
     } else {
-        $retval = _drupal_lookup_path_direct($action, $path, $path_language);
+      $hook_module = 0;
     }
-    return $retval;
+  }
+
+  if ($hook_module !== 0) {
+    $retval = module_invoke($hook_module, 'lookup_path', $action, $path, $path_language);
+  } else {
+    $retval = _drupal_lookup_path_direct($action, $path, $path_language);
+  }
+  return $retval;
 }
 
 /**

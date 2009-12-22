@@ -24,4 +24,3 @@ function path_alias_cache_schema() {
   return $schema;
 }
 
-?>
