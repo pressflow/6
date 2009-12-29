@@ -19,8 +19,9 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
 
   // Retrieve the path alias whitelist.
   if (!isset($cache['whitelist'])) {
-    $cache['whitelist'] = cache_get('path_alias_whitelist', 'cache_path');
-    if (!isset($cache['whitelist'])) {
+    if ($cached = cache_get('path_alias_whitelist', 'cache_path')) {
+      $cache['whitelist'] = $cached->data;
+    } else {
       $cache['whitelist'] = path_alias_cache_path_alias_whitelist_rebuild();
     }
   }
@@ -192,7 +193,7 @@ function path_alias_cache_path_alias_whitelist_rebuild() {
   while ($row = db_fetch_object($result)) {
     $whitelist[$row->path] = TRUE;
   }
-  cache_set('path_alias_whitelist', $whitelist);
+  cache_set('path_alias_whitelist', $whitelist, 'cache_path');
   return $whitelist;
 }
 
