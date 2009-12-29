@@ -19,7 +19,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
 
   // Retrieve the path alias whitelist.
   if (!isset($cache['whitelist'])) {
-    $cache['whitelist'] = variable_get('path_alias_whitelist', NULL);
+    $cache['whitelist'] = cache_get('path_alias_whitelist', 'cache_path');
     if (!isset($cache['whitelist'])) {
       $cache['whitelist'] = path_alias_cache_path_alias_whitelist_rebuild();
     }
@@ -128,7 +128,7 @@ function path_alias_cache_cache_system_paths() {
     // system paths for the page request.
     if ($paths = current($cache['map'])) {
       $data = array_keys($paths);
-      $expire = $_SERVER['REQUEST_TIME'] + (60 * 60 * 24);
+      $expire = $_SERVER['REQUEST_TIME'] + variable_get('cache_lifetime', 0);
       cache_set($cid, $data, 'cache_path', $expire);
     }
   }
@@ -192,7 +192,7 @@ function path_alias_cache_path_alias_whitelist_rebuild() {
   while ($row = db_fetch_object($result)) {
     $whitelist[$row->path] = TRUE;
   }
-  variable_set('path_alias_whitelist', $whitelist);
+  cache_set('path_alias_whitelist', $whitelist);
   return $whitelist;
 }
 
