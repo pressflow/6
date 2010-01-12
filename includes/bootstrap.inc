@@ -1488,18 +1488,18 @@ function ip_address() {
     // Only use parts of the X-Forwarded-For (XFF) header that have followed a trusted route.
     // Specifically, identify the leftmost IP address in the XFF header that is not one of ours.
     // An XFF header is: X-Forwarded-For: client1, proxy1, proxy2
-    if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && variable_get('reverse_proxy', 0)) {
+    if (isset($_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]) && variable_get('reverse_proxy', 0)) {
       // Load trusted reverse proxy server IPs.
       $reverse_proxy_addresses = variable_get('reverse_proxy_addresses', array());
       
       // Turn XFF header into an array.
-      $forwarded = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-      
-      // Tack direct client IP onto end of forwarded array.
-      $forwarded[] = $ip_address;
+      $forwarded = explode(',', $_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]);
       
       // Trim the forwarded IPs; they may have been delimited by commas and spaces.
       $forwarded = array_map('trim', $forwarded);
+
+      // Tack direct client IP onto end of forwarded array.
+      $forwarded[] = $ip_address;
 
       // Eliminate all trusted IPs.
       $untrusted = array_diff($forwarded, $reverse_proxy_addresses);
