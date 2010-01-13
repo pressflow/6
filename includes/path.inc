@@ -53,11 +53,11 @@ function drupal_lookup_path($action, $path = '', $path_language = '') {
     if (count($modules) > 0) {
       $hook_module = $modules[0];
     } else {
-      $hook_module = 0;
+      $hook_module = FALSE;
     }
   }
 
-  if ($hook_module !== 0) {
+  if ($hook_module !== FALSE) {
     $retval = module_invoke($hook_module, 'lookup_path', $action, $path, $path_language);
   } else {
     $retval = _drupal_lookup_path_direct($action, $path, $path_language);

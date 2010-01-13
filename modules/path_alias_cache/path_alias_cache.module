@@ -34,7 +34,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
   }
   elseif ($cache['whitelist'] && $path != '') {
     if ($action == 'alias') {
-      // During the first call to drupal_lookup_path() per language, load the
+      // During the first call to path_alias_cache_lookup_path() per language, load the
       // expected system paths for the page from cache.
       if (!empty($cache['first_call'])) {
         $cache['first_call'] = FALSE;
@@ -64,7 +64,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
       if (isset($cache['map'][$path_language][$path])) {
         return $cache['map'][$path_language][$path];
       }
-      // Check the path whitelist, if the top_level part before the first /
+      // Check the path whitelist, if the top_level part before the first "/"
       // is not in the list, then there is no need to do anything further,
       // it is not in the database.
       elseif (!isset($cache['whitelist'][strtok($path, '/')])) {
@@ -114,7 +114,7 @@ function path_alias_cache_exit() {
  * Cache system paths for a page.
  *
  * Cache an array of the system paths available on each page. We assume
- * that aiases will be needed for the majority of these paths during
+ * that aliases will be needed for the majority of these paths during
  * subsequent requests, and load them in a single query during
  * drupal_lookup_path().
  */
@@ -186,7 +186,7 @@ function &path_alias_cache_static($name, $default_value = NULL, $reset = FALSE) 
  */
 function path_alias_cache_path_alias_whitelist_rebuild() {
   // For each alias in the database, get the top level component of the system
-  // path it corresponds to. This is the portion of the path before the first /
+  // path it corresponds to. This is the portion of the path before the first "/"
   // if present, otherwise the whole path itself.
   $whitelist = array();
   $result = db_query("SELECT SUBSTRING_INDEX(src, '/', 1) AS path FROM {url_alias} GROUP BY path");
