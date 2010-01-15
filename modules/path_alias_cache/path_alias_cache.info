@@ -1,0 +1,3 @@
+name = Path Alias Cache
+description = A path alias implementation which adds a cache to the core version.
+core = 6.x
