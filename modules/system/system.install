@@ -1,5 +1,5 @@
 <?php
-// $Id: system.install,v 1.238.2.18 2009/09/14 13:59:58 goba Exp $
+// $Id: system.install,v 1.238.2.19 2009/11/06 08:39:46 goba Exp $
 
 /**
  * Test and report Drupal installation requirements.
@@ -358,6 +358,11 @@ function system_install() {
     drupal_install_schema($module);
   }
 
+  // Clear out module list and hook implementation statics before calling
+  // system_theme_data().
+  module_list(TRUE, FALSE);
+  module_implements('', FALSE, TRUE);
+
   // Load system theme data appropriately.
   system_theme_data();
 
@@ -365,23 +370,23 @@ function system_install() {
   // uid 2 which is not what we want. So we insert the first user here, the
   // anonymous user. uid is 1 here for now, but very soon it will be changed
   // to 0.
-  db_query("INSERT INTO {users} (name, mail) VALUES('%s', '%s')", '', '');
+  db_query("INSERT INTO {users} (uid, name, mail) VALUES(%d, '%s', '%s')", 1, '', '');
   // We need some placeholders here as name and mail are uniques and data is
   // presumed to be a serialized array. Install will change uid 1 immediately
   // anyways. So we insert the superuser here, the uid is 2 here for now, but
   // very soon it will be changed to 1.
-  db_query("INSERT INTO {users} (name, mail, created, data) VALUES('%s', '%s', %d, '%s')", 'placeholder-for-uid-1', 'placeholder-for-uid-1', time(), serialize(array()));
+  db_query("INSERT INTO {users} (uid, name, mail, created, data) VALUES(%d, '%s', '%s', %d, '%s')", 2, 'placeholder-for-uid-1', 'placeholder-for-uid-1', time(), serialize(array()));
   // This sets the above two users uid 0 (anonymous). We avoid an explicit 0
   // otherwise MySQL might insert the next auto_increment value.
   db_query("UPDATE {users} SET uid = uid - uid WHERE name = '%s'", '');
   // This sets uid 1 (superuser). We skip uid 2 but that's not a big problem.
   db_query("UPDATE {users} SET uid = 1 WHERE name = '%s'", 'placeholder-for-uid-1');
 
-  db_query("INSERT INTO {role} (name) VALUES ('%s')", 'anonymous user');
-  db_query("INSERT INTO {role} (name) VALUES ('%s')", 'authenticated user');
+  db_query("INSERT INTO {role} (rid,name) VALUES (" . DRUPAL_ANONYMOUS_RID . ",'anonymous user')");
+  db_query("INSERT INTO {role} (rid,name) VALUES (" . DRUPAL_AUTHENTICATED_RID . ",'authenticated user')");
 
-  db_query("INSERT INTO {permission} (rid, perm, tid) VALUES (%d, '%s', %d)", 1, 'access content', 0);
-  db_query("INSERT INTO {permission} (rid, perm, tid) VALUES (%d, '%s', %d)", 2, 'access comments, access content, post comments, post comments without approval', 0);
+  db_query("INSERT INTO {permission} (rid, perm, tid) VALUES (%d, '%s', %d)", DRUPAL_ANONYMOUS_RID, 'access content', 0);
+  db_query("INSERT INTO {permission} (rid, perm, tid) VALUES (%d, '%s', %d)", DRUPAL_AUTHENTICATED_RID, 'access comments, access content, post comments, post comments without approval', 0);
 
   db_query("INSERT INTO {variable} (name, value) VALUES ('%s', '%s')", 'theme_default', 's:7:"garland";');
   db_query("UPDATE {system} SET status = %d WHERE type = '%s' AND name = '%s'", 1, 'theme', 'garland');
@@ -392,28 +397,28 @@ function system_install() {
   db_query("INSERT INTO {node_access} (nid, gid, realm, grant_view, grant_update, grant_delete) VALUES (%d, %d, '%s', %d, %d, %d)", 0, 0, 'all', 1, 0, 0);
 
   // Add input formats.
-  db_query("INSERT INTO {filter_formats} (name, roles, cache) VALUES ('%s', '%s', %d)", 'Filtered HTML', ',1,2,', 1);
-  db_query("INSERT INTO {filter_formats} (name, roles, cache) VALUES ('%s', '%s', %d)", 'Full HTML', '', 1);
+  db_query("INSERT INTO {filter_formats} (format, name, roles, cache) VALUES (%d, '%s', '%s', %d)", 1, 'Filtered HTML', ',1,2,', 1);
+  db_query("INSERT INTO {filter_formats} (format, name, roles, cache) VALUES (%d, '%s', '%s', %d)", 2, 'Full HTML', '', 1);
 
   // Enable filters for each input format.
 
   // Filtered HTML:
   // URL filter.
-  db_query("INSERT INTO {filters} (format, module, delta, weight) VALUES (%d, '%s', %d, %d)", 1, 'filter', 2, 0);
+  db_query("INSERT INTO {filters} (fid, format, module, delta, weight) VALUES (%d, %d, '%s', %d, %d)", 1,  1, 'filter', 2, 0);
   // HTML filter.
-  db_query("INSERT INTO {filters} (format, module, delta, weight) VALUES (%d, '%s', %d, %d)", 1, 'filter', 0, 1);
+  db_query("INSERT INTO {filters} (fid, format, module, delta, weight) VALUES (%d, %d, '%s', %d, %d)", 2, 1, 'filter', 0, 1);
   // Line break filter.
-  db_query("INSERT INTO {filters} (format, module, delta, weight) VALUES (%d, '%s', %d, %d)", 1, 'filter', 1, 2);
+  db_query("INSERT INTO {filters} (fid, format, module, delta, weight) VALUES (%d, %d, '%s', %d, %d)", 3, 1, 'filter', 1, 2);
   // HTML corrector filter.
-  db_query("INSERT INTO {filters} (format, module, delta, weight) VALUES (%d, '%s', %d, %d)", 1, 'filter', 3, 10);
+  db_query("INSERT INTO {filters} (fid, format, module, delta, weight) VALUES (%d, %d, '%s', %d, %d)", 4, 1, 'filter', 3, 10);
 
   // Full HTML:
   // URL filter.
-  db_query("INSERT INTO {filters} (format, module, delta, weight) VALUES (%d, '%s', %d, %d)", 2, 'filter', 2, 0);
+  db_query("INSERT INTO {filters} (fid, format, module, delta, weight) VALUES (%d, %d, '%s', %d, %d)", 5, 2, 'filter', 2, 0);
   // Line break filter.
-  db_query("INSERT INTO {filters} (format, module, delta, weight) VALUES (%d, '%s', %d, %d)", 2, 'filter', 1, 1);
+  db_query("INSERT INTO {filters} (fid, format, module, delta, weight) VALUES (%d, %d, '%s', %d, %d)", 6, 2, 'filter', 1, 1);
   // HTML corrector filter.
-  db_query("INSERT INTO {filters} (format, module, delta, weight) VALUES (%d, '%s', %d, %d)", 2, 'filter', 3, 10);
+  db_query("INSERT INTO {filters} (fid, format, module, delta, weight) VALUES (%d, %d, '%s', %d, %d)", 7, 2, 'filter', 3, 10);
 
   db_query("INSERT INTO {variable} (name, value) VALUES ('%s','%s')", 'filter_html_1', 'i:1;');
 

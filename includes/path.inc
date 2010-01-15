@@ -1,5 +1,5 @@
 <?php
-// $Id: path.inc,v 1.19.2.1 2008/10/13 21:06:41 dries Exp $
+// $Id: path.inc,v 1.19.2.2 2009/12/16 17:35:11 goba Exp $
 
 /**
  * @file
@@ -231,7 +231,7 @@ function drupal_is_front_page() {
  *   String containing a set of patterns separated by \n, \r or \r\n.
  *
  * @return
- *   Boolean value: TRUE if the path matches a pattern, FALSE otherwise.
+ *   1 if there is a match, 0 if there is not a match.
  */
 function drupal_match_path($path, $patterns) {
   static $regexps;

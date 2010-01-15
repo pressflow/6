@@ -1,5 +1,5 @@
 <?php
-// $Id: contact.admin.inc,v 1.3 2007/11/09 07:55:13 dries Exp $
+// $Id: contact.admin.inc,v 1.3.2.1 2009/12/16 20:47:10 goba Exp $
 
 /**
  * @file
@@ -13,7 +13,7 @@ function contact_admin_categories() {
   $result = db_query('SELECT cid, category, recipients, selected FROM {contact} ORDER BY weight, category');
   $rows = array();
   while ($category = db_fetch_object($result)) {
-    $rows[] = array($category->category, $category->recipients, ($category->selected ? t('Yes') : t('No')), l(t('edit'), 'admin/build/contact/edit/'. $category->cid), l(t('delete'), 'admin/build/contact/delete/'. $category->cid));
+    $rows[] = array(check_plain($category->category), check_plain($category->recipients), ($category->selected ? t('Yes') : t('No')), l(t('edit'), 'admin/build/contact/edit/'. $category->cid), l(t('delete'), 'admin/build/contact/delete/'. $category->cid));
   }
   $header = array(t('Category'), t('Recipients'), t('Selected'), array('data' => t('Operations'), 'colspan' => 2));
 

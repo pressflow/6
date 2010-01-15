@@ -35,6 +35,14 @@ define('CACHE_NORMAL', 1);
 define('CACHE_AGGRESSIVE', 2);
 
 /**
+ * Indicates that page caching is using "external" mode. This disables the
+ * internal page cache but returns headers allowing downstream caches (such
+ * as Squid, Varnish, and other reverse proxies) to cache full pages. Like
+ * "aggressive" mode, this may break functionality in some modules.
+ */
+define('CACHE_EXTERNAL', 3);
+
+/**
  *
  * Severity levels, as defined in RFC 3164 http://www.faqs.org/rfcs/rfc3164.html
  * @see watchdog()
@@ -812,6 +820,38 @@ function drupal_page_header() {
 }
 
 /**
+ * Set HTTP headers in for downstream caching.
+ *
+ * The headers allow as much as possible in proxies and browsers without any
+ * particular knowledge about the pages. Used for the external caching mode.
+ */
+function drupal_page_cache_header_external() {
+  // Get headers set in hook_boot(). Keys are lower-case.
+  $hook_boot_headers = drupal_get_header();
+
+  $max_age = variable_get('page_cache_max_age', 0);
+  drupal_set_header('Cache-Control', 'public, max-age=' . $max_age);
+  drupal_set_header('Last-Modified', gmdate(DATE_RFC1123, $_SERVER['REQUEST_TIME']));
+
+  // HTTP/1.0 proxies do not support the Vary header, so prevent any caching
+  // by sending an Expires date in the past. HTTP/1.1 clients ignores the
+  // Expires header if a Cache-Control: max-age= directive is specified (see RFC
+  // 2616, section 14.9.3).
+  drupal_set_header('Expires', 'Sun, 11 Mar 1984 12:00:00 GMT');
+
+  // Allow HTTP proxies to cache pages for anonymous users without a session
+  // cookie. The Vary header is used to indicates the set of request-header
+  // fields that fully determines whether a cache is permitted to use the
+  // response to reply to a subsequent request for a given URL without
+  // revalidation. If a Vary header has been set in hook_boot(), it is assumed
+  // that the module knows how to cache the page.
+  if (!isset($hook_boot_headers['vary']) && !variable_get('omit_vary_cookie', FALSE)) {
+    drupal_set_header('Vary', 'Cookie');
+  }
+}
+
+
+/**
  * Set HTTP headers in preparation for a cached page response.
  *
  * The headers allow as much as possible in proxies and browsers without any
@@ -1273,8 +1313,8 @@ function _drupal_bootstrap($phase) {
       $conf = variable_init(isset($conf) ? $conf : array());
 
       $cache_mode = variable_get('cache', CACHE_DISABLED);
-      // Get the page from the cache.
-      if ($cache_mode != CACHE_DISABLED) {
+      // Get the page from the cache, unless the cache is disabled or external.
+      if ($cache_mode != CACHE_DISABLED && $cache_mode != CACHE_EXTERNAL) {
         $cache = page_get_cache();
       }
       else {
@@ -1300,8 +1340,13 @@ function _drupal_bootstrap($phase) {
         exit;
       }
   
-      if (!$cache && drupal_page_is_cacheable()) {
+      if (!$cache && drupal_page_is_cacheable() && $cache_mode != CACHE_EXTERNAL) {
         header('X-Drupal-Cache: MISS');
+      }
+      
+      // If using an external cache and the page is cacheable, set headers.
+      if ($cache_mode == CACHE_EXTERNAL && drupal_page_is_cacheable()) {
+        drupal_page_cache_header_external();
       }
 
       // Prepare for non-cached page workflow.
@@ -1441,15 +1486,28 @@ function ip_address() {
 
   if (!isset($ip_address)) {
     $ip_address = $_SERVER['REMOTE_ADDR'];
-    if (variable_get('reverse_proxy', 0) && array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)) {
-      // If an array of known reverse proxy IPs is provided, then trust
-      // the XFF header if request really comes from one of them.
+    
+    // Only use parts of the X-Forwarded-For (XFF) header that have followed a trusted route.
+    // Specifically, identify the leftmost IP address in the XFF header that is not one of ours.
+    // An XFF header is: X-Forwarded-For: client1, proxy1, proxy2
+    if (isset($_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]) && variable_get('reverse_proxy', 0)) {
+      // Load trusted reverse proxy server IPs.
       $reverse_proxy_addresses = variable_get('reverse_proxy_addresses', array());
-      if (!empty($reverse_proxy_addresses) && in_array($ip_address, $reverse_proxy_addresses, TRUE)) {
-        // If there are several arguments, we need to check the most
-        // recently added one, i.e. the last one.
-        $ip_address = array_pop(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
-      }
+      
+      // Turn XFF header into an array.
+      $forwarded = explode(',', $_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]);
+      
+      // Trim the forwarded IPs; they may have been delimited by commas and spaces.
+      $forwarded = array_map('trim', $forwarded);
+
+      // Tack direct client IP onto end of forwarded array.
+      $forwarded[] = $ip_address;
+
+      // Eliminate all trusted IPs.
+      $untrusted = array_diff($forwarded, $reverse_proxy_addresses);
+      
+      // The right-most IP is the most specific we can trust.
+      $ip_address = array_pop($untrusted);
     }
   }
 

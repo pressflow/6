@@ -1,5 +1,5 @@
 <?php
-// $Id: update.module,v 1.17.2.5 2009/06/09 11:08:32 goba Exp $
+// $Id: update.module,v 1.17.2.6 2009/12/16 17:30:00 goba Exp $
 
 /**
  * @file
@@ -557,7 +557,7 @@ function _update_cache_set($cid, $data, $expire) {
   }
 }
 
-/** 
+/**
  * Retrieve data from the private update status cache table.
  *
  * @param $cid
@@ -585,7 +585,7 @@ function _update_cache_get($cid) {
  */
 function _update_cache_clear($cid = NULL) {
   if (empty($cid)) {
-    db_query("DELETE FROM {cache_update}");
+    db_query("TRUNCATE TABLE {cache_update}");
   }
   else {
     db_query("DELETE FROM {cache_update} WHERE cid = '%s'", $cid);

@@ -1,5 +1,5 @@
 <?php
-// $Id: module.inc,v 1.115.2.1 2009/02/16 10:32:10 goba Exp $
+// $Id: module.inc,v 1.115.2.3 2009/11/16 17:17:35 goba Exp $
 
 /**
  * @file
@@ -243,13 +243,25 @@ function module_load_install($module) {
 
 /**
  * Load a module include file.
+ * 
+ * Examples:
+ * @code
+ *   // Load node.admin.inc from the node module.
+ *   module_load_include('inc', 'node', 'node.admin');
+ *   // Load content_types.inc from the node module.
+ *   module_load_include('inc', 'node', 'content_types');  
+ * @endcode
+ * 
+ * Do not use this function to load an install file. Use module_load_install()
+ * instead.
  *
  * @param $type
  *   The include file's type (file extension).
  * @param $module
  *   The module to which the include file belongs.
  * @param $name
- *   Optionally, specify the file name. If not set, the module's name is used.
+ *   Optionally, specify the base file name (without the $type extension). 
+ *   If not set, $module is used.
  */
 function module_load_include($type, $module, $name = NULL) {
   if (empty($name)) {
@@ -356,19 +368,19 @@ function module_disable($module_list) {
  * Allow modules to interact with the Drupal core.
  *
  * Drupal's module system is based on the concept of "hooks". A hook is a PHP
- * function that is named foo_bar(), where "foo" is the name of the module (whose
- * filename is thus foo.module) and "bar" is the name of the hook. Each hook has
- * a defined set of parameters and a specified result type.
+ * function that is named foo_bar(), where "foo" is the name of the module
+ * (whose filename is thus foo.module) and "bar" is the name of the hook. Each
+ * hook has a defined set of parameters and a specified result type.
  *
- * To extend Drupal, a module need simply implement a hook. When Drupal wishes to
- * allow intervention from modules, it determines which modules implement a hook
- * and call that hook in all enabled modules that implement it.
+ * To extend Drupal, a module need simply implement a hook. When Drupal wishes
+ * to allow intervention from modules, it determines which modules implement a
+ * hook and calls that hook in all enabled modules that implement it.
  *
  * The available hooks to implement are explained here in the Hooks section of
  * the developer documentation. The string "hook" is used as a placeholder for
- * the module name is the hook definitions. For example, if the module file is
- * called example.module, then hook_help() as implemented by that module would be
- * defined as example_help().
+ * the module name in the hook definitions. For example, if the module file is
+ * called example.module, then hook_help() as implemented by that module would
+ * be defined as example_help().
  */
 
 /**

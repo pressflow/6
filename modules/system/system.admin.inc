@@ -1266,28 +1266,33 @@ function system_logging_overview() {
  */
 function system_performance_settings() {
 
-  $description = '<p>'. t("The normal cache mode is suitable for most sites and does not cause any side effects. The aggressive cache mode causes Drupal to skip the loading (boot) and unloading (exit) of enabled modules when serving a cached page. This results in an additional performance boost but can cause unwanted side effects.") .'</p>';
+  $description = '<p>'. t("The normal cache mode is suitable for most sites and does not cause any side effects. The aggressive cache mode causes Pressflow to skip the loading (boot) and unloading (exit) of enabled modules when serving a cached page. This results in an additional performance boost but can cause unwanted side effects.") .'</p>';
 
   $problem_modules = array_unique(array_merge(module_implements('boot'), module_implements('exit')));
   sort($problem_modules);
 
   if (count($problem_modules) > 0) {
-    $description .= '<p>'. t('<strong class="error">The following enabled modules are incompatible with aggressive mode caching and will not function properly: %modules</strong>', array('%modules' => implode(', ', $problem_modules))) .'.</p>';
+    $description .= '<p>'. t('<strong class="error">The following enabled modules are potentially incompatible with aggressive- and external-mode caching and will not function properly: %modules</strong>', array('%modules' => implode(', ', $problem_modules))) .'.</p>';
   }
   else {
-    $description .= '<p>'. t('<strong class="ok">Currently, all enabled modules are compatible with the aggressive caching policy.</strong> Please note, if you use aggressive caching and enable new modules, you will need to check this page again to ensure compatibility.') .'</p>';
+    $description .= '<p>'. t('<strong class="ok">Currently, all enabled modules are compatible with an aggressive or external caching policy.</strong> Please note, if you use aggressive or external caching and enable new modules, you will need to check this page again to ensure compatibility.') .'</p>';
   }
   $form['page_cache'] = array(
     '#type' => 'fieldset',
     '#title' => t('Page cache'),
-    '#description' => t('Enabling the page cache will offer a significant performance boost. Drupal can store and send compressed cached pages requested by <em>anonymous</em> users. By caching a web page, Drupal does not have to construct the page each time it is viewed.'),
+    '#description' => t('Enabling the page cache will offer a significant performance boost. Pressflow can store and send compressed cached pages requested by <em>anonymous</em> users. By caching a web page, Pressflow does not have to construct the page each time it is viewed.'),
   );
 
   $form['page_cache']['cache'] = array(
     '#type' => 'radios',
     '#title' => t('Caching mode'),
     '#default_value' => variable_get('cache', CACHE_DISABLED),
-    '#options' => array(CACHE_DISABLED => t('Disabled'), CACHE_NORMAL => t('Normal (recommended for production sites, no side effects)'), CACHE_AGGRESSIVE => t('Aggressive (experts only, possible side effects)')),
+    '#options' => array(
+      CACHE_DISABLED => t('Disabled'),
+      CACHE_NORMAL => t('Normal (recommended for production sites, no side effects)'),
+      CACHE_AGGRESSIVE => t('Aggressive (experts only, possible side effects)'),
+      CACHE_EXTERNAL => t('External (experts only, possible side effects)'),
+    ),
     '#description' => $description
   );
 
@@ -1312,7 +1317,7 @@ function system_performance_settings() {
     '#title' => t('Page compression'),
     '#default_value' => variable_get('page_compression', TRUE),
     '#options' => array(t('Disabled'), t('Enabled')),
-    '#description' => t("By default, Drupal compresses the pages it caches in order to save bandwidth and improve download times. This option should be disabled when using a webserver that performs compression."),
+    '#description' => t("By default, Pressflow compresses the pages it caches in order to save bandwidth and improve download times. This option should be disabled when using a webserver that performs compression."),
   );
 
   $form['block_cache'] = array(
