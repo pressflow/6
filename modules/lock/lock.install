@@ -10,7 +10,7 @@ function lock_uninstall() {
 
 function lock_schema() {
   $schema = array();
-  $schema['semaphore'] = array(
+  $schema['pf_semaphore'] = array(
     'description' => 'Table for holding semaphores, locks, flags, etc. that cannot be stored as variables since they must not be cached.',
     'fields' => array(
       'name' => array(

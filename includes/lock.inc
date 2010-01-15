@@ -62,7 +62,7 @@
  * by setting the 'lock_inc' variable to an alternate include filepath.  Since
  * this is an API intended to support alternative implementations, code using
  * this API should never rely upon specific implementation details (for example
- * no code should look for or directly modify a lock in the {semaphore} table).
+ * no code should look for or directly modify a lock in the {pf_semaphore} table).
  */
 
 /**
@@ -113,7 +113,7 @@ function lock_acquire($name, $timeout = 30.0) {
   $expire = (float)$usec + (float)$sec + $timeout;
   if (isset($locks[$name])) {
     // Try to extend the expiration of a lock we already acquired.
-    if (!db_result(db_query("UPDATE {semaphore} SET expire = %f WHERE name = '%s' AND value = '%s'", $expire, $name, _lock_id()))) {
+    if (!db_result(db_query("UPDATE {pf_semaphore} SET expire = %f WHERE name = '%s' AND value = '%s'", $expire, $name, _lock_id()))) {
       // The lock was broken.
       unset($locks[$name]);
     }
@@ -124,7 +124,7 @@ function lock_acquire($name, $timeout = 30.0) {
     $retry = FALSE;
     // We always want to do this code at least once.
     do {
-      if (@db_query("INSERT INTO {semaphore} (name, value, expire) VALUES ('%s', '%s', %f)", $name, _lock_id(), $expire)) {
+      if (@db_query("INSERT INTO {pf_semaphore} (name, value, expire) VALUES ('%s', '%s', %f)", $name, _lock_id(), $expire)) {
         // We track all acquired locks in the global variable.
         $locks[$name] = TRUE;
         // We never need to try again.
@@ -161,7 +161,7 @@ function lock_may_be_available($name) {
     return TRUE;
   }
 
-  $lock = db_fetch_array(db_query("SELECT expire, value FROM {semaphore} WHERE name = '%s'", $name));
+  $lock = db_fetch_array(db_query("SELECT expire, value FROM {pf_semaphore} WHERE name = '%s'", $name));
   if (!$lock) {
     return TRUE;
   }
@@ -172,7 +172,7 @@ function lock_may_be_available($name) {
     // We check two conditions to prevent a race condition where another
     // request acquired the lock and set a new expire time.  We add a small
     // number to $expire to avoid errors with float to string conversion.
-    db_query("DELETE FROM {semaphore} WHERE name = '%s' AND value = '%s' AND expire <= %f", $name, $lock['value'], 0.0001 + $expire);
+    db_query("DELETE FROM {pf_semaphore} WHERE name = '%s' AND value = '%s' AND expire <= %f", $name, $lock['value'], 0.0001 + $expire);
     return (bool)db_affected_rows();
   }
   return FALSE;
@@ -227,7 +227,7 @@ function lock_release($name) {
   global $locks;
 
   unset($locks[$name]);
-  db_query("DELETE FROM {semaphore} WHERE name = '%s' AND value = '%s'", $name, _lock_id());
+  db_query("DELETE FROM {pf_semaphore} WHERE name = '%s' AND value = '%s'", $name, _lock_id());
 }
 
 /**
@@ -246,7 +246,7 @@ function lock_release_all($lock_id = NULL) {
     $lock_id = _lock_id();
   }
 
-  db_query("DELETE FROM {semaphore} WHERE value = '%s'", _lock_id());
+  db_query("DELETE FROM {pf_semaphore} WHERE value = '%s'", _lock_id());
 }
 
 /**
