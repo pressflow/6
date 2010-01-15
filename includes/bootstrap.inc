@@ -485,17 +485,21 @@ function variable_init($conf = array(), $regenerate = FALSE) {
     $variables = $cached->data;
   }
   else {
-    if (!lock_acquire('variable_cache_regenerate')) {
+    if (lock_acquire('variable_cache_regenerate')) {
+      $result = db_query('SELECT * FROM {variable}');
+      while ($variable = db_fetch_object($result)) {
+        $variables[$variable->name] = unserialize($variable->value);
+      }
+      cache_set('variables', $variables);
+      lock_release('variable_cache_regenerate');
+    }
+    else {
       // Wait for another request that is already doing this work.
       lock_wait('variable_cache_regenerate');
+
+      // Run the function again.
+      return variable_init($conf, $regenerate);
     }
-    
-    $result = db_query('SELECT * FROM {variable}');
-    while ($variable = db_fetch_object($result)) {
-      $variables[$variable->name] = unserialize($variable->value);
-    }
-    cache_set('variables', $variables);
-    lock_release('variable_cache_regenerate');
   }
 
   foreach ($conf as $name => $value) {
