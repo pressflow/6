@@ -102,6 +102,11 @@ function _lock_id() {
 function lock_acquire($name, $timeout = 30.0) {
   global $locks;
 
+  // Just return TRUE if the supporting module is not enabled.
+  if (!module_exists('lock')) {
+    return TRUE;
+  }
+
   // Insure that the timeout is at least 1 ms.
   $timeout = max($timeout, 0.001);
   list($usec, $sec) = explode(' ', microtime());
@@ -151,6 +156,11 @@ function lock_acquire($name, $timeout = 30.0) {
  *   TRUE if there is no lock or it was removed, FALSE otherwise.
  */
 function lock_may_be_available($name) {
+  // Just return TRUE if the supporting module is not enabled.
+  if (!module_exists('lock')) {
+    return TRUE;
+  }
+
   $lock = db_fetch_array(db_query("SELECT expire, value FROM {semaphore} WHERE name = '%s'", $name));
   if (!$lock) {
     return TRUE;
@@ -209,6 +219,11 @@ function lock_wait($name, $delay = 30) {
  *   The name of the lock.
  */
 function lock_release($name) {
+  // Just return if the supporting module is not enabled.
+  if (!module_exists('lock')) {
+    return;
+  }
+
   global $locks;
 
   unset($locks[$name]);
@@ -219,6 +234,11 @@ function lock_release($name) {
  * Release all previously acquired locks.
  */
 function lock_release_all($lock_id = NULL) {
+  // Just return if the supporting module is not enabled.
+  if (!module_exists('lock')) {
+    return;
+  }
+
   global $locks;
 
   $locks = array();

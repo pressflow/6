@@ -1,0 +1,34 @@
+<?php
+
+function lock_install() {
+  drupal_install_schema('lock');
+}
+
+function lock_uninstall() {
+  drupal_uninstall_schema('lock');
+}
+
+function lock_schema() {
+  $schema = array();
+  $schema['semaphore'] = array(
+    'fields' => array(
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''),
+      'value' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''),
+      'expire' => array(
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => TRUE),
+      ),
+    'indexes' => array('expire' => array('expire')),
+    'primary key' => array('name'),
+  );
+  return $schema;
+}
