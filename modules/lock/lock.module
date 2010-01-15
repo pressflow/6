@@ -1,0 +1,5 @@
+<?php
+
+// In order to keep the Pressflow implementation similar
+// to the proposed Drupal 6 backport, this module only
+// exists to manage the semaphore table for lock.inc.
