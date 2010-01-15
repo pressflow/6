@@ -127,7 +127,7 @@ function path_alias_cache_cache_system_paths() {
     $cid = $_GET['q'];
     // The static $map array used by drupal_lookup_path() includes all
     // system paths for the page request.
-    if ($paths = current($cache['map'])) {
+    if (is_array($cache['map']) && $paths = current($cache['map'])) {
       $data = array_keys($paths);
       $expire = $_SERVER['REQUEST_TIME'] + variable_get('cache_lifetime', 0);
       cache_set($cid, $data, 'cache_path', $expire);
