@@ -1,0 +1,38 @@
+<?php
+
+function lock_install() {
+  drupal_install_schema('lock');
+}
+
+function lock_uninstall() {
+  drupal_uninstall_schema('lock');
+}
+
+function lock_schema() {
+  $schema = array();
+  $schema['pf_semaphore'] = array(
+    'description' => 'Table for holding semaphores, locks, flags, etc. that cannot be stored as variables since they must not be cached.',
+    'fields' => array(
+      'name' => array(
+        'description' => 'Unique lock name.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''),
+      'value' => array(
+        'description' => 'Unique request ID.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''),
+      'expire' => array(
+        'description' => 'Expiration microtimestamp.',
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => TRUE),
+      ),
+    'indexes' => array('expire' => array('expire')),
+    'primary key' => array('name'),
+  );
+  return $schema;
+}
