@@ -479,17 +479,27 @@ function drupal_get_filename($type, $name, $filename = NULL) {
  * with variable_set() as well as those explicitly specified in the configuration
  * file.
  */
-function variable_init($conf = array()) {
+function variable_init($conf = array(), $regenerate = FALSE) {
   // NOTE: caching the variables improves performance by 20% when serving cached pages.
-  if ($cached = cache_get('variables', 'cache')) {
+  if (!$regenerate && $cached = cache_get('variables', 'cache')) {
     $variables = $cached->data;
   }
   else {
-    $result = db_query('SELECT * FROM {variable}');
-    while ($variable = db_fetch_object($result)) {
-      $variables[$variable->name] = unserialize($variable->value);
+    if (lock_acquire('variable_cache_regenerate')) {
+      $result = db_query('SELECT * FROM {variable}');
+      while ($variable = db_fetch_object($result)) {
+        $variables[$variable->name] = unserialize($variable->value);
+      }
+      cache_set('variables', $variables);
+      lock_release('variable_cache_regenerate');
     }
-    cache_set('variables', $variables);
+    else {
+      // Wait for another request that is already doing this work.
+      lock_wait('variable_cache_regenerate');
+
+      // Run the function again.
+      return variable_init($conf, $regenerate);
+    }
   }
 
   foreach ($conf as $name => $value) {
@@ -537,9 +547,9 @@ function variable_set($name, $value) {
     @db_query("INSERT INTO {variable} (name, value) VALUES ('%s', '%s')", $name, $serialized_value);
   }
 
-  cache_clear_all('variables', 'cache');
-
   $conf[$name] = $value;
+
+  variable_cache_rebuild();
 }
 
 /**
@@ -557,9 +567,19 @@ function variable_del($name) {
 
   unset($conf[$name]);
 
-  cache_set('variables', $conf);
+  variable_cache_rebuild();
 }
 
+/**
+ * Schedules a rebuild of the variable cache on shutdown.
+ */
+function variable_cache_rebuild() {
+  static $shutdown_registered = FALSE;
+  if (!$shutdown_registered) {
+    register_shutdown_function('variable_init', array(), TRUE);
+    $shutdown_registered = TRUE;
+  }
+}
 
 /**
  * Retrieve the current page from the cache.
