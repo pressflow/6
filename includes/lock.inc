@@ -103,7 +103,7 @@ function lock_acquire($name, $timeout = 30.0) {
   global $locks;
 
   // Just return TRUE if the supporting module is not enabled.
-  if (!module_exists('lock')) {
+  if (!_lock_table_exists()) {
     return TRUE;
   }
 
@@ -157,7 +157,7 @@ function lock_acquire($name, $timeout = 30.0) {
  */
 function lock_may_be_available($name) {
   // Just return TRUE if the supporting module is not enabled.
-  if (!module_exists('lock')) {
+  if (!_lock_table_exists()) {
     return TRUE;
   }
 
@@ -220,7 +220,7 @@ function lock_wait($name, $delay = 30) {
  */
 function lock_release($name) {
   // Just return if the supporting module is not enabled.
-  if (!module_exists('lock')) {
+  if (!_lock_table_exists()) {
     return;
   }
 
@@ -235,7 +235,7 @@ function lock_release($name) {
  */
 function lock_release_all($lock_id = NULL) {
   // Just return if the supporting module is not enabled.
-  if (!module_exists('lock')) {
+  if (!_lock_table_exists()) {
     return;
   }
 
@@ -247,6 +247,19 @@ function lock_release_all($lock_id = NULL) {
   }
 
   db_query("DELETE FROM {pf_semaphore} WHERE value = '%s'", _lock_id());
+}
+
+/**
+ * Detemine if the table has been installed.
+ */
+function _lock_table_exists() {
+  static $exists = NULL;
+  
+  if (!isset($exists)) {
+    $exists = db_table_exists('pf_semaphore');
+  }
+  
+  return $exists;
 }
 
 /**
