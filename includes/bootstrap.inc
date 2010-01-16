@@ -1329,6 +1329,9 @@ function _drupal_bootstrap($phase) {
       break;
 
     case DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE:
+      require_once variable_get('lock_inc', './includes/lock.inc');
+      lock_init();
+
       // Initialize configuration variables, using values from settings.php if available.
       $conf = variable_init(isset($conf) ? $conf : array());
 
@@ -1370,8 +1373,6 @@ function _drupal_bootstrap($phase) {
       }
 
       // Prepare for non-cached page workflow.
-      require_once variable_get('lock_inc', './includes/lock.inc');
-      lock_init();
       if (!drupal_is_cli()) {
         ob_start();
         drupal_page_header();
