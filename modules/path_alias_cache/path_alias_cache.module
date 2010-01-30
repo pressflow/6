@@ -85,7 +85,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
       $src = '';
       if (!isset($cache['map'][$path_language]) || !($src = array_search($path, $cache['map'][$path_language]))) {
         // Get the most fitting result falling back with alias without language
-        if ($src = db_result(db_query("SELECT src FROM {url_alias} WHERE dst = '%s' AND (language = '%s' OR langauge = '') ORDER BY language DESC", $path, $path_language))) {
+        if ($src = db_result(db_query("SELECT src FROM {url_alias} WHERE dst = '%s' AND (language = '%s' OR language = '') ORDER BY language DESC", $path, $path_language))) {
           $cache['map'][$path_language][$src] = $path;
         }
         else {
