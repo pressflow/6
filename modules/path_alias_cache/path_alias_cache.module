@@ -50,7 +50,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
           // We order by ASC and overwrite array keys to ensure the correct
           // alias is used when there are multiple aliases per path.
           $placeholders = db_placeholders($cache['system_paths'], 'varchar');
-          $result = db_query("SELECT src, dst FROM {url_alias} WHERE src IN($placeholders) AND (language = '%s' OR lanaguage = '') ORDER BY language ASC", $cache['system_paths'], $path_language);
+          $result = db_query("SELECT src, dst FROM {url_alias} WHERE src IN($placeholders) AND (language = '%s' OR language = '') ORDER BY language ASC", $cache['system_paths'], $path_language);
           while ($record = db_fetch_object($result)) {
             if (!isset($cache['map'][$path_language][$record->src])) {
               $cache['map'][$path_language][$record->src] = $record->dst;
