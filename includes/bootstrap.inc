@@ -1270,14 +1270,18 @@ function drupal_anonymous_user($session = '') {
  *     DRUPAL_BOOTSTRAP_PATH: set $_GET['q'] to Drupal path of request.
  *     DRUPAL_BOOTSTRAP_FULL: Drupal is fully loaded, validate and fix input data.
  */
-function drupal_bootstrap($phase) {
+function drupal_bootstrap($phase = NULL) {
   static $phases = array(DRUPAL_BOOTSTRAP_CONFIGURATION, DRUPAL_BOOTSTRAP_EARLY_PAGE_CACHE, DRUPAL_BOOTSTRAP_DATABASE, DRUPAL_BOOTSTRAP_ACCESS, DRUPAL_BOOTSTRAP_SESSION, DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE, DRUPAL_BOOTSTRAP_LANGUAGE, DRUPAL_BOOTSTRAP_PATH, DRUPAL_BOOTSTRAP_FULL), $phase_index = 0;
 
-  while ($phase >= $phase_index && isset($phases[$phase_index])) {
-    $current_phase = $phases[$phase_index];
-    unset($phases[$phase_index++]);
-    _drupal_bootstrap($current_phase);
+  if (isset($phase)) {
+    while ($phase >= $phase_index && isset($phases[$phase_index])) {
+      $current_phase = $phases[$phase_index];
+      unset($phases[$phase_index++]);
+      _drupal_bootstrap($current_phase);
+    }
   }
+  
+  return $phase_index;
 }
 
 function _drupal_bootstrap($phase) {
@@ -1678,6 +1682,17 @@ function drupal_save_session($status = NULL) {
     $save_session = $status;
   }
   return $save_session;
+}
+	
+/**
+ * Returns the current bootstrap phase for this Drupal process.
+ *
+ * The current phase is the one most recently completed by drupal_bootstrap().
+ *
+ * @see drupal_bootstrap()
+ */
+function drupal_get_bootstrap_phase() {
+  return drupal_bootstrap();
 }
 
 /**
