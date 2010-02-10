@@ -1,5 +1,5 @@
 <?php
-// $Id: simpletest.test,v 1.1.2.16 2009/09/14 23:22:56 boombatower Exp $
+// $Id: simpletest.test,v 1.1.2.17 2009/11/06 21:23:32 boombatower Exp $
 // Core: Id: simpletest.test,v 1.31 2009/09/01 17:40:27 webchick Exp
 
 /**
@@ -53,6 +53,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
     if (!$this->inCURL()) {
       $this->drupalGet('node');
       $this->assertTrue($this->drupalGetHeader('Date'), t('An HTTP header was received.'));
+//      $this->assertTitle(t('Welcome to @site-name | @site-name', array('@site-name' => variable_get('site_name', 'Drupal'))), t('Site title matches.'));
       $this->assertTitle(variable_get('site_name', 'Pressflow'), t('Site title matches.'));
       $this->assertNoTitle('Foo', t('Site title does not match.'));
       // Make sure that we are locked out of the installer when prefixing
@@ -92,6 +93,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
       // Run twice so test_ids can be accumulated.
       for ($i = 0; $i < 2; $i++) {
         // Run this test from web interface.
+//        $this->drupalGet('admin/config/development/testing');
         $this->drupalGet('admin/build/testing');
 
         $edit = array();
@@ -163,6 +165,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
 
     $this->assertAssertion("Debug: 'Foo'", 'Debug', 'Fail', 'simpletest.test', 'SimpleTestFunctionalTest->stubTest()');
 
+//    $this->assertEqual('6 passes, 2 fails, 2 exceptions, and 1 debug message', $this->childTestResults['summary'], 'Stub test summary is correct');
     $this->assertEqual('8 passes, 2 fails, 2 exceptions, and 1 debug message', $this->childTestResults['summary'], 'Stub test summary is correct');
 
     $this->test_ids[] = $test_id = $this->getTestIdFromResults();
@@ -228,6 +231,7 @@ class SimpleTestFunctionalTest extends DrupalWebTestCase {
           $assertion['file'] = $this->asText($row->td[2]);
           $assertion['line'] = $this->asText($row->td[3]);
           $assertion['function'] = $this->asText($row->td[4]);
+//          $ok_url = file_create_url('misc/watchdog-ok.png');
           $ok_url = '/misc/watchdog-ok.png';
           $assertion['status'] = ($row->td[5]->img['src'] == $ok_url) ? 'Pass' : 'Fail';
           $results['assertions'][] = $assertion;
@@ -310,6 +314,7 @@ class SimpleTestMailCaptureTestCase extends DrupalWebTestCase {
     $this->assertEqual(count($captured_emails), 0, t('The captured e-mails queue is empty.'), t('E-mail'));
 
     // Send the e-mail.
+//    $response = drupal_mail_sending_system('simpletest', 'drupal_mail_test')->mail($message);
     $response = drupal_mail('simpletest', 'drupal_mail_test', $message['to'], language_default(), $message, NULL, TRUE);
 
     // Ensure that there is one e-mail in the captured e-mails array.
@@ -331,6 +336,7 @@ class SimpleTestMailCaptureTestCase extends DrupalWebTestCase {
         'to' => $this->randomName(32) . '@example.com',
         'body' => $this->randomString(512),
       );
+//      drupal_mail_sending_system('drupal_mail_test', $index)->mail($message);
       $response = drupal_mail('simpletest', 'drupal_mail_test', $message['to'], language_default(), $message, NULL, TRUE);
     }
 
@@ -348,25 +354,10 @@ class SimpleTestMailCaptureTestCase extends DrupalWebTestCase {
 
     // Send the last e-mail again, so we can confirm that the drupalGetMails-filter
     // correctly returns all e-mails with a given property/value.
+//    drupal_mail_sending_system('drupal_mail_test', $index)->mail($message);
     $response = drupal_mail('simpletest', $index, $message['to'], language_default(), $message, NULL, TRUE);
     $captured_emails = $this->drupalGetMails(array('id' => 'drupal_mail_test_4'));
     $this->assertEqual(count($captured_emails), 2, t('All e-mails with the same id are returned when filtering by id.'), t('E-mail'));
   }
 }
 
-/**
- * Capture e-mail message during testing.
- *
- * Code copied from TestingMailSystem in mail.sending.inc (Drupal 7). Placed in
- * this file to ensure no loaded until in testing mode, to ensure no conflicts
- * with other implementations like devel.
- *
- * @param $message
- *   An e-mail message.
- */
-function drupal_mail_wrapper(array $message) {
-  $captured_emails = variable_get('drupal_test_email_collector', array());
-  $captured_emails[] = $message;
-  variable_set('drupal_test_email_collector', $captured_emails);
-  return TRUE;
-}
