@@ -1606,7 +1606,9 @@ function drupal_page_footer() {
   // Write the session, and open one if needed.
   drupal_session_commit();
 
-  if (variable_get('cache', CACHE_DISABLED) != CACHE_DISABLED) {
+  // Do not cache if cache is disabled or external.
+  $cache = variable_get('cache', CACHE_DISABLED);
+  if ($cache != CACHE_DISABLED && $cache != CACHE_EXTERNAL) {
     page_set_cache();
   }
 
