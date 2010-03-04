@@ -1,5 +1,5 @@
 <?php
-// $Id: database.mysqli.inc,v 1.54.2.1 2009/07/21 08:52:30 goba Exp $
+// $Id: database.mysqli.inc,v 1.54.2.2 2010/02/01 16:32:10 goba Exp $
 
 /**
  * @file
@@ -349,31 +349,6 @@ function db_table_exists($table) {
  */
 function db_column_exists($table, $column) {
   return (bool) db_fetch_object(db_query("SHOW COLUMNS FROM {". db_escape_table($table) ."} LIKE '". db_escape_table($column) ."'"));
-}
-
-/**
- * Wraps the given table.field entry with a DISTINCT(). The wrapper is added to
- * the SELECT list entry of the given query and the resulting query is returned.
- * This function only applies the wrapper if a DISTINCT doesn't already exist in
- * the query.
- *
- * @param $table Table containing the field to set as DISTINCT
- * @param $field Field to set as DISTINCT
- * @param $query Query to apply the wrapper to
- * @return SQL query with the DISTINCT wrapper surrounding the given table.field.
- */
-function db_distinct_field($table, $field, $query) {
-  $field_to_select = 'DISTINCT('. $table .'.'. $field .')';
-  $matches = array();
-  if (preg_match('/^SELECT(.*?)FROM(.*)/is', $query, $matches)) {
-    $select = preg_replace(
-      '/((?:^|,)\s*)(?<!DISTINCT\()(?:'. $table .'\.)?'. $field .'(\s*(?:,|$))/is',
-      '\1'. $field_to_select .'\2', $matches[1], 1
-    );
-    
-    return 'SELECT'. $select .'FROM'.$matches[2];
-  }
-  return $query;
 }
 
 /**

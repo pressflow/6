@@ -1,5 +1,5 @@
 <?php
-// $Id: common.inc,v 1.756.2.74 2009/12/16 20:47:10 goba Exp $
+// $Id: common.inc,v 1.756.2.79 2010/03/04 00:15:28 goba Exp $
 
 /**
  * @file
@@ -311,11 +311,21 @@ function drupal_get_destination() {
  */
 function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response_code = 302) {
 
+  $destination = FALSE;
   if (isset($_REQUEST['destination'])) {
-    extract(parse_url(urldecode($_REQUEST['destination'])));
+    $destination = $_REQUEST['destination'];
   }
   else if (isset($_REQUEST['edit']['destination'])) {
-    extract(parse_url(urldecode($_REQUEST['edit']['destination'])));
+    $destination = $_REQUEST['edit']['destination'];
+  }
+
+  if ($destination) {
+    // Do not redirect to an absolute URL originating from user input.
+    $colonpos = strpos($destination, ':');
+    $absolute = ($colonpos !== FALSE && !preg_match('![/?#]!', substr($destination, 0, $colonpos)));
+    if (!$absolute) {
+      extract(parse_url(urldecode($destination)));
+    }
   }
 
   $url = url($path, array('query' => $query, 'fragment' => $fragment, 'absolute' => TRUE));
@@ -1726,7 +1736,7 @@ function drupal_clone($object) {
  * Add a <link> tag to the page's HEAD.
  */
 function drupal_add_link($attributes) {
-  drupal_set_html_head('<link'. drupal_attributes($attributes) ." />\n");
+  drupal_set_html_head('<link'. drupal_attributes($attributes) .' />');
 }
 
 /**
@@ -3495,7 +3505,7 @@ function drupal_write_record($table, &$object, $update = array()) {
  * White-space generally doesn't matter, except inside values.
  * e.g.
  *
- * @verbatim
+ * @code
  *   key = value
  *   key = "value"
  *   key = 'value'
@@ -3508,16 +3518,16 @@ function drupal_write_record($table, &$object, $update = array()) {
  *   key
  *   =
  *   'value'
- * @endverbatim
+ * @endcode
  *
  * Arrays are created using a GET-like syntax:
  *
- * @verbatim
+ * @code
  *   key[] = "numeric array"
  *   key[index] = "associative array"
  *   key[index][] = "nested numeric array"
  *   key[index][index] = "nested associative array"
- * @endverbatim
+ * @endcode
  *
  * PHP constants are substituted in, but only when used as the entire value:
  *
@@ -3533,14 +3543,14 @@ function drupal_write_record($table, &$object, $update = array()) {
  * - package: The name of the package of modules this module belongs to.
  *
  * Example of .info file:
- * @verbatim
+ * @code
  *   name = Forum
  *   description = Enables threaded discussions about general topics.
  *   dependencies[] = taxonomy
  *   dependencies[] = comment
  *   package = Core - optional
  *   version = VERSION
- * @endverbatim
+ * @endcode
  *
  * @param $filename
  *   The file we are parsing. Accepts file with relative or absolute path.
@@ -3549,6 +3559,7 @@ function drupal_write_record($table, &$object, $update = array()) {
  */
 function drupal_parse_info_file($filename) {
   $info = array();
+  $constants = get_defined_constants();
 
   if (!file_exists($filename)) {
     return $info;
@@ -3592,9 +3603,9 @@ function drupal_parse_info_file($filename) {
         $parent = &$parent[$key];
       }
 
-      // Handle PHP constants
-      if (defined($value)) {
-        $value = constant($value);
+      // Handle PHP constants.
+      if (isset($constants[$value])) {
+        $value = $constants[$value];
       }
 
       // Insert actual value

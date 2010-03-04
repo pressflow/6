@@ -1,5 +1,5 @@
 <?php
-// $Id: system.admin.inc,v 1.63.2.13 2009/09/16 18:02:32 goba Exp $
+// $Id: system.admin.inc,v 1.63.2.14 2010/03/01 10:20:28 goba Exp $
 
 /**
  * @file
@@ -1626,8 +1626,7 @@ function system_date_time_settings_submit($form, &$form_state) {
  */
 function system_date_time_lookup() {
   $result = format_date(time(), 'custom', $_GET['format']);
-  echo drupal_to_js($result);
-  exit;
+  drupal_json($result);
 }
 
 /**

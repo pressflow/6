@@ -1,5 +1,5 @@
 <?php
-// $Id: forum.module,v 1.448.2.7 2009/06/03 18:27:48 goba Exp $
+// $Id: forum.module,v 1.448.2.8 2010/03/01 11:32:00 goba Exp $
 
 /**
  * @file
@@ -392,7 +392,7 @@ function forum_form_alter(&$form, $form_state, $form_id) {
  * Implementation of hook_load().
  */
 function forum_load($node) {
-  $forum = db_fetch_object(db_query('SELECT * FROM {term_node} WHERE vid = %d', $node->vid));
+  $forum = db_fetch_object(db_query('SELECT * FROM {forum} WHERE vid = %d', $node->vid));
 
   return $forum;
 }

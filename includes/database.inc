@@ -1,5 +1,5 @@
 <?php
-// $Id: database.inc,v 1.92.2.8 2009/09/14 10:49:34 goba Exp $
+// $Id: database.inc,v 1.92.2.9 2010/02/01 16:32:10 goba Exp $
 
 /**
  * @file
@@ -385,6 +385,27 @@ function db_rewrite_sql($query, $primary_table = 'n', $primary_field = 'nid',  $
     }
   }
 
+  return $query;
+}
+
+/**
+ * Adds the DISTINCT flag to the supplied query if a DISTINCT doesn't already
+ * exist in the query. Returns the altered query.
+ *
+ * This will not, and never did guarantee that you will obtain distinct 
+ * values of $table.$field.
+ *
+ * @param $table Unused. Kept to remain API compatibility.
+ * @param $field Unused. Kept to remain API compatibility.
+ * @param $query Query to which the DISTINCT flag should be applied.
+ * @return SQL query with the DISTINCT flag set.
+ */
+function db_distinct_field($table, $field, $query) {
+  $matches = array();
+  if (!preg_match('/^SELECT\s*DISTINCT/i', $query, $matches)) {
+    // Only add distinct to the outer SELECT to avoid messing up subqueries.
+    $query = preg_replace('/^SELECT/i', 'SELECT DISTINCT', $query);
+  }
   return $query;
 }
 

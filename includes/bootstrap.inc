@@ -1,5 +1,5 @@
 <?php
-// $Id: bootstrap.inc,v 1.206.2.13 2009/09/14 13:33:39 goba Exp $
+// $Id: bootstrap.inc,v 1.206.2.14 2010/02/01 16:49:14 goba Exp $
 
 /**
  * @file
@@ -1060,6 +1060,8 @@ function _drupal_bootstrap($phase) {
         exit;
       }
       // Prepare for non-cached page workflow.
+      require_once variable_get('lock_inc', './includes/lock.inc');
+      lock_init();
       drupal_page_header();
       break;
 

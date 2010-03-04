@@ -1,5 +1,5 @@
 <?php
-// $Id: database.mysql-common.inc,v 1.17.2.3 2009/09/14 10:49:34 goba Exp $
+// $Id: database.mysql-common.inc,v 1.17.2.4 2010/03/01 10:37:30 goba Exp $
 
 /**
  * @file
@@ -335,7 +335,7 @@ function db_drop_field(&$ret, $table, $field) {
  *   Default value to be set. NULL for 'default NULL'.
  */
 function db_field_set_default(&$ret, $table, $field, $default) {
-  if ($default == NULL) {
+  if ($default === NULL) {
     $default = 'NULL';
   }
   else {

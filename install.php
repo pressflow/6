@@ -1,5 +1,5 @@
 <?php
-// $Id: install.php,v 1.113.2.9 2009/04/27 10:50:35 goba Exp $
+// $Id: install.php,v 1.113.2.10 2010/03/01 09:36:01 goba Exp $
 
 require_once './includes/install.inc';
 
@@ -40,6 +40,13 @@ function install_main() {
   drupal_load('module', 'system');
   drupal_load('module', 'filter');
 
+  // Install profile chosen, set the global immediately.
+  // This needs to be done before the theme cache gets 
+  // initialized in drupal_maintenance_theme().
+  if (!empty($_GET['profile'])) {
+    $profile = preg_replace('/[^a-zA-Z_0-9]/', '', $_GET['profile']);
+  }
+
   // Set up theme system for the maintenance page.
   drupal_maintenance_theme();
 
@@ -74,15 +81,14 @@ function install_main() {
     $task = NULL;
   }
 
-  // Decide which profile to use.
-  if (!empty($_GET['profile'])) {
-    $profile = preg_replace('/[^a-zA-Z_0-9]/', '', $_GET['profile']);
-  }
-  elseif ($profile = install_select_profile()) {
-    install_goto("install.php?profile=$profile");
-  }
-  else {
-    install_no_profile_error();
+  // No profile was passed in GET, ask the user.
+  if (empty($_GET['profile'])) {
+    if ($profile = install_select_profile()) {
+      install_goto("install.php?profile=$profile");
+    }
+    else {
+      install_no_profile_error();
+    }
   }
 
   // Load the profile.

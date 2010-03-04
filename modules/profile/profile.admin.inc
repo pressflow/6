@@ -1,5 +1,5 @@
 <?php
-// $Id: profile.admin.inc,v 1.8.2.1 2008/10/16 12:43:08 goba Exp $
+// $Id: profile.admin.inc,v 1.8.2.2 2010/03/01 10:20:28 goba Exp $
 
 /**
  * @file
@@ -400,6 +400,5 @@ function profile_admin_settings_autocomplete($string) {
   while ($data = db_fetch_object($result)) {
     $matches[$data->category] = check_plain($data->category);
   }
-  print drupal_to_js($matches);
-  exit();
+  drupal_json($matches);
 }
