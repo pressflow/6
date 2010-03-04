@@ -695,7 +695,7 @@ function drupal_set_header($name = NULL, $value = NULL, $append = FALSE) {
   // Support the Drupal 6 header API
   if (!isset($value)) {
     if (strpos($name, ':') !== FALSE) {
-      $parts = explode(':', $name);
+      $parts = explode(':', $name, 2);
       $name = trim($parts[0]);
       $value = trim($parts[1]);
     }
