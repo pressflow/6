@@ -1,5 +1,5 @@
 <?php
-// $Id: user.admin.inc,v 1.18.2.1 2008/08/13 23:59:14 drumm Exp $
+// $Id: user.admin.inc,v 1.18.2.2 2010/03/01 11:15:38 goba Exp $
 
 /**
  * @file
@@ -139,9 +139,18 @@ function user_admin_account() {
     t('Operations')
   );
 
-  $sql = 'SELECT DISTINCT u.uid, u.name, u.status, u.created, u.access FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid '. $filter['join'] .' WHERE u.uid != 0 '. $filter['where'];
+  if ($filter['join'] != "") {
+    $sql = 'SELECT DISTINCT u.uid, u.name, u.status, u.created, u.access FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid '. $filter['join'] .' WHERE u.uid != 0 '. $filter['where'];
+    $query_count = 'SELECT COUNT(DISTINCT u.uid) FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid '. $filter['join'] .' WHERE u.uid != 0 '. $filter['where'];
+  }
+  else {
+    $sql = 'SELECT u.uid, u.name, u.status, u.created, u.access FROM {users} u WHERE u.uid != 0 '. $filter['where'];
+    $query_count = 'SELECT COUNT(u.uid) FROM {users} u WHERE u.uid != 0 '. $filter['where'];
+  }
+
+  
   $sql .= tablesort_sql($header);
-  $query_count = 'SELECT COUNT(DISTINCT u.uid) FROM {users} u LEFT JOIN {users_roles} ur ON u.uid = ur.uid '. $filter['join'] .' WHERE u.uid != 0 '. $filter['where'];
+
   $result = pager_query($sql, 50, 0, $query_count, $filter['args']);
 
   $form['options'] = array(
