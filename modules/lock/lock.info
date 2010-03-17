@@ -1,4 +1,0 @@
-name = Database locking support
-description = Installs the semaphore table to support the bundled, database-backed locking API.
-core = 6.x
-package = Pressflow

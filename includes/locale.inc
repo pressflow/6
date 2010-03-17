@@ -1,5 +1,5 @@
 <?php
-// $Id: locale.inc,v 1.174.2.10 2009/09/15 10:40:26 goba Exp $
+// $Id: locale.inc,v 1.174.2.12 2010/03/04 00:15:28 goba Exp $
 
 /**
  * @file
@@ -34,6 +34,9 @@ function locale_languages_overview_form() {
   $options = array();
   $form['weight'] = array('#tree' => TRUE);
   foreach ($languages as $langcode => $language) {
+    // Language code should contain no markup, but is emitted
+    // by radio and checkbox options.
+    $langcode = check_plain($langcode);
 
     $options[$langcode] = '';
     if ($language->enabled) {
@@ -335,6 +338,17 @@ function locale_languages_predefined_form_submit($form, &$form_state) {
  * Validate the language editing form. Reused for custom language addition too.
  */
 function locale_languages_edit_form_validate($form, &$form_state) {
+  // Validate that the name, native, and langcode variables are safe.
+  if (preg_match('/["<>\']/', $form_state['values']['langcode'])) {
+    form_set_error('langcode', t('The characters &lt;, &gt;, " and \' are not allowed in the language code field.'));
+  }
+  if (preg_match('/["<>\']/', $form_state['values']['name'])) {
+    form_set_error('name', t('The characters &lt;, &gt;, " and \' are not allowed in the language name in English field.'));
+  }
+  if (preg_match('/["<>\']/', $form_state['values']['native'])) {
+    form_set_error('native', t('The characters &lt;, &gt;, " and \' are not allowed in the native language name field.'));
+  }
+
   if (!empty($form_state['values']['domain']) && !empty($form_state['values']['prefix'])) {
     form_set_error('prefix', t('Domain and path prefix values should not be set at the same time.'));
   }
@@ -536,8 +550,13 @@ function locale_translate_seek_screen() {
  */
 function locale_translate_seek_form() {
   // Get all languages, except English
-  $languages = locale_language_list('name', TRUE);
-  unset($languages['en']);
+  $raw_languages = locale_language_list('name', TRUE);
+  unset($raw_languages['en']);
+  // Sanitize the values to be used in radios.
+  $languages = array();
+  foreach ($raw_languages as $key => $value) {
+    $languages[check_plain($key)] = check_plain($value);
+  }
 
   // Present edit form preserving previous user settings
   $query = _locale_translate_seek_query();
@@ -2166,6 +2185,7 @@ function _locale_rebuild_js($langcode = NULL) {
   }
 
   // Construct the JavaScript file, if there are translations.
+  $data_hash = NULL;
   $data = $status = '';
   if (!empty($translations)) {
 
@@ -2184,22 +2204,38 @@ function _locale_rebuild_js($langcode = NULL) {
   $dir = file_create_path(variable_get('locale_js_directory', 'languages'));
 
   // Delete old file, if we have no translations anymore, or a different file to be saved.
-  if (!empty($language->javascript) && (!$data || $language->javascript != $data_hash)) {
+  $changed_hash = $language->javascript != $data_hash;
+  if (!empty($language->javascript) && (!$data || $changed_hash)) {
     file_delete(file_create_path($dir .'/'. $language->language .'_'. $language->javascript .'.js'));
     $language->javascript = '';
     $status = 'deleted';
   }
 
-  // Only create a new file if the content has changed.
-  if ($data && $language->javascript != $data_hash) {
+  // Only create a new file if the content has changed or the original file got
+  // lost.
+  $dest = $dir .'/'. $language->language .'_'. $data_hash .'.js';
+  if ($data && ($changed_hash || !file_exists($dest))) {
     // Ensure that the directory exists and is writable, if possible.
     file_check_directory($dir, TRUE);
 
     // Save the file.
-    $dest = $dir .'/'. $language->language .'_'. $data_hash .'.js';
     if (file_save_data($data, $dest)) {
       $language->javascript = $data_hash;
-      $status = ($status == 'deleted') ? 'updated' : 'created';
+      // If we deleted a previous version of the file and we replace it with a
+      // new one we have an update.
+      if ($status == 'deleted') {
+        $status = 'updated';
+      }
+      // If the file did not exist previously and the data has changed we have
+      // a fresh creation.
+      elseif ($changed_hash) {
+        $status = 'created';
+      }
+      // If the data hash is unchanged the translation was lost and has to be
+      // rebuilt.
+      else {
+        $status = 'rebuilt';
+      }
     }
     else {
       $language->javascript = '';
@@ -2207,9 +2243,10 @@ function _locale_rebuild_js($langcode = NULL) {
     }
   }
 
-  // Save the new JavaScript hash (or an empty value if the file
-  // just got deleted). Act only if some operation was executed.
-  if ($status) {
+  // Save the new JavaScript hash (or an empty value if the file just got
+  // deleted). Act only if some operation was executed that changed the hash
+  // code.
+  if ($status && $changed_hash) {
     db_query("UPDATE {languages} SET javascript = '%s' WHERE language = '%s'", $language->javascript, $language->language);
 
     // Update the default language variable if the default language has been altered.
@@ -2227,6 +2264,10 @@ function _locale_rebuild_js($langcode = NULL) {
     case 'updated':
       watchdog('locale', 'Updated JavaScript translation file for the language %language.', array('%language' => t($language->name)));
       return TRUE;
+    case 'rebuilt':
+      watchdog('locale', 'JavaScript translation file %file.js was lost.', array('%file' => $language->javascript), WATCHDOG_WARNING);
+      // Proceed to the 'created' case as the JavaScript translation file has
+      // been created again.
     case 'created':
       watchdog('locale', 'Created JavaScript translation file for the language %language.', array('%language' => t($language->name)));
       return TRUE;

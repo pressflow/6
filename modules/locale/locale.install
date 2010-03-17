@@ -1,5 +1,5 @@
 <?php
-// $Id: locale.install,v 1.27.2.1 2009/01/06 15:46:37 goba Exp $
+// $Id: locale.install,v 1.27.2.3 2010/03/04 00:15:28 goba Exp $
 
 /**
  * Implementation of hook_install().
@@ -164,7 +164,7 @@ function locale_update_6004() {
 
 /**
  * Change language setting variable of content types.
- * 
+ *
  * Use language_content_type_<content_type> instead of language_<content_type>
  * so content types such as 'default', 'count' or 'negotiation' will not
  * interfere with language variables.
@@ -202,6 +202,26 @@ function locale_update_6005() {
 }
 
 /**
+ * Neutralize unsafe language names in the database.
+ */
+function locale_update_6006() {
+  $ret = array();
+  $matches = db_result(db_query("SELECT 1 FROM {languages} WHERE native LIKE '%<%' OR native LIKE '%>%' OR name LIKE '%<%' OR name LIKE '%>%'"));
+  if ($matches) {
+    $ret[] = update_sql("UPDATE {languages} SET name = REPLACE(name, '<', ''), native = REPLACE(native, '<', '')");
+    $ret[] = update_sql("UPDATE {languages} SET name = REPLACE(name, '>', ''), native = REPLACE(native, '>', '')");
+    drupal_set_message('The language name in English and the native language name values of all the existing custom languages of your site have been sanitized for security purposes. Visit the <a href="'. url('admin/settings/language') .'">Languages</a> page to check these and fix them if necessary.', 'warning');
+  }
+  // Check if some langcode values contain potentially dangerous characters and
+  // warn the user if so. These are not fixed since they are referenced in other
+  // tables (e.g. {node}).
+  if (db_result(db_query("SELECT 1 FROM {languages} WHERE language LIKE '%<%' OR language LIKE '%>%' OR language LIKE '%\"%' OR language LIKE '%\\\\\%'"))) {
+    drupal_set_message('Some of your custom language code values contain invalid characters. You should examine the <a href="'. url('admin/settings/language') .'">Languages</a> page. These must be fixed manually.', 'error');
+  }
+  return $ret;
+}
+
+/**
  * @} End of "defgroup updates-5.x-to-6.x"
  */
 
@@ -216,6 +236,26 @@ function locale_uninstall() {
       file_delete(file_create_path($file->javascript));
     }
   }
+
+  // Clear variables.
+  variable_del('language_default');
+  variable_del('language_count');
+  variable_del('language_content_type_default');
+  variable_del('language_content_type_negotiation');
+  variable_del('locale_cache_strings');
+  variable_del('locale_js_directory');
+  variable_del('javascript_parsed');
+  variable_del('language_negotiation');
+
+  foreach (node_get_types() as $type => $content_type) {
+    variable_del("language_content_type_$type");
+  }
+
+  // Switch back to English: with a $language->language value different from
+  // 'en' successive calls of t() might result in calling locale(), which in
+  // turn might try to query the unexisting {locales_source} and
+  // {locales_target} tables.
+  drupal_init_language();
 
   // Remove tables.
   drupal_uninstall_schema('locale');
@@ -395,4 +435,3 @@ function locale_schema() {
 
   return $schema;
 }
-

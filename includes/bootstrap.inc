@@ -1,5 +1,5 @@
 <?php
-// $Id: bootstrap.inc,v 1.206.2.13 2009/09/14 13:33:39 goba Exp $
+// $Id: bootstrap.inc,v 1.206.2.14 2010/02/01 16:49:14 goba Exp $
 
 /**
  * @file
@@ -485,13 +485,15 @@ function variable_init($conf = array(), $regenerate = FALSE) {
     $variables = $cached->data;
   }
   else {
-    if (lock_acquire('variable_cache_regenerate')) {
+    if (defined('MAINTENANCE_MODE') || lock_acquire('variable_cache_regenerate')) {
       $result = db_query('SELECT * FROM {variable}');
       while ($variable = db_fetch_object($result)) {
         $variables[$variable->name] = unserialize($variable->value);
       }
       cache_set('variables', $variables);
-      lock_release('variable_cache_regenerate');
+      if (!defined('MAINTENANCE_MODE')) {
+        lock_release('variable_cache_regenerate');
+      }
     }
     else {
       // Wait for another request that is already doing this work.
@@ -703,7 +705,7 @@ function drupal_set_header($name = NULL, $value = NULL, $append = FALSE) {
   // Support the Drupal 6 header API
   if (!isset($value)) {
     if (strpos($name, ':') !== FALSE) {
-      $parts = explode(':', $name);
+      $parts = explode(':', $name, 2);
       $name = trim($parts[0]);
       $value = trim($parts[1]);
     }
