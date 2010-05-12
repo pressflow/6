@@ -1020,24 +1020,24 @@ function theme_get_setting($setting_name, $refresh = FALSE) {
 
     if ($settings['toggle_logo']) {
       if ($settings['default_logo']) {
-        $settings['logo'] = base_path() . dirname($theme_object->filename) .'/logo.png';
+        $settings['logo'] = file_create_url(dirname($theme_object->filename) .'/logo.png');
       }
       elseif ($settings['logo_path']) {
-        $settings['logo'] = base_path() . $settings['logo_path'];
+        $settings['logo'] = file_create_url($settings['logo_path']);
       }
     }
 
     if ($settings['toggle_favicon']) {
       if ($settings['default_favicon']) {
         if (file_exists($favicon = dirname($theme_object->filename) .'/favicon.ico')) {
-          $settings['favicon'] = base_path() . $favicon;
+          $settings['favicon'] = file_create_url($favicon);
         }
         else {
-          $settings['favicon'] = base_path() .'misc/favicon.ico';
+          $settings['favicon'] = file_create_url('misc/favicon.ico');
         }
       }
       elseif ($settings['favicon_path']) {
-        $settings['favicon'] = base_path() . $settings['favicon_path'];
+        $settings['favicon'] = file_create_url($settings['favicon_path']);
       }
       else {
         $settings['toggle_favicon'] = FALSE;
@@ -1258,7 +1258,7 @@ function theme_links($links, $attributes = array('class' => 'links')) {
 function theme_image($path, $alt = '', $title = '', $attributes = NULL, $getsize = TRUE) {
   if (!$getsize || (is_file($path) && (list($width, $height, $type, $image_attributes) = @getimagesize($path)))) {
     $attributes = drupal_attributes($attributes);
-    $url = (url($path) == $path) ? $path : (base_path() . $path);
+    $url = (url($path) == $path) ? $path : file_create_url($path);
     return '<img src="'. check_url($url) .'" alt="'. check_plain($alt) .'" title="'. check_plain($title) .'" '. (isset($image_attributes) ? $image_attributes : '') . $attributes .' />';
   }
 }

@@ -1880,15 +1880,15 @@ function drupal_get_css($css = NULL) {
             // If a CSS file is not to be preprocessed and it's a module CSS file, it needs to *always* appear at the *top*,
             // regardless of whether preprocessing is on or off.
             if (!$preprocess && $type == 'module') {
-              $no_module_preprocess .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. base_path() . $file . $query_string .'" />'."\n";
+              $no_module_preprocess .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. file_create_url($file) . $query_string .'" />'."\n";
             }
             // If a CSS file is not to be preprocessed and it's a theme CSS file, it needs to *always* appear at the *bottom*,
             // regardless of whether preprocessing is on or off.
             else if (!$preprocess && $type == 'theme') {
-              $no_theme_preprocess .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. base_path() . $file . $query_string .'" />'."\n";
+              $no_theme_preprocess .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. file_create_url($file) . $query_string .'" />'."\n";
             }
             else {
-              $output .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. base_path() . $file . $query_string .'" />'."\n";
+              $output .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. file_create_url($file) . $query_string .'" />'."\n";
             }
           }
         }
@@ -1900,7 +1900,7 @@ function drupal_get_css($css = NULL) {
       // starting with "ad*".
       $filename = 'css_'. md5(serialize($types) . $query_string) .'.css';
       $preprocess_file = drupal_build_css_cache($types, $filename);
-      $output .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. base_path() . $preprocess_file .'" />'."\n";
+      $output .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. file_create_url($preprocess_file) .'" />'."\n";
     }
   }
 
@@ -2234,7 +2234,7 @@ function drupal_get_js($scope = 'header', $javascript = NULL) {
         // Additionally, go through any remaining scripts if JS preprocessing is on and output the non-cached ones.
         foreach ($data as $path => $info) {
           if (!$info['preprocess'] || !$is_writable || !$preprocess_js) {
-            $no_preprocess[$type] .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') .' src="'. base_path() . $path . ($info['cache'] ? $query_string : '?'. time()) ."\"></script>\n";
+            $no_preprocess[$type] .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') .' src="'. file_create_url($path) . ($info['cache'] ? $query_string : '?'. time()) ."\"></script>\n";
           }
           else {
             $files[$path] = $info;
@@ -2249,7 +2249,7 @@ function drupal_get_js($scope = 'header', $javascript = NULL) {
     // starting with "ad*".
     $filename = 'js_'. md5(serialize($files) . $query_string) .'.js';
     $preprocess_file = drupal_build_js_cache($files, $filename);
-    $preprocessed .= '<script type="text/javascript" src="'. base_path() . $preprocess_file .'"></script>'."\n";
+    $preprocessed .= '<script type="text/javascript" src="'. file_create_url($preprocess_file) .'"></script>'."\n";
   }
 
   // Keep the order of JS files consistent as some are preprocessed and others are not.
