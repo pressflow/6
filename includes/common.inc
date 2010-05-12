@@ -2435,7 +2435,7 @@ function drupal_clear_js_cache() {
  */
 function drupal_to_js($var) {
   // json_encode() does not escape <, > and &, so we do it with str_replace()
-  return str_replace(array("<", ">", "&"), array('\x3c', '\x3e', '\x26'), json_encode($var));
+  return str_replace(array("<", ">", "&"), array('\u003c', '\u003e', '\u0026'), json_encode($var));
 }
 
 /**
