@@ -1,5 +1,5 @@
 <?php
-// $Id: menu.admin.inc,v 1.26.2.6 2009/12/16 20:47:10 goba Exp $
+// $Id: menu.admin.inc,v 1.26.2.7 2010/06/02 12:56:20 goba Exp $
 
 /**
  * @file
@@ -344,8 +344,16 @@ function menu_edit_item_validate($form, &$form_state) {
     if (isset($parsed_link['query'])) {
       $item['options']['query'] = $parsed_link['query'];
     }
+    else {
+      // Use unset() rather than setting to empty string
+      // to avoid redundant serialized data being stored.
+      unset($item['options']['query']);
+    }
     if (isset($parsed_link['fragment'])) {
       $item['options']['fragment'] = $parsed_link['fragment'];
+    }
+    else {
+      unset($item['options']['fragment']);
     }
     if ($item['link_path'] != $parsed_link['path']) {
       $item['link_path'] = $parsed_link['path'];

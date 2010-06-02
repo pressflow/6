@@ -1,5 +1,5 @@
 <?php
-// $Id: statistics.admin.inc,v 1.6 2008/01/08 10:35:42 goba Exp $
+// $Id: statistics.admin.inc,v 1.6.2.2 2010/06/02 12:14:48 goba Exp $
 
 /**
  * @file
@@ -83,7 +83,7 @@ function statistics_top_visitors() {
   );
 
   $sql = "SELECT COUNT(a.uid) AS hits, a.uid, u.name, a.hostname, SUM(a.timer) AS total, ac.aid FROM {accesslog} a LEFT JOIN {access} ac ON ac.type = 'host' AND LOWER(a.hostname) LIKE (ac.mask) LEFT JOIN {users} u ON a.uid = u.uid GROUP BY a.hostname, a.uid, u.name, ac.aid". tablesort_sql($header);
-  $sql_cnt = "SELECT COUNT(DISTINCT(CONCAT(uid, hostname))) FROM {accesslog}";
+  $sql_cnt = "SELECT COUNT(*) FROM (SELECT DISTINCT uid, hostname FROM {accesslog}) AS unique_visits";
   $result = pager_query($sql, 30, 0, $sql_cnt);
 
   $rows = array();
@@ -192,7 +192,7 @@ function statistics_access_logging_settings() {
     '#default_value' => variable_get('statistics_enable_access_log', 0),
     '#options' => $options,
     '#description' => t('Log each page access. Required for referrer statistics.'));
-  $period = drupal_map_assoc(array(3600, 10800, 21600, 32400, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200, 4838400, 9676800), 'format_interval');
+  $period = array('0' => t('Never')) + drupal_map_assoc(array(3600, 10800, 21600, 32400, 43200, 86400, 172800, 259200, 604800, 1209600, 2419200, 4838400, 9676800), 'format_interval');
   $form['access']['statistics_flush_accesslog_timer'] = array(
     '#type' => 'select',
     '#title' => t('Discard access logs older than'),

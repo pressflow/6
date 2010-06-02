@@ -1,5 +1,5 @@
 <?php
-// $Id: poll.module,v 1.263.2.4 2009/09/14 10:16:54 goba Exp $
+// $Id: poll.module,v 1.263.2.5 2010/05/11 12:40:43 goba Exp $
 
 /**
  * @file
@@ -294,8 +294,6 @@ function poll_more_choices_submit($form, &$form_state) {
 }
 
 function _poll_choice_form($delta, $value = '', $votes = 0) {
-  $admin = user_access('administer nodes');
-
   $form = array(
     '#tree' => TRUE,
   );
@@ -308,17 +306,15 @@ function _poll_choice_form($delta, $value = '', $votes = 0) {
     '#default_value' => $value,
     '#parents' => array('choice', $delta, 'chtext'),
   );
-
-  if ($admin) {
-    $form['chvotes'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Votes for choice @n', array('@n' => ($delta + 1))),
-      '#default_value' => $votes,
-      '#size' => 5,
-      '#maxlength' => 7,
-      '#parents' => array('choice', $delta, 'chvotes'),
-    );
-  }
+  $form['chvotes'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Votes for choice @n', array('@n' => ($delta + 1))),
+    '#default_value' => $votes,
+    '#size' => 5,
+    '#maxlength' => 7,
+    '#parents' => array('choice', $delta, 'chvotes'),
+    '#access' => user_access('administer nodes'),
+  );
 
   return $form;
 }

@@ -1,5 +1,5 @@
 <?php
-// $Id: database.pgsql.inc,v 1.68.2.8 2010/02/01 16:32:10 goba Exp $
+// $Id: database.pgsql.inc,v 1.68.2.9 2010/05/28 15:02:16 goba Exp $
 
 /**
  * @file
@@ -579,20 +579,16 @@ function _db_create_field_sql($name, $spec) {
   if ($spec['type'] == 'serial') {
     unset($spec['not null']);
   }
-  if (!empty($spec['unsigned'])) {
-    if ($spec['type'] == 'serial') {
-      $sql .= " CHECK ($name >= 0)";
-    }
-    else {
-      $sql .= '_unsigned';
-    }
-  }
 
   if (in_array($spec['type'], array('varchar', 'char', 'text')) && isset($spec['length'])) {
     $sql .= '('. $spec['length'] .')';
   }
   elseif (isset($spec['precision']) && isset($spec['scale'])) {
     $sql .= '('. $spec['precision'] .', '. $spec['scale'] .')';
+  }
+
+  if (!empty($spec['unsigned'])) {
+    $sql .= " CHECK ($name >= 0)";
   }
 
   if (isset($spec['not null']) && $spec['not null']) {

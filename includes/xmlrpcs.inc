@@ -1,5 +1,5 @@
 <?php
-// $Id: xmlrpcs.inc,v 1.24.2.3 2009/12/07 11:36:28 goba Exp $
+// $Id: xmlrpcs.inc,v 1.24.2.4 2010/06/02 12:52:07 goba Exp $
 
 /**
  * The main entry point for XML-RPC requests.
@@ -230,7 +230,7 @@ function xmlrpc_server_multicall($methodcalls) {
     elseif ($ok) {
       $result = xmlrpc_server_call($xmlrpc_server, $method, $params);
     }
-    if ($result->is_error) {
+    if (is_object($result) && !empty($result->is_error)) {
       $return[] = array(
         'faultCode' => $result->code,
         'faultString' => $result->message
