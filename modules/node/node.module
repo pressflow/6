@@ -1,5 +1,5 @@
 <?php
-// $Id: node.module,v 1.947.2.22 2010/03/03 21:36:37 goba Exp $
+// $Id: node.module,v 1.947.2.24 2010/06/02 12:11:07 goba Exp $
 
 /**
  * @file
@@ -1285,9 +1285,13 @@ function node_search($op = 'search', $keys = NULL) {
         $node->body = drupal_render($node->content);
 
         // Fetch comments for snippet.
-        $node->body .= module_invoke('comment', 'nodeapi', $node, 'update index');
+        if (module_exists('comment')) {
+          $node->body .= comment_nodeapi($node, 'update index');
+        }
         // Fetch terms for snippet.
-        $node->body .= module_invoke('taxonomy', 'nodeapi', $node, 'update index');
+        if (module_exists('taxonomy')) {
+          $node->body .= taxonomy_nodeapi($node, 'update index');
+        }
 
         $extra = node_invoke_nodeapi($node, 'search result');
         $results[] = array(
@@ -2376,7 +2380,7 @@ function _node_access_rebuild_batch_operation(&$context) {
       node_access_acquire_grants($loaded_node);
     }
     $context['sandbox']['progress']++;
-    $context['sandbox']['current_node'] = $loaded_node->nid;
+    $context['sandbox']['current_node'] = $row['nid'];
   }
 
   // Multistep processing : report progress.

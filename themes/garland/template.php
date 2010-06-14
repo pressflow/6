@@ -1,5 +1,5 @@
 <?php
-// $Id: template.php,v 1.16.2.2 2009/08/10 11:32:54 goba Exp $
+// $Id: template.php,v 1.16.2.3 2010/05/11 09:41:22 goba Exp $
 
 /**
  * Sets the body-tag class attribute.
@@ -68,6 +68,9 @@ function phptemplate_menu_local_tasks() {
   return menu_primary_local_tasks();
 }
 
+/**
+ * Returns the themed submitted-by string for the comment.
+ */
 function phptemplate_comment_submitted($comment) {
   return t('!datetime — !username',
     array(
@@ -76,6 +79,9 @@ function phptemplate_comment_submitted($comment) {
     ));
 }
 
+/**
+ * Returns the themed submitted-by string for the node.
+ */
 function phptemplate_node_submitted($node) {
   return t('!datetime — !username',
     array(

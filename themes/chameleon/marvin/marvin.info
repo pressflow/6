@@ -7,8 +7,8 @@ version = VERSION
 core = 6.x
 base theme = chameleon
 
-; Information added by drupal.org packaging script on 2010-03-04
-version = "6.16"
+; Information added by drupal.org packaging script on 2010-06-02
+version = "6.17"
 project = "drupal"
-datestamp = "1267662008"
+datestamp = "1275505216"
 
