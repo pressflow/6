@@ -1615,8 +1615,6 @@ function l($text, $path, $options = array()) {
  * react to the closing of the page by calling hook_exit().
  */
 function drupal_page_footer() {
-  global $user;
-
   // Write the session, and open one if needed.
   drupal_session_commit();
 
@@ -2633,12 +2631,12 @@ function page_set_cache() {
   if (drupal_page_is_cacheable()) {
     // This will fail in some cases, see page_get_cache() for the explanation.
     if ($data = ob_get_contents()) {
+      ob_end_clean();
       $cache_lifetime = variable_get('page_cache_lifetime', 0);
 
       if (variable_get('page_compression', TRUE) && extension_loaded('zlib')) {
         $data = gzencode($data, 9, FORCE_GZIP);
       }
-      ob_end_flush();
 
       $cache = (object) array(
         'cid' => $base_root . request_uri(),

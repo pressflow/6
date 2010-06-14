@@ -1034,12 +1034,14 @@ function drupal_page_cache_header(stdClass $cache) {
     header('Vary: Accept-Encoding', FALSE);
     // If page_compression is enabled, the cache contains gzipped data.
     if ($return_compressed) {
+      ini_set('zlib.output_compression', '0');
       header('Content-Encoding: gzip');
     }
     else {
       // The client does not support compression, so unzip the data in the
       // cache. Strip the gzip header and run uncompress.
       $cache->data = gzinflate(substr(substr($cache->data, 10), 0, -8));
+      header('X-PF-Uncompressing: 1');
     }
   }
 
