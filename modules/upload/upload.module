@@ -1,5 +1,5 @@
 <?php
-// $Id: upload.module,v 1.197.2.5 2009/09/16 17:54:19 goba Exp $
+// $Id: upload.module,v 1.197.2.6 2010/05/19 14:43:56 goba Exp $
 
 /**
  * @file
@@ -189,6 +189,9 @@ function upload_node_form_submit(&$form, &$form_state) {
 
   if (isset($form_state['values']['files'])) {
     foreach ($form_state['values']['files'] as $fid => $file) {
+      // If the node was previewed prior to saving, $form['#node']->files[$fid]
+      // is an array instead of an object. Convert file to object for compatibility. 
+      $form['#node']->files[$fid] = (object) $form['#node']->files[$fid];
       $form_state['values']['files'][$fid]['new'] = !empty($form['#node']->files[$fid]->new);
     }
   }

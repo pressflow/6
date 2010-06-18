@@ -1,5 +1,5 @@
 <?php
-// $Id: xmlrpc.inc,v 1.47.2.5 2009/01/14 21:36:16 goba Exp $
+// $Id: xmlrpc.inc,v 1.47.2.6 2010/06/02 12:22:02 goba Exp $
 
 /**
  * @file
@@ -157,11 +157,6 @@ function xmlrpc_message($message) {
  *   TRUE if parsing succeeded; FALSE otherwise
  */
 function xmlrpc_message_parse(&$xmlrpc_message) {
-  // First remove the XML declaration
-  $xmlrpc_message->message = preg_replace('/<\?xml(.*)?\?'.'>/', '', $xmlrpc_message->message);
-  if (trim($xmlrpc_message->message) == '') {
-    return FALSE;
-  }
   $xmlrpc_message->_parser = xml_parser_create();
   // Set XML parser to take the case of tags into account.
   xml_parser_set_option($xmlrpc_message->_parser, XML_OPTION_CASE_FOLDING, FALSE);
@@ -175,7 +170,10 @@ function xmlrpc_message_parse(&$xmlrpc_message) {
   xml_parser_free($xmlrpc_message->_parser);
   // Grab the error messages, if any
   $xmlrpc_message = xmlrpc_message_get();
-  if ($xmlrpc_message->messagetype == 'fault') {
+  if (!isset($xmlrpc_message->messagetype)) {
+    return FALSE;
+  }
+  elseif ($xmlrpc_message->messagetype == 'fault') {
     $xmlrpc_message->fault_code = $xmlrpc_message->params[0]['faultCode'];
     $xmlrpc_message->fault_string = $xmlrpc_message->params[0]['faultString'];
   }

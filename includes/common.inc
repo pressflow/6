@@ -1,5 +1,5 @@
 <?php
-// $Id: common.inc,v 1.756.2.79 2010/03/04 00:15:28 goba Exp $
+// $Id: common.inc,v 1.756.2.88 2010/06/02 18:52:32 goba Exp $
 
 /**
  * @file
@@ -430,8 +430,8 @@ function drupal_access_denied() {
  *   An integer representing how many times to retry the request in case of a
  *   redirect.
  * @return
- *   An object containing the HTTP request headers, response code, headers,
- *   data and redirect status.
+ *   An object containing the HTTP request headers, response code, protocol,
+ *   status message, headers, data and redirect status.
  */
 function drupal_http_request($url, $headers = array(), $method = 'GET', $data = NULL, $retry = 3) {
   global $db_prefix;
@@ -455,6 +455,7 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
 
   switch ($uri['scheme']) {
     case 'http':
+    case 'feed':
       $port = isset($uri['port']) ? $uri['port'] : 80;
       $host = $uri['host'] . ($port != 80 ? ':'. $port : '');
       $fp = @fsockopen($uri['host'], $port, $errno, $errstr, 15);
@@ -550,7 +551,10 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
   list($split, $result->data) = explode("\r\n\r\n", $response, 2);
   $split = preg_split("/\r\n|\n|\r/", $split);
 
-  list($protocol, $code, $text) = explode(' ', trim(array_shift($split)), 3);
+  list($protocol, $code, $status_message) = explode(' ', trim(array_shift($split)), 3);
+  $result->protocol = $protocol;
+  $result->status_message = $status_message;
+
   $result->headers = array();
 
   // Parse headers.
@@ -596,7 +600,7 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
 
       break;
     default:
-      $result->error = $text;
+      $result->error = $status_message;
   }
 
   $result->code = $code;
@@ -978,7 +982,7 @@ function valid_url($url, $absolute = FALSE) {
   if ($absolute) {
     return (bool)preg_match("
       /^                                                      # Start at the beginning of the text
-      (?:ftp|https?):\/\/                                     # Look for ftp, http, or https schemes
+      (?:ftp|https?|feed):\/\/                                # Look for ftp, http, https or feed schemes
       (?:                                                     # Userinfo (optional) which is typically
         (?:(?:[\w\.\-\+!$&'\(\)*\+,;=]|%[0-9a-f]{2})+:)*      # a username or a username and password
         (?:[\w\.\-\+%!$&'\(\)*\+,;=]|%[0-9a-f]{2})+@          # combination
@@ -1611,8 +1615,6 @@ function l($text, $path, $options = array()) {
  * react to the closing of the page by calling hook_exit().
  */
 function drupal_page_footer() {
-  global $user;
-
   // Write the session, and open one if needed.
   drupal_session_commit();
 
@@ -2040,8 +2042,16 @@ function _drupal_load_stylesheet($matches) {
   $filename = $matches[1];
   // Load the imported stylesheet and replace @import commands in there as well.
   $file = drupal_load_stylesheet($filename);
-  // Alter all url() paths, but not external.
-  return preg_replace('/url\(([\'"]?)(?![a-z]+:)([^\'")]+)[\'"]?\)?;/i', 'url(\1'. dirname($filename) .'/', $file);
+  // Determine the file's directory.
+  $directory = dirname($filename);
+  // If the file is in the current directory, make sure '.' doesn't appear in
+  // the url() path.
+  $directory = $directory == '.' ? '' : $directory .'/';
+
+  // Alter all internal url() paths. Leave external paths alone. We don't need
+  // to normalize absolute paths here (i.e. remove folder/... segments) because
+  // that will be done later.
+  return preg_replace('/url\s*\(([\'"]?)(?![a-z]+:|\/+)/i', 'url(\1'. $directory, $file);
 }
 
 /**
@@ -2408,8 +2418,8 @@ function drupal_build_js_cache($files, $filename) {
     // Build aggregate JS file.
     foreach ($files as $path => $info) {
       if ($info['preprocess']) {
-        // Append a ';' after each JS file to prevent them from running together.
-        $contents .= file_get_contents($path) .';';
+        // Append a ';' and a newline after each JS file to prevent them from running together.
+        $contents .= file_get_contents($path) .";\n";
       }
     }
 
@@ -2605,53 +2615,46 @@ function _drupal_bootstrap_full() {
 /**
  * Store the current page in the cache.
  *
- * We try to store a gzipped version of the cache. This requires the
- * PHP zlib extension (http://php.net/manual/en/ref.zlib.php).
- * Presence of the extension is checked by testing for the function
- * gzencode. There are two compression algorithms: gzip and deflate.
- * The majority of all modern browsers support gzip or both of them.
- * We thus only deal with the gzip variant and unzip the cache in case
- * the browser does not accept gzip encoding.
+ * If page_compression is enabled, a gzipped version of the page is stored in
+ * the cache to avoid compressing the output on each request. The cache entry
+ * is unzipped in the relatively rare event that the page is requested by a
+ * client without gzip support.
+ *
+ * Page compression requires the PHP zlib extension
+ * (http://php.net/manual/en/ref.zlib.php).
  *
  * @see drupal_page_header
  */
 function page_set_cache() {
-  global $user, $base_root;
+  global $base_root;
 
   if (drupal_page_is_cacheable()) {
-    $cache_page = TRUE;
+    // This will fail in some cases, see page_get_cache() for the explanation.
+    if ($data = ob_get_contents()) {
+      ob_end_clean();
+      $cache_lifetime = variable_get('page_cache_lifetime', 0);
 
-    $cache_lifetime = variable_get('page_cache_lifetime', 0);
+      if (variable_get('page_compression', TRUE) && extension_loaded('zlib')) {
+        $data = gzencode($data, 9, FORCE_GZIP);
+      }
 
-    $cache = (object) array(
-      'cid' => $base_root . request_uri(),
-      'data' => ob_get_clean(),
-      'expire' => $cache_lifetime > 0 ? $cache_lifetime : CACHE_TEMPORARY,
-      'created' => $_SERVER['REQUEST_TIME'],
-      'headers' => array(),
-    );
-    // Restore preferred header names based on the lower-case names returned
-    // by drupal_get_header().
-    $header_names = _drupal_set_preferred_header_name();
-    foreach (drupal_get_header() as $name_lower => $value) {
-      $cache->headers[$header_names[$name_lower]] = $value;
-    }
-    if (variable_get('page_compression', TRUE) && function_exists('gzencode')) {
-      // We do not store the data in case the zlib mode is deflate. This should
-      // be rarely happening.
-      if (zlib_get_coding_type() == 'deflate') {
-        $cache_page = FALSE;
+      $cache = (object) array(
+        'cid' => $base_root . request_uri(),
+        'data' => $data,
+        'expire' => $cache_lifetime > 0 ? $cache_lifetime : CACHE_TEMPORARY,
+        'created' => $_SERVER['REQUEST_TIME'],
+        'headers' => array(),
+      );
+    
+      // Restore preferred header names based on the lower-case names returned
+      // by drupal_get_header().
+      $header_names = _drupal_set_preferred_header_name();
+      foreach (drupal_get_header() as $name_lower => $value) {
+        $cache->headers[$header_names[$name_lower]] = $value;
       }
-      elseif (zlib_get_coding_type() == FALSE) {
-        $cache->data = gzencode($cache->data, 9, FORCE_GZIP);
-      }
-      // The remaining case is 'gzip' which means the data is already
-      // compressed and nothing left to do but to store it.
-    }
-    if ($cache_page && $cache->data) {
       cache_set($cache->cid, $cache->data, 'cache_page', $cache->expire, serialize($cache->headers));
+      drupal_page_cache_header($cache);
     }
-    drupal_page_cache_header($cache);
   }
 }
 
