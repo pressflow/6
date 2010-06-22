@@ -552,7 +552,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
  * with variable_set() as well as those explicitly specified in the configuration
  * file.
  */
-function variable_init($conf = array(), $regenerate = FALSE) {
+function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 0) {
   // NOTE: caching the variables improves performance by 20% when serving cached pages.
   if (!$regenerate && $cached = cache_get('variables', 'cache')) {
     $variables = $cached->data;
@@ -572,8 +572,15 @@ function variable_init($conf = array(), $regenerate = FALSE) {
       // Wait for another request that is already doing this work.
       lock_wait('variable_cache_regenerate');
 
-      // Run the function again.
-      return variable_init($conf, $regenerate);
+      // Run the function again. Try a limited number of times to avoid 
+      // infinite recursion if the database connection is invalid for  
+      // some reason, e.g., mysqld restart, loss of network, etc.
+      $recursion_depth++;
+      if ($recursion_depth < 50) {
+        return variable_init($conf, $regenerate, $recursion_depth);
+      }
+
+      $variables = array();
     }
   }
 
