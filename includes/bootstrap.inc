@@ -614,7 +614,7 @@ function variable_get($name, $default) {
  * @see variable_del(), variable_get()
  */
 function variable_set($name, $value) {
-  global $conf;
+  global $conf, $db_prefix;
 
   $serialized_value = serialize($value);
   db_query("UPDATE {variable} SET value = '%s' WHERE name = '%s'", $serialized_value, $name);
@@ -624,6 +624,11 @@ function variable_set($name, $value) {
 
   $conf[$name] = $value;
 
+  // The write-through rebuild optimization isn't compatible with SimpleTest.
+  if (strpos($db_prefix, 'simpletest') === 0) {
+    cache_clear_all('variables', 'cache');
+  }
+  
   variable_cache_rebuild();
 }
 
@@ -636,12 +641,17 @@ function variable_set($name, $value) {
  * @see variable_get(), variable_set()
  */
 function variable_del($name) {
-  global $conf;
+  global $conf, $db_prefix;
 
   db_query("DELETE FROM {variable} WHERE name = '%s'", $name);
 
   unset($conf[$name]);
 
+  // The write-through rebuild optimization isn't compatible with SimpleTest.
+  if (strpos($db_prefix, 'simpletest') === 0) {
+    cache_clear_all('variables', 'cache');
+  }
+  
   variable_cache_rebuild();
 }
 
@@ -1362,14 +1372,18 @@ function drupal_anonymous_user($session = '') {
  *     DRUPAL_BOOTSTRAP_PATH: set $_GET['q'] to Drupal path of request.
  *     DRUPAL_BOOTSTRAP_FULL: Drupal is fully loaded, validate and fix input data.
  */
-function drupal_bootstrap($phase) {
+function drupal_bootstrap($phase = NULL) {
   static $phases = array(DRUPAL_BOOTSTRAP_CONFIGURATION, DRUPAL_BOOTSTRAP_EARLY_PAGE_CACHE, DRUPAL_BOOTSTRAP_DATABASE, DRUPAL_BOOTSTRAP_ACCESS, DRUPAL_BOOTSTRAP_SESSION, DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE, DRUPAL_BOOTSTRAP_LANGUAGE, DRUPAL_BOOTSTRAP_PATH, DRUPAL_BOOTSTRAP_FULL), $phase_index = 0;
 
-  while ($phase >= $phase_index && isset($phases[$phase_index])) {
-    $current_phase = $phases[$phase_index];
-    unset($phases[$phase_index++]);
-    _drupal_bootstrap($current_phase);
+  if (isset($phase)) {
+    while ($phase >= $phase_index && isset($phases[$phase_index])) {
+      $current_phase = $phases[$phase_index];
+      unset($phases[$phase_index++]);
+      _drupal_bootstrap($current_phase);
+    }
   }
+  
+  return $phase_index;
 }
 
 function _drupal_bootstrap($phase) {
@@ -1403,11 +1417,11 @@ function _drupal_bootstrap($phase) {
       // running tests. However, for security reasons, it is imperative that we
       // validate we ourselves made the request.
       $GLOBALS['simpletest_installed'] = TRUE;
-      if (isset($_SERVER['HTTP_USER_AGENT']) && (strpos($_SERVER['HTTP_USER_AGENT'], "simpletest") !== FALSE) && !drupal_valid_test_ua($_SERVER['HTTP_USER_AGENT'])) {
-        header($_SERVER['SERVER_PROTOCOL'] . ' 403 Forbidden');
-        exit;
-      }
       if (isset($_SERVER['HTTP_USER_AGENT']) && preg_match("/^(simpletest\d+);/", $_SERVER['HTTP_USER_AGENT'], $matches)) {
+        if (!drupal_valid_test_ua($_SERVER['HTTP_USER_AGENT'])) {
+          header($_SERVER['SERVER_PROTOCOL'] . ' 403 Forbidden');
+          exit;
+        }
         $db_prefix .= $matches[1];
       }
 
@@ -1772,11 +1786,23 @@ function drupal_save_session($status = NULL) {
   }
   return $save_session;
 }
+	
+/**
+ * Returns the current bootstrap phase for this Drupal process.
+ *
+ * The current phase is the one most recently completed by drupal_bootstrap().
+ *
+ * @see drupal_bootstrap()
+ */
+function drupal_get_bootstrap_phase() {
+  return drupal_bootstrap();
+}
 
 /**
  * Validate the HMAC and timestamp of a user agent header from simpletest.
  */
 function drupal_valid_test_ua($user_agent) {
+//  global $dbatabases;
   global $db_url;
 
   list($prefix, $time, $salt, $hmac) = explode(';', $user_agent);
@@ -1784,7 +1810,9 @@ function drupal_valid_test_ua($user_agent) {
   // We use the database credentials from settings.php to make the HMAC key, since
   // the database is not yet initialized and we can't access any Drupal variables.
   // The file properties add more entropy not easily accessible to others.
+//  $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
   $filepath = './includes/bootstrap.inc';
+//  $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
   $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   // The HMAC must match.
   return $hmac == base64_encode(hash_hmac('sha1', $check_string, $key, TRUE));
@@ -1802,7 +1830,9 @@ function drupal_generate_test_ua($prefix) {
     // We use the database credentials to make the HMAC key, since we
     // check the HMAC before the database is initialized. filectime()
     // and fileinode() are not easily determined from remote.
-    $filepath = './includes/bootstrap.inc';
+//    $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
+    $filepath = './includes/bootstrap.inc';                
+//    $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
     $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   }
    // Generate a moderately secure HMAC based on the database credentials.

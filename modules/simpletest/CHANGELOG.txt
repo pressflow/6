@@ -1,4 +1,22 @@
-// $Id: CHANGELOG.txt,v 1.1.2.97 2009/09/14 23:22:56 boombatower Exp $
+// $Id: CHANGELOG.txt,v 1.1.2.110 2009/12/30 22:37:21 boombatower Exp $
+
+SimpleTest 6.x-2.10, 2009-12-30
+-------------------------------
+- Bugs
+   * Correct INSTALL.txt link URL in requirement check.
+   * #587304: Call to undefined function drupal_realpath().
+   * #587988: drupal_http_request() does not use drupal_generate_test_ua().
+   * Manual fix of --file argument for run-tests.sh.
+   * #596440 by grendzy: assertMail doesn't work on real modules - Class 'DrupalWebTestCase' not found.
+   * #603410: Missing backported error handler in _drupal_bootstrap_full().
+   * #640076: Link to file INSTALL.txt should use url().
+   * #654534 by sun: SimpleTest deletes *all* files.
+   * #649344 by joachim: Link in admin help message to INSTALL file is broken.
+- Changes:
+   * #580406: DrupalUnitTestCase requires Database class.
+   * #667546: INSTALL.txt text correction.
+- Backports:
+   * #653860 by yhahn: Ensure simpletest JS handlers are attached only once.
 
 SimpleTest 6.x-2.9, 2009-09-14
 ------------------------------
