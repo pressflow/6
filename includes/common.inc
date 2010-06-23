@@ -524,7 +524,7 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
   // same time won't interfere with each other as they would if the database
   // prefix were stored statically in a file or database variable.
   if (is_string($db_prefix) && preg_match("/^simpletest\d+$/", $db_prefix, $matches)) {
-    $defaults['User-Agent'] = 'User-Agent: ' . $matches[0];
+    $defaults['User-Agent'] = 'User-Agent: ' . drupal_generate_test_ua($matches[0]);
   }
 
   foreach ($headers as $header => $value) {
@@ -2587,7 +2587,8 @@ function _drupal_bootstrap_full() {
   require_once './includes/mail.inc';
   require_once './includes/actions.inc';
   // Set the Drupal custom error handler.
-  set_error_handler('drupal_error_handler');
+  set_error_handler('_drupal_error_handler');
+  set_exception_handler('_drupal_exception_handler');
   // Emit the correct charset HTTP header.
   drupal_set_header('Content-Type: text/html; charset=utf-8');
   // Detect string handling method

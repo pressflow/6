@@ -72,7 +72,9 @@ function theme_simpletest_test_table($table) {
   // Create header for test selection table.
   $header = array(
     theme('table_select_header_cell'),
+//     array('data' => t('Test'), 'class' => array('simpletest_test')),
     array('data' => t('Test'), 'class' => 'simpletest_test'),
+//     array('data' => t('Description'), 'class' => array('simpletest_description')),
     array('data' => t('Description'), 'class' => 'simpletest_description'),
   );
 
@@ -100,6 +102,7 @@ function theme_simpletest_test_table($table) {
     $image_index = $collapsed ? 0 : 1;
 
     // Place-holder for checkboxes to select group of tests.
+//     $row[] = array('id' => $test_class, 'class' => array('simpletest-select-all'));
     $row[] = array('id' => $test_class, 'class' => 'simpletest-select-all');
 
     // Expand/collapse image and group title.
@@ -111,6 +114,7 @@ function theme_simpletest_test_table($table) {
 
     $row[] = '&nbsp;';
 
+//    $rows[] = array('data' => $row, 'class' => array('simpletest-group'));
     $rows[] = array('data' => $row, 'class' => 'simpletest-group');
 
     // Add individual tests to group.
@@ -145,6 +149,7 @@ function theme_simpletest_test_table($table) {
       $row[] = theme('indentation', 1) . '<label for="edit-' . $test_name . '">' . $title . '</label>';
       $row[] = '<div class="description">' . $description . '</div>';
 
+//      $rows[] = array('data' => $row, 'class' => array($test_class . '-test', ($collapsed ? 'js-hide' : '')));
       $rows[] = array('data' => $row, 'class' => $test_class . '-test ' . ($collapsed ? 'js-hide' : ''));
     }
     $js['simpletest-test-group-' . $test_class] = $current_js;
@@ -209,6 +214,7 @@ function simpletest_result_form(&$form_state, $test_id) {
   $results = array();
   if (is_numeric($test_id) && !$results = simpletest_result_get($test_id)) {
     drupal_set_message(t('No test results to display.'), 'error');
+//    drupal_goto('admin/config/development/testing');
     drupal_goto('admin/build/testing');
     return $form;
   }
@@ -236,6 +242,7 @@ function simpletest_result_form(&$form_state, $test_id) {
   );
 
   // Cycle through each test group.
+//  $header = array(t('Message'), t('Group'), t('Filename'), t('Line'), t('Function'), array('colspan' => 2, 'data' => t('Status')));
   $header = array(t('Message'), t('Group'), t('Filename'), t('Line'), t('Function'), t('Status'));
   $form['result']['results'] = array();
   $classes = simpletest_test_get_all_classes(); // Drupal 6.
@@ -268,11 +275,17 @@ function simpletest_result_form(&$form_state, $test_id) {
       if ($assertion->message_group == 'Debug') {
         $class = 'simpletest-debug';
       }
+//      $rows[] = array('data' => $row, 'class' => array($class));
       $rows[] = array('data' => $row, 'class' => $class);
 
       $group_summary['#' . $assertion->status]++;
       $form['result']['summary']['#' . $assertion->status]++;
     }
+//    $form['result']['results'][$group]['table'] = array(
+//      '#theme' => 'table',
+//      '#header' => $header,
+//      '#rows' => $rows,
+//    );
     $form['result']['results'][$group]['table'] = array(
       '#type' => 'markup',
       '#value' => theme('table', $header, $rows),
@@ -290,10 +303,12 @@ function simpletest_result_form(&$form_state, $test_id) {
   $form['result']['summary']['#ok'] = $form['result']['summary']['#fail'] + $form['result']['summary']['#exception'] == 0;
 
   // Actions.
+//  $form['#action'] = url('admin/config/development/testing/results/re-run');
   $form['#action'] = url('admin/build/testing/results/re-run');
   $form['action'] = array(
     '#type' => 'fieldset',
     '#title' => t('Actions'),
+//    '#attributes' => array('class' => array('container-inline')),
     '#attributes' => array('class' => 'container-inline'),
     '#weight' => -11,
   );
@@ -325,6 +340,7 @@ function simpletest_result_form(&$form_state, $test_id) {
   );
 
   $form['action']['return'] = array(
+//    '#markup' => l(t('Return to list'), 'admin/config/development/testing'),
     '#type' => 'markup',
     '#value' => l(t('Return to list'), 'admin/build/testing'),
   );
@@ -382,12 +398,19 @@ function theme_simpletest_result_summary($form) {
  * @return Array of results grouped by test_class.
  */
 function simpletest_result_get($test_id) {
+//  $results = db_select('simpletest')
+//    ->fields('simpletest')
+//    ->condition('test_id', $test_id)
+//    ->orderBy('test_class')
+//    ->orderBy('message_id')
+//    ->execute();
   $results = db_query('SELECT *
                        FROM {simpletest}
                        WHERE test_id = %d
                        ORDER BY test_class, message_id', $test_id);
 
   $test_results = array();
+//  foreach ($results as $result) {
   while ($result = db_fetch_object($results)) {
     if (!isset($test_results[$result->test_class])) {
       $test_results[$result->test_class] = array();

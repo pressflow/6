@@ -2278,7 +2278,14 @@ function _menu_router_build($callbacks) {
   // First pass: separate callbacks from paths, making paths ready for
   // matching. Calculate fitness, and fill some default values.
   $menu = array();
+  $unique_paths = array();
   foreach ($callbacks as $path => $item) {
+    // If this is a duplicate path (case insensitive) then ignore this
+    // callback item.
+    if (in_array(strtolower($path), $unique_paths)) {
+      continue;
+    }
+    $unique_paths[] = strtolower($path);
     $load_functions = array();
     $to_arg_functions = array();
     $fit = 0;

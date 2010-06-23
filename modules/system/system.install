@@ -385,10 +385,10 @@ function system_install() {
   // This sets uid 1 (superuser). We skip uid 2 but that's not a big problem.
   db_query("UPDATE {users} SET uid = 1 WHERE name = '%s'", 'placeholder-for-uid-1');
 
-  db_query("INSERT INTO {role} (rid, name) VALUES (%d, '%s')", DRUPAL_ANONYMOUS_RID, 'anonymous user');
+  db_query("INSERT INTO {role} (name) VALUES ('%s')", 'anonymous user');
   $rid_anonymous = db_last_insert_id('role', 'rid');
 
-  db_query("INSERT INTO {role} (rid, name) VALUES (%d, '%s')", DRUPAL_AUTHENTICATED_RID, 'authenticated user');
+  db_query("INSERT INTO {role} (name) VALUES ('%s')", 'authenticated user');
   $rid_authenticated = db_last_insert_id('role', 'rid');
 
   // Sanity check to ensure the anonymous and authenticated role IDs are the 
