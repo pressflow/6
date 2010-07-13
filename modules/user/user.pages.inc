@@ -153,7 +153,7 @@ function user_logout() {
   user_module_invoke('logout', $null, $user);
 
   // Destroy the current session, and reset $user to the anonymous user.
-  session_destroy();
+  drupal_session_destroy();
 
   // Load the anonymous user
   $user = drupal_anonymous_user();

@@ -1714,7 +1714,7 @@ function drupal_session_commit() {
   if (empty($user->uid) && empty($_SESSION)) {
     if (drupal_session_started() && drupal_save_session()) {
       // Destroy empty anonymous sessions.
-      session_destroy();
+      drupal_session_destroy();
     }
   }
   else if (drupal_save_session()) {
@@ -1854,4 +1854,20 @@ function drupal_generate_test_ua($prefix) {
 function drupal_is_cli() {
   return ((!isset($_SERVER['SERVER_SOFTWARE']) || $_SERVER['SERVER_SOFTWARE'] == 'PHP CLI')
     && (php_sapi_name() == 'cli' || (is_numeric($_SERVER['argc']) && $_SERVER['argc'] > 0)));
+}
+
+/**
+ * Destroys all data registered to a session.
+ *
+ * Placed in bootstrap.inc instead of session.inc as session.inc may be
+ * overridden by other session persistance layers (eg., memcache).
+ *
+ * @ingroup php_wrappers
+ */
+function drupal_session_destroy() {
+  session_destroy();
+  
+  // Workaround PHP 5.2 fatal error "Failed to initialize storage module".
+  // @see http://bugs.php.net/bug.php?id=32330
+  session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy_sid', 'sess_gc');
 }
