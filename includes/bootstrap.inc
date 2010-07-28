@@ -1395,6 +1395,16 @@ function drupal_bootstrap($phase = NULL) {
   return $phase_index;
 }
 
+/**
+ * Redirect to the installer if an essential table is missing.
+ */
+function detect_installation_or_run_installer() {
+  if (variable_get('pressflow_smart_start', FALSE) && !db_table_exists('access')) {
+    include_once 'includes/install.inc';
+    install_goto('install.php');
+  }
+}
+
 function _drupal_bootstrap($phase) {
   global $conf, $user, $db_prefix;
 
@@ -1441,6 +1451,10 @@ function _drupal_bootstrap($phase) {
       // those using APC or memcached.
       require_once variable_get('lock_inc', './includes/lock.inc');
       lock_init();
+      
+      // Detect if an installation is present.
+      detect_installation_or_run_installer();
+
       break;
 
     case DRUPAL_BOOTSTRAP_ACCESS:

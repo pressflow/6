@@ -238,6 +238,15 @@ ini_set('url_rewriter.tags',        '');
 #   '@count min' => '@count minutes',
 # );
 
+/**
+ * Smart start:
+ *
+ * If you would prefer to be redirected to the installation system when a
+ * valid settings.php file is present but no tables are installed, remove
+ * the leading hash sign below.
+ */
+# $conf['pressflow_smart_start'] = TRUE;
+
 $GLOBALS['simpletest_installed'] = TRUE;
 if (preg_match("/^simpletest\d+$/", $_SERVER['HTTP_USER_AGENT'])) {
   $db_prefix = $_SERVER['HTTP_USER_AGENT'];
