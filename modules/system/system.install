@@ -146,14 +146,24 @@ function system_requirements($phase) {
     if (time() - $cron_last > $threshold_error) {
       $severity = REQUIREMENT_ERROR;
     }
-    else if ($never_run || (time() - $cron_last > $threshold_warning)) {
+    else if ($never_run) {
+      // In "smart start" mode, suppress a warning if we're
+      // within the normal cron threshold from installation.
+      if (variable_get('pressflow_smart_start', FALSE)) {
+        $severity = REQUIREMENT_OK;
+      }
+      else {
+        $severity = REQUIREMENT_WARNING;
+      }
+    }
+    else if (time() - $cron_last > $threshold_warning) {
       $severity = REQUIREMENT_WARNING;
     }
 
     // If cron hasn't been run, and the user is viewing the main
     // administration page, instead of an error, we display a helpful reminder
     // to configure cron jobs.
-    if ($never_run && $severity != REQUIREMENT_ERROR && $_GET['q'] == 'admin' && user_access('administer site configuration')) {
+    if ($never_run && $severity != REQUIREMENT_ERROR && $_GET['q'] == 'admin' && user_access('administer site configuration') && !variable_get('pressflow_smart_start', FALSE)) {
       drupal_set_message($t('Cron has not run. Please visit the <a href="@status">status report</a> for more information.', array('@status' => url('admin/reports/status'))));
     }
 

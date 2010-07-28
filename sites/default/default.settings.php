@@ -244,6 +244,10 @@ ini_set('url_rewriter.tags',        '');
  * If you would prefer to be redirected to the installation system when a
  * valid settings.php file is present but no tables are installed, remove
  * the leading hash sign below.
+ *
+ * "Smart start" mode also assumes the site already has cron properly
+ * configured. So, it suppresses the cron notice until the normal warning
+ * threshold has elapsed since installation.
  */
 # $conf['pressflow_smart_start'] = TRUE;
 
