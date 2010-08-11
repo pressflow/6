@@ -1,4 +1,10 @@
-// $Id: CHANGELOG.txt,v 1.253.2.39 2010/06/02 18:52:32 goba Exp $
+// $Id: CHANGELOG.txt,v 1.253.2.39.2.1 2010/08/11 20:22:27 goba Exp $
+
+Drupal 6.18, 2010-08-11
+----------------------
+- Fixed security issues (OpenID authentication bypass, File download access
+  bypass, Comment unpublishing bypass, Actions cross site scripting),
+  see SA-CORE-2010-002.
 
 Drupal 6.17, 2010-06-02
 ----------------------

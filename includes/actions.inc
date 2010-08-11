@@ -1,5 +1,5 @@
 <?php
-// $Id: actions.inc,v 1.8.2.12 2010/05/28 15:08:22 goba Exp $
+// $Id: actions.inc,v 1.8.2.12.2.1 2010/08/11 20:22:27 goba Exp $
 
 /**
  * @file
@@ -328,7 +328,7 @@ function actions_synchronize($actions_in_code = array(), $delete_orphans = FALSE
       else {
         // This is a new singleton that we don't have an aid for; assign one.
         db_query("INSERT INTO {actions} (aid, type, callback, parameters, description) VALUES ('%s', '%s', '%s', '%s', '%s')", $callback, $array['type'], $callback, '', $array['description']);
-        watchdog('actions', "Action '%action' added.", array('%action' => filter_xss_admin($array['description'])));
+        watchdog('actions', "Action '%action' added.", array('%action' => $array['description']));
       }
     }
   }
@@ -350,7 +350,7 @@ function actions_synchronize($actions_in_code = array(), $delete_orphans = FALSE
       $results = db_query("SELECT a.aid, a.description FROM {actions} a WHERE callback IN ($placeholders)", $orphaned);
       while ($action = db_fetch_object($results)) {
         actions_delete($action->aid);
-        watchdog('actions', "Removed orphaned action '%action' from database.", array('%action' => filter_xss_admin($action->description)));
+        watchdog('actions', "Removed orphaned action '%action' from database.", array('%action' => $action->description));
       }
     }
     else {
