@@ -1,5 +1,5 @@
 <?php
-// $Id: bootstrap.inc,v 1.206.2.23 2010/06/02 13:07:45 goba Exp $
+// $Id: bootstrap.inc,v 1.206.2.29 2010/08/06 11:50:24 goba Exp $
 
 /**
  * @file
@@ -213,6 +213,11 @@ define('LANGUAGE_LTR', 0);
  * Language written right to left. Possible value of $language->direction.
  */
 define('LANGUAGE_RTL', 1);
+
+// Hide E_DEPRECATED messages.
+if (defined('E_DEPRECATED')) {
+  error_reporting(error_reporting() & ~E_DEPRECATED);
+}
 
 /**
  * Start the timer with the specified name. If you start and stop
@@ -561,7 +566,11 @@ function variable_init($conf = array()) {
 }
 
 /**
- * Return a persistent variable.
+ * Returns a persistent variable.
+ *
+ * Case-sensitivity of the variable_* functions depends on the database
+ * collation used. To avoid problems, always use lower case for persistent
+ * variable names.
  *
  * @param $name
  *   The name of the variable to return.
@@ -579,7 +588,11 @@ function variable_get($name, $default) {
 }
 
 /**
- * Set a persistent variable.
+ * Sets a persistent variable.
+ *
+ * Case-sensitivity of the variable_* functions depends on the database
+ * collation used. To avoid problems, always use lower case for persistent
+ * variable names.
  *
  * @param $name
  *   The name of the variable to set.
@@ -604,7 +617,11 @@ function variable_set($name, $value) {
 }
 
 /**
- * Unset a persistent variable.
+ * Unsets a persistent variable.
+ *
+ * Case-sensitivity of the variable_* functions depends on the database
+ * collation used. To avoid problems, always use lower case for persistent
+ * variable names.
  *
  * @param $name
  *   The name of the variable to undefine.
@@ -791,7 +808,7 @@ function bootstrap_hooks() {
 function drupal_unpack($obj, $field = 'data') {
   if ($obj->$field && $data = unserialize($obj->$field)) {
     foreach ($data as $key => $value) {
-      if (!isset($obj->$key)) {
+      if (!empty($key) && !isset($obj->$key)) {
         $obj->$key = $value;
       }
     }
@@ -909,7 +926,8 @@ function request_uri() {
  * Log a system message.
  *
  * @param $type
- *   The category to which this message belongs.
+ *   The category to which this message belongs. Can be any string, but the
+ *   general practice is to use the name of the module calling watchdog().
  * @param $message
  *   The message to store in the log. See t() for documentation
  *   on how $message and $variables interact. Keep $message
@@ -919,7 +937,8 @@ function request_uri() {
  *   NULL if message is already translated or not possible to
  *   translate.
  * @param $severity
- *   The severity of the message, as per RFC 3164
+ *   The severity of the message, as per RFC 3164. Possible values are
+ *   WATCHDOG_ERROR, WATCHDOG_WARNING, etc.
  * @param $link
  *   A link to associate with the message.
  *
@@ -943,7 +962,7 @@ function watchdog($type, $message, $variables = array(), $severity = WATCHDOG_NO
     );
 
   // Call the logging hooks to log/process the message
-  foreach (module_implements('watchdog', TRUE) as $module) {
+  foreach (module_implements('watchdog') as $module) {
     module_invoke($module, 'watchdog', $log_message);
   }
 }

@@ -1,4 +1,4 @@
-/* $Id: print.css,v 1.3 2007/09/06 21:23:32 goba Exp $ */
+/* $Id: print.css,v 1.3.2.1 2010/08/06 11:37:38 goba Exp $ */
 
 /**
  * Garland, for Drupal 5.0
@@ -19,7 +19,7 @@ ul.primary-links, ul.secondary-links,
   display: none;
 }
 
-body.sidebars, body.sideber-left, body.sidebar-right, body {
+body.sidebars, body.sidebar-left, body.sidebar-right, body {
   width: 640px;
 }
 

@@ -1,5 +1,5 @@
 <?php
-// $Id: user.module,v 1.892.2.25 2010/06/02 12:47:58 goba Exp $
+// $Id: user.module,v 1.892.2.27 2010/08/06 11:58:09 goba Exp $
 
 /**
  * @file
@@ -235,7 +235,7 @@ function user_save($account, $array = array(), $category = 'account') {
           if ($value === NULL) {
             unset($data[$key]);
           }
-          else {
+          elseif (!empty($key)) {
             $data[$key] = $value;
           }
         }
@@ -2526,4 +2526,19 @@ function _user_forms(&$edit, $account, $category, $hook = 'form') {
   uasort($groups, '_user_sort');
 
   return empty($groups) ? FALSE : $groups;
+}
+
+/**
+ * Prepare a destination query string for use in combination with drupal_goto().
+ *
+ * Used to direct the user back to the referring page after completing
+ * the openid login.  This function prevents the login page from being
+ * returned because that page will give an access denied message to an
+ * authenticated user.
+ *
+ * @see drupal_get_destination()
+ */
+function user_login_destination() {
+  $destination = drupal_get_destination();
+  return $destination == 'destination=user%2Flogin' ? 'destination=user' : $destination;
 }

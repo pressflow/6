@@ -1,5 +1,5 @@
 <?php
-// $Id: system.install,v 1.238.2.23 2010/05/28 11:51:20 goba Exp $
+// $Id: system.install,v 1.238.2.24 2010/08/06 10:54:12 goba Exp $
 
 /**
  * Test and report Drupal installation requirements.
@@ -629,7 +629,7 @@ function system_schema() {
         'not null' => TRUE,
         'default' => 0),
       'status' => array(
-        'description' => 'A flag indicating whether file is temporary (1) or permanent (0).',
+        'description' => 'A flag indicating whether file is temporary (0) or permanent (1).',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0),

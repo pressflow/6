@@ -1,5 +1,5 @@
 <?php
-// $Id: taxonomy.module,v 1.414.2.14 2010/05/11 10:19:04 goba Exp $
+// $Id: taxonomy.module,v 1.414.2.16 2010/08/06 11:10:57 goba Exp $
 
 /**
  * @file
@@ -509,8 +509,9 @@ function taxonomy_form_alter(&$form, $form_state, $form_id) {
       $terms = empty($node->nid) ? array() : taxonomy_node_get_terms($node);
     }
     else {
-      // After preview the terms must be converted to objects.
-      if (isset($form_state['node_preview'])) {
+      // After a preview or form reload, the terms must be converted to objects.
+      reset($node->taxonomy);
+      if (!is_object(current($node->taxonomy))) {
         $node->taxonomy = taxonomy_preview_terms($node);
       }
       $terms = $node->taxonomy;
@@ -1329,7 +1330,9 @@ function _taxonomy_get_tid_from_term($term) {
 }
 
 /**
- * Implode a list of tags of a certain vocabulary into a string.
+ * Implodes a list of tags of a certain vocabulary into a string.
+ *
+ * @see drupal_explode_tags()
  */
 function taxonomy_implode_tags($tags, $vid = NULL) {
   $typed_tags = array();

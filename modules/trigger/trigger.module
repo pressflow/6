@@ -1,5 +1,5 @@
 <?php
-// $Id: trigger.module,v 1.13.2.3 2009/06/08 16:34:57 goba Exp $
+// $Id: trigger.module,v 1.13.2.4 2010/06/30 09:38:50 goba Exp $
 
 /**
  * @file
@@ -105,6 +105,7 @@ function trigger_menu() {
       'title' => $nice_name,
       'page callback' => 'trigger_assign',
       'page arguments' => array($module),
+      'access callback' => 'trigger_access_check',
       'access arguments' => array($module),
       'type' => MENU_LOCAL_TASK,
       'file' => 'trigger.admin.inc',
