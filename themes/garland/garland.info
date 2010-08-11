@@ -7,8 +7,8 @@ engine = phptemplate
 stylesheets[all][] = style.css
 stylesheets[print][] = print.css
 
-; Information added by drupal.org packaging script on 2010-06-02
-version = "6.17"
+; Information added by drupal.org packaging script on 2010-08-11
+version = "6.18"
 project = "drupal"
-datestamp = "1275505216"
+datestamp = "1281558392"
 
