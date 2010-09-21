@@ -1,6 +1,15 @@
 <?php
 
-/*
+/**
+ * Implementation of hook_flush_caches().
+ *
+ * @return array
+ */
+function path_alias_cache_flush_caches() {
+  return array('cache_path');
+}
+
+/**
  * Implementation of hook_lookup_path
  *
  * This version of lookup_path is almost exactly what is in core, but adds a cache table.
