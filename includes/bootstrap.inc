@@ -674,7 +674,9 @@ function variable_del($name) {
   unset($conf[$name]);
 
   // The write-through rebuild optimization isn't compatible with SimpleTest.
-  if (strpos($db_prefix, 'simpletest') === 0) {
+  // Because array-based prefixes don't work with SimpleTest, we can assume
+  // that a non-string prefix indicates lack of SimpleTest operations.
+  if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
     cache_clear_all('variables', 'cache');
   }
   
