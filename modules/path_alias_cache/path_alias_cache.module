@@ -137,19 +137,18 @@ function path_alias_cache_cache_system_paths() {
   // Check if the system paths for this page were loaded from cache in this
   // request to avoid writing to cache on every request.
   $cache = &path_alias_cache_static('path_alias_cache_lookup_path', array());
-  if (!array_key_exists('system_paths', $cache)) {
+  if (empty($cache['system_paths']) && !empty($cache['map'])) {
     // Generate a cache ID (cid) specifically for this page.
-    $cid = array_key_exists('q', $_GET) ? $_GET['q'] : '';
+    $cid = $_GET['q'];
     // The static $map array used by drupal_lookup_path() includes all
     // system paths for the page request.
     if (array_key_exists('map', $cache) && is_array($cache['map']) && $paths = current($cache['map'])) {
       $data = array_keys($paths);
-      $expire = $_SERVER['REQUEST_TIME'] + variable_get('cache_lifetime', 0);
+      $expire = $_SERVER['REQUEST_TIME'] + 86400;
       cache_set($cid, $data, 'cache_path', $expire);
     }
   }
 }
-
 
 /**
  * Central static variable storage.
