@@ -1,5 +1,5 @@
 <?php
-// $Id: node.module,v 1.947.2.26 2010/08/06 11:41:13 goba Exp $
+// $Id: node.module,v 1.947.2.29 2010/12/15 12:53:33 goba Exp $
 
 /**
  * @file
@@ -816,7 +816,13 @@ function node_validate($node, $form = array()) {
 }
 
 /**
- * Prepare node for save and allow modules to make changes.
+ * Prepares a node for saving by populating teaser, author, and creation date.
+ *
+ * @param object|array $node
+ *   A node object or array.
+ *
+ * @return
+ *   A validated node object with a populated teaser, author, and creation date.
  */
 function node_submit($node) {
   global $user;
@@ -1233,9 +1239,9 @@ function node_search($op = 'search', $keys = NULL) {
       if ($weight = (int)variable_get('node_rank_recent', 5)) {
         // Exponential decay with half-life of 6 months, starting at last indexed node
         // c.last_comment_timestamp may be NULL. Since both MAX(anynumber, NULL) and
-        // GREATEST(anynumber, NULL) return NULL, we OR MAX(c.last_comment_timestamp) with 1
+        // GREATEST(anynumber, NULL) return NULL, we use COALESCE(MAX(c.last_comment_timestamp), 0)
         // to prevent it from being NULL.
-        $ranking[] = '%d * POW(2, (GREATEST(MAX(n.created), MAX(n.changed), MAX(c.last_comment_timestamp) || 1) - %d) * 6.43e-8)';
+        $ranking[] = '%d * POW(2, (GREATEST(MAX(n.created), MAX(n.changed), COALESCE(MAX(c.last_comment_timestamp), 0)) - %d) * 6.43e-8)';
         $arguments2[] = $weight;
         $arguments2[] = (int)variable_get('node_cron_last', 0);
         $join2 .= ' LEFT JOIN {node_comment_statistics} c ON c.nid = i.sid';
@@ -2688,7 +2694,7 @@ function node_save_action($node) {
 function node_assign_owner_action(&$node, $context) {
   $node->uid = $context['owner_uid'];
   $owner_name = db_result(db_query("SELECT name FROM {users} WHERE uid = %d", $context['owner_uid']));
-  watchdog('action', 'Changed owner of @type %title to uid %name.', array('@type' => node_get_types('type', $node), '%title' => $node->title, '%name' => $owner_name));
+  watchdog('action', 'Changed owner of @type %title to uid %name.', array('@type' => node_get_types('name', $node), '%title' => $node->title, '%name' => $owner_name));
 }
 
 function node_assign_owner_action_form($context) {

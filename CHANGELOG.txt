@@ -1,4 +1,8 @@
-// $Id: CHANGELOG.txt,v 1.253.2.41 2010/08/11 20:35:47 goba Exp $
+// $Id: CHANGELOG.txt,v 1.253.2.43 2010/12/15 21:11:22 goba Exp $
+
+Drupal 6.20, 2010-12-15
+----------------------
+- Fixed a variety of small bugs, improved code documentation.
 
 Drupal 6.19, 2010-08-11
 ----------------------
