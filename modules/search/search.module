@@ -1,5 +1,5 @@
 <?php
-// $Id: search.module,v 1.250.2.11 2010/08/06 11:18:01 goba Exp $
+// $Id: search.module,v 1.250.2.13 2010/12/13 18:45:16 goba Exp $
 
 /**
  * @file
@@ -911,7 +911,7 @@ function _search_parse_query(&$word, &$scores, $not = FALSE) {
  *              Default: 'ORDER BY score DESC'
  *
  * @return
- *   An array of SIDs for the search results.
+ *   An array of objects for the search results.
  *
  * @ingroup search
  */
@@ -1018,7 +1018,7 @@ function search_get_keys() {
  * @param $prompt
  *   A piece of text to put before the form (e.g. "Enter your keywords")
  * @return
- *   An HTML string containing the search form.
+ *   A Form API array for the search form.
  */
 function search_form(&$form_state, $action = '', $keys = '', $type = NULL, $prompt = NULL) {
 

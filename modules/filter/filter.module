@@ -1,5 +1,5 @@
 <?php
-// $Id: filter.module,v 1.204.2.16 2010/08/06 11:20:12 goba Exp $
+// $Id: filter.module,v 1.204.2.17 2010/11/03 14:11:43 goba Exp $
 
 /**
  * @file
@@ -1219,7 +1219,7 @@ function _filter_xss_attributes($attr) {
 function filter_xss_bad_protocol($string, $decode = TRUE) {
   static $allowed_protocols;
   if (!isset($allowed_protocols)) {
-    $allowed_protocols = array_flip(variable_get('filter_allowed_protocols', array('http', 'https', 'ftp', 'news', 'nntp', 'telnet', 'mailto', 'irc', 'ssh', 'sftp', 'webcal', 'rtsp')));
+    $allowed_protocols = array_flip(variable_get('filter_allowed_protocols', array('http', 'https', 'ftp', 'news', 'nntp', 'tel', 'telnet', 'mailto', 'irc', 'ssh', 'sftp', 'webcal', 'rtsp')));
   }
 
   // Get the plain text representation of the attribute value (i.e. its meaning).

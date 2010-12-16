@@ -1,5 +1,5 @@
 <?php
-// $Id: system.admin.inc,v 1.63.2.14 2010/03/01 10:20:28 goba Exp $
+// $Id: system.admin.inc,v 1.63.2.16 2010/09/06 10:49:14 goba Exp $
 
 /**
  * @file
@@ -503,17 +503,6 @@ function system_theme_settings(&$form_state, $key = '') {
   }
 
   if ($key) {
-    // Include the theme's theme-settings.php file
-    $filename = './'. str_replace("/$key.info", '', $themes[$key]->filename) .'/theme-settings.php';
-    if (!file_exists($filename) and !empty($themes[$key]->info['base theme'])) {
-      // If the theme doesn't have a theme-settings.php file, use the base theme's.
-      $base = $themes[$key]->info['base theme'];
-      $filename = './'. str_replace("/$base.info", '', $themes[$base]->filename) .'/theme-settings.php';
-    }
-    if (file_exists($filename)) {
-      require_once $filename;
-    }
-
     // Call engine-specific settings.
     $function = $themes[$key]->prefix .'_engine_settings';
     if (function_exists($function)) {
@@ -523,16 +512,36 @@ function system_theme_settings(&$form_state, $key = '') {
         $form['engine_specific'] = array_merge($form['engine_specific'], $group);
       }
     }
-    // Call theme-specific settings.
-    $function = $key .'_settings';
-    if (!function_exists($function)) {
-      $function = $themes[$key]->prefix .'_settings';
+
+    // Create a list which includes the current theme and all its base themes.
+    if (isset($themes[$key]->base_themes)) {
+      $theme_keys = array_keys($themes[$key]->base_themes);
+      $theme_keys[] = $key;
     }
-    if (function_exists($function)) {
-      $group = $function($settings);
-      if (!empty($group)) {
-        $form['theme_specific'] = array('#type' => 'fieldset', '#title' => t('Theme-specific settings'), '#description' => t('These settings only exist for the %theme theme and all the styles based on it.', array('%theme' => $themes[$key]->info['name'])));
-        $form['theme_specific'] = array_merge($form['theme_specific'], $group);
+    else {
+      $theme_keys = array($key);
+    }
+
+    // Process the theme and all its base themes.
+    foreach ($theme_keys as $theme) {
+      // Include the theme-settings.php file.
+      $filename = './'. str_replace("/$theme.info", '', $themes[$theme]->filename) .'/theme-settings.php';
+      if (file_exists($filename)) {
+        require_once $filename;
+      }
+
+      $function = $theme .'_settings';
+      if (!function_exists($function)) {
+        $function = $themes[$theme]->prefix .'_settings';
+      }
+      if (function_exists($function)) {
+        $group = $function($settings);
+        if (!empty($group)) {
+          $form['theme_specific']['#type'] = 'fieldset';
+          $form['theme_specific']['#title'] = t('Theme-specific settings');
+          $form['theme_specific']['#description'] = t('These settings only exist for the %theme theme and all the styles based on it.', array('%theme' => $themes[$theme]->info['name']));
+          $form['theme_specific'] = array_merge($form['theme_specific'], $group);
+        }
       }
     }
   }
@@ -628,15 +637,23 @@ function system_modules($form_state = array()) {
   // Get current list of modules.
   $files = module_rebuild_cache();
 
-  uasort($files, 'system_sort_modules_by_info_name');
+  // Remove hidden modules from display list.
+  $visible_files = $files;
+  foreach ($visible_files as $filename => $file) {
+    if (!empty($file->info['hidden'])) {
+      unset($visible_files[$filename]);
+    }
+  }
+
+  uasort($visible_files, 'system_sort_modules_by_info_name');
 
   if (!empty($form_state['storage'])) {
-    return system_modules_confirm_form($files, $form_state['storage']);
+    return system_modules_confirm_form($visible_files, $form_state['storage']);
   }
   $dependencies = array();
 
   // Store module list for validation callback.
-  $form['validation_modules'] = array('#type' => 'value', '#value' => $files);
+  $form['validation_modules'] = array('#type' => 'value', '#value' => $visible_files);
 
   // Create storage for disabled modules as browser will disable checkboxes.
   $form['disabled_modules'] = array('#type' => 'value', '#value' => array());
@@ -644,7 +661,7 @@ function system_modules($form_state = array()) {
   // Traverse the files, checking for compatibility
   $incompatible_core = array();
   $incompatible_php = array();
-  foreach ($files as $filename => $file) {
+  foreach ($visible_files as $filename => $file) {
     // Ensure this module is compatible with this version of core.
     if (!isset($file->info['core']) || $file->info['core'] != DRUPAL_CORE_COMPATIBILITY) {
       $incompatible_core[$file->name] = $file->name;
@@ -659,7 +676,7 @@ function system_modules($form_state = array()) {
   $disabled = array();
   $throttle = array();
   // Traverse the files retrieved and build the form.
-  foreach ($files as $filename => $file) {
+  foreach ($visible_files as $filename => $file) {
     $form['name'][$filename] = array('#value' => $file->info['name']);
     $form['version'][$filename] = array('#value' => $file->info['version']);
     $form['description'][$filename] = array('#value' => t($file->info['description']));
@@ -681,18 +698,19 @@ function system_modules($form_state = array()) {
     // Check for missing dependencies.
     if (is_array($file->info['dependencies'])) {
       foreach ($file->info['dependencies'] as $dependency) {
-        if (!isset($files[$dependency]) || !$files[$dependency]->status) {
-          if (isset($files[$dependency])) {
-            $dependencies[] = t('@module (<span class="admin-disabled">disabled</span>)', array('@module' => $files[$dependency]->info['name']));
+        if (!isset($files[$dependency])) {
+          $dependencies[] = t('@module (<span class="admin-missing">missing</span>)', array('@module' => drupal_ucfirst($dependency)));
+          $disabled[] = $filename;
+          $form['disabled_modules']['#value'][$filename] = FALSE;
+        }
+        // Only display visible modules.
+        elseif (isset($visible_files[$dependency])) {
+          if ($files[$dependency]->status) {
+            $dependencies[] = t('@module (<span class="admin-enabled">enabled</span>)', array('@module' => $files[$dependency]->info['name']));
           }
           else {
-            $dependencies[] = t('@module (<span class="admin-missing">missing</span>)', array('@module' => drupal_ucfirst($dependency)));
-            $disabled[] = $filename;
-            $form['disabled_modules']['#value'][$filename] = FALSE;
+            $dependencies[] = t('@module (<span class="admin-disabled">disabled</span>)', array('@module' => $files[$dependency]->info['name']));
           }
-        }
-        else {
-          $dependencies[] = t('@module (<span class="admin-enabled">enabled</span>)', array('@module' => $files[$dependency]->info['name']));
         }
       }
 
@@ -709,13 +727,16 @@ function system_modules($form_state = array()) {
     // Mark dependents disabled so user can not remove modules being depended on.
     $dependents = array();
     foreach ($file->info['dependents'] as $dependent) {
-      if ($files[$dependent]->status == 1) {
-        $dependents[] = t('@module (<span class="admin-enabled">enabled</span>)', array('@module' => $files[$dependent]->info['name']));
-        $disabled[] = $filename;
-        $form['disabled_modules']['#value'][$filename] = TRUE;
-      }
-      else {
-        $dependents[] = t('@module (<span class="admin-disabled">disabled</span>)', array('@module' => $files[$dependent]->info['name']));
+      // Hidden modules are unset already.
+      if (isset($visible_files[$dependent])) {
+        if ($files[$dependent]->status == 1) {
+          $dependents[] = t('@module (<span class="admin-enabled">enabled</span>)', array('@module' => $files[$dependent]->info['name']));
+          $disabled[] = $filename;
+          $form['disabled_modules']['#value'][$filename] = TRUE;
+        }
+        else {
+          $dependents[] = t('@module (<span class="admin-disabled">disabled</span>)', array('@module' => $files[$dependent]->info['name']));
+        }
       }
     }
 

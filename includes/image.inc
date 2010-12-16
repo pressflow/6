@@ -1,5 +1,5 @@
 <?php
-// $Id: image.inc,v 1.24 2008/01/28 16:05:17 goba Exp $
+// $Id: image.inc,v 1.24.2.1 2010/12/15 14:08:17 goba Exp $
 
 /**
  * @file
@@ -114,7 +114,7 @@ function image_toolkit_invoke($method, $params = array()) {
  *    'file_size' - File size in bytes.
  */
 function image_get_info($file) {
-  if (!is_file($file)) {
+  if (!is_file($file) && !is_uploaded_file($filepath)) {
     return FALSE;
   }
 
