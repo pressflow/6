@@ -77,7 +77,7 @@ function file_create_url($path) {
   else {
     switch (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC)) {
       case FILE_DOWNLOADS_PUBLIC:
-        return base_path() . $path;
+        return rtrim(base_path(), '/') . '/' . ltrim($path, '/');
       case FILE_DOWNLOADS_PRIVATE:
         // Strip file_directory_path from $path. Private downloads' URLs are
         // rewritten to be served relatively to system/files (which is a menu
