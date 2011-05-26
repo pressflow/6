@@ -1,5 +1,5 @@
 <?php
-// $Id: database.pgsql.inc,v 1.68.2.11 2010/12/15 20:41:10 goba Exp $
+// $Id$
 
 /**
  * @file

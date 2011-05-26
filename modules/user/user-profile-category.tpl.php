@@ -1,5 +1,5 @@
 <?php
-// $Id: user-profile-category.tpl.php,v 1.2 2007/08/07 08:39:36 goba Exp $
+// $Id$
 
 /**
  * @file user-profile-category.tpl.php

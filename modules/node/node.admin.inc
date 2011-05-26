@@ -1,5 +1,5 @@
 <?php
-// $Id: node.admin.inc,v 1.19.2.3 2009/06/08 16:45:34 goba Exp $
+// $Id$
 
 /**
  * @file

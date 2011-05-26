@@ -1,5 +1,5 @@
 <?php
-// $Id: update.php,v 1.252.2.4 2010/11/03 12:29:24 goba Exp $
+// $Id$
 
 /**
  * @file

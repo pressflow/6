@@ -1,5 +1,5 @@
 <?php
-// $Id: comment.pages.inc,v 1.2.2.2 2009/07/01 20:51:55 goba Exp $
+// $Id$
 
 /**
  * @file

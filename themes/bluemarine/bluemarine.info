@@ -1,12 +1,12 @@
-; $Id: bluemarine.info,v 1.4 2007/06/08 05:50:57 dries Exp $
+; $Id$
 name = Bluemarine
 description = Table-based multi-column theme with a marine and ash color scheme.
 version = VERSION
 core = 6.x
 engine = phptemplate
 
-; Information added by drupal.org packaging script on 2010-12-15
-version = "6.20"
+; Information added by drupal.org packaging script on 2011-05-25
+version = "6.21"
 project = "drupal"
-datestamp = "1292447788"
+datestamp = "1306354917"
 

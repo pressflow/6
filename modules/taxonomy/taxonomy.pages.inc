@@ -1,5 +1,5 @@
 <?php
-// $Id: taxonomy.pages.inc,v 1.9.2.1 2009/04/27 11:49:05 goba Exp $
+// $Id$
 
 /**
  * @file

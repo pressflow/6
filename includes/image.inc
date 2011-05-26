@@ -1,5 +1,5 @@
 <?php
-// $Id: image.inc,v 1.24.2.1 2010/12/15 14:08:17 goba Exp $
+// $Id$
 
 /**
  * @file

@@ -1,5 +1,5 @@
 <?php
-// $Id: translation.pages.inc,v 1.2.2.1 2008/09/30 10:50:43 goba Exp $
+// $Id$
 
 /**
  * @file

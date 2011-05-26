@@ -1,5 +1,5 @@
 <?php
-// $Id: bootstrap.inc,v 1.206.2.31 2010/12/15 13:21:14 goba Exp $
+// $Id$
 
 /**
  * @file

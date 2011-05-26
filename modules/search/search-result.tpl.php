@@ -1,5 +1,5 @@
 <?php
-// $Id: search-result.tpl.php,v 1.1.2.1 2008/08/28 08:21:44 dries Exp $
+// $Id$
 
 /**
  * @file search-result.tpl.php

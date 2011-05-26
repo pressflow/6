@@ -1,5 +1,5 @@
 <?php
-// $Id: theme.inc,v 1.415.2.28 2010/11/03 19:03:19 goba Exp $
+// $Id$
 
 /**
  * @file

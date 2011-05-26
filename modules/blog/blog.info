@@ -1,12 +1,12 @@
-; $Id: blog.info,v 1.5 2007/06/08 05:50:53 dries Exp $
+; $Id$
 name = Blog
 description = Enables keeping easily and regularly updated user web pages or blogs.
 package = Core - optional
 version = VERSION
 core = 6.x
 
-; Information added by drupal.org packaging script on 2010-12-15
-version = "6.20"
+; Information added by drupal.org packaging script on 2011-05-25
+version = "6.21"
 project = "drupal"
-datestamp = "1292447788"
+datestamp = "1306354917"
 

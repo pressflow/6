@@ -1,5 +1,5 @@
 <?php
-// $Id: contact.pages.inc,v 1.6.2.2 2009/04/27 14:48:21 goba Exp $
+// $Id$
 
 /**
  * @file

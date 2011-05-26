@@ -1,5 +1,5 @@
 <?php
-// $Id: node.tpl.php,v 1.4.2.1 2009/08/10 10:48:33 goba Exp $
+// $Id$
 
 /**
  * @file node.tpl.php

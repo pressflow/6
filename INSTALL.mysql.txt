@@ -1,4 +1,4 @@
-// $Id: INSTALL.mysql.txt,v 1.10 2007/11/19 19:53:51 goba Exp $
+// $Id$
 
 CREATE THE MySQL DATABASE
 --------------------------

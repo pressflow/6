@@ -1,5 +1,5 @@
 <?php
-// $Id: color.inc,v 1.4 2007/12/14 17:00:14 goba Exp $
+// $Id$
 
 $info = array(
 

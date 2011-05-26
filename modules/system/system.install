@@ -1,5 +1,5 @@
 <?php
-// $Id: system.install,v 1.238.2.25 2010/11/03 12:29:24 goba Exp $
+// $Id$
 
 /**
  * Test and report Drupal installation requirements.

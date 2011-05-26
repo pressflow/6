@@ -1,5 +1,5 @@
 <?php
-// $Id: filter.pages.inc,v 1.2 2007/11/10 17:41:18 dries Exp $
+// $Id$
 
 /**
  * @file

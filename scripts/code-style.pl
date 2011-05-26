@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# $Id: code-style.pl,v 1.14 2007/02/15 11:40:19 dries Exp $
+# $Id$
 
 use Pod::Usage;
 use Getopt::Long qw(GetOptions);

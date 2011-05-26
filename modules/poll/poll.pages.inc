@@ -1,5 +1,5 @@
 <?php
-// $Id: poll.pages.inc,v 1.4 2007/12/14 09:50:41 goba Exp $
+// $Id$
 
 /**
  * @file

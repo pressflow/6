@@ -1,5 +1,5 @@
 <?php
-// $Id: language.inc,v 1.14.2.2 2010/03/22 12:18:04 goba Exp $
+// $Id$
 
 /**
  * @file

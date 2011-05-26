@@ -1,5 +1,5 @@
 <?php
-// $Id: dblog.install,v 1.6.2.3 2009/09/14 08:19:24 goba Exp $
+// $Id$
 
 /**
  * Implementation of hook_install().

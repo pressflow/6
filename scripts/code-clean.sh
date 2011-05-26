@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: code-clean.sh,v 1.8 2005/08/11 13:02:08 dries Exp $
+# $Id$
 
 find . -name "*~" -type f | xargs rm -f
 find . -name ".#*" -type f | xargs rm -f

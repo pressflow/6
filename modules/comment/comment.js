@@ -1,4 +1,4 @@
-// $Id: comment.js,v 1.5 2007/09/12 18:29:32 goba Exp $
+// $Id$
 
 Drupal.behaviors.comment = function (context) {
   var parts = new Array("name", "homepage", "mail");

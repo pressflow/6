@@ -1,5 +1,5 @@
 <?php
-// $Id: aggregator.pages.inc,v 1.12.2.1 2008/08/16 21:13:48 dries Exp $
+// $Id$
 
 /**
  * @file

@@ -1,4 +1,4 @@
-// $Id: UPGRADE.txt,v 1.12.2.1 2010/05/11 09:39:36 goba Exp $
+// $Id$
 
 UPGRADING
 ---------

@@ -1,5 +1,5 @@
 <?php
-// $Id: dblog.admin.inc,v 1.6.2.2 2010/12/09 11:58:30 goba Exp $
+// $Id$
 
 /**
  * @file

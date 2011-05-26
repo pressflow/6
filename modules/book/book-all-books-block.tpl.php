@@ -1,5 +1,5 @@
 <?php
-// $Id: book-all-books-block.tpl.php,v 1.1 2007/11/04 14:29:09 goba Exp $
+// $Id$
 
 /**
  * @file book-all-books-block.tpl.php

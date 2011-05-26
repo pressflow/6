@@ -1,4 +1,4 @@
-// $Id: INSTALL.pgsql.txt,v 1.7 2007/11/26 16:36:42 dries Exp $
+// $Id$
 
 CREATE THE PostgreSQL DATABASE
 ------------------------------

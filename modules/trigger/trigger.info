@@ -1,12 +1,12 @@
-; $Id: trigger.info,v 1.1 2007/09/11 14:50:05 goba Exp $
+; $Id$
 name = Trigger
 description = Enables actions to be fired on certain system events, such as when new content is created.
 package = Core - optional
 version = VERSION
 core = 6.x
 
-; Information added by drupal.org packaging script on 2010-12-15
-version = "6.20"
+; Information added by drupal.org packaging script on 2011-05-25
+version = "6.21"
 project = "drupal"
-datestamp = "1292447788"
+datestamp = "1306354917"
 

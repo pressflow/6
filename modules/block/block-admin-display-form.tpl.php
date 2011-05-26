@@ -1,5 +1,5 @@
 <?php
-// $Id: block-admin-display-form.tpl.php,v 1.3 2008/01/16 22:57:26 goba Exp $
+// $Id$
 
 /**
  * @file block-admin-display-form.tpl.php

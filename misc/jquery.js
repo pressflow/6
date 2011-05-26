@@ -1,4 +1,4 @@
-// $Id: jquery.js,v 1.12.2.3 2008/06/25 09:38:39 goba Exp $ 
+// $Id$ 
 
 /*
  * jQuery 1.2.6 - New Wave Javascript

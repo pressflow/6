@@ -1,5 +1,5 @@
 <?php
-// $Id: update.fetch.inc,v 1.7.2.7 2009/07/21 08:59:12 goba Exp $
+// $Id$
 
 /**
  * @file
