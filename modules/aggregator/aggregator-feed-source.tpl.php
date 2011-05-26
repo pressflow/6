@@ -1,5 +1,5 @@
 <?php
-// $Id: aggregator-feed-source.tpl.php,v 1.1 2007/09/13 08:02:38 goba Exp $
+// $Id$
 
 /**
  * @file aggregator-feed-source.tpl.php

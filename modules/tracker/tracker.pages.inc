@@ -1,5 +1,5 @@
 <?php
-// $Id: tracker.pages.inc,v 1.5 2007/11/28 10:29:20 dries Exp $
+// $Id$
 
 /**
  * @file

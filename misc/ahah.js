@@ -1,4 +1,4 @@
-// $Id: ahah.js,v 1.7.2.1 2008/02/11 14:46:27 goba Exp $
+// $Id$
 
 /**
  * Provides AJAX-like page updating via AHAH (Asynchronous HTML and HTTP).

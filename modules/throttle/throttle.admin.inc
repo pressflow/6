@@ -1,5 +1,5 @@
 <?php
-// $Id: throttle.admin.inc,v 1.2 2008/01/08 10:35:43 goba Exp $
+// $Id$
 
 /**
  * @file

@@ -1,5 +1,5 @@
 <?php
-// $Id: statistics.pages.inc,v 1.2.2.1 2009/04/27 12:08:29 goba Exp $
+// $Id$
 
 /**
  * @file

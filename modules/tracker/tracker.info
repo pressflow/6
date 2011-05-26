@@ -1,4 +1,4 @@
-; $Id: tracker.info,v 1.5 2007/07/04 10:54:26 goba Exp $
+; $Id$
 name = Tracker
 description = Enables tracking of recent posts for users.
 dependencies[] = comment
@@ -6,8 +6,8 @@ package = Core - optional
 version = VERSION
 core = 6.x
 
-; Information added by drupal.org packaging script on 2010-12-15
-version = "6.20"
+; Information added by drupal.org packaging script on 2011-05-25
+version = "6.21"
 project = "drupal"
-datestamp = "1292447788"
+datestamp = "1306354917"
 

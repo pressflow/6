@@ -1,5 +1,5 @@
 <?php
-// $Id: install.mysqli.inc,v 1.12 2008/01/23 09:59:29 goba Exp $
+// $Id$
 
 // MySQLi specific install functions
 

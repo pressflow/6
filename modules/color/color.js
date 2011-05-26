@@ -1,4 +1,4 @@
-// $Id: color.js,v 1.6 2007/09/12 18:29:32 goba Exp $
+// $Id$
 
 Drupal.behaviors.color = function (context) {
   // This behavior attaches by ID, so is only valid once on a page.

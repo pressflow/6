@@ -1,5 +1,5 @@
 <?php
-// $Id: comment.tpl.php,v 1.7 2008/01/04 19:24:23 goba Exp $
+// $Id$
 ?>
   <div class="comment<?php print ' '. $status; ?>">
     <?php if ($picture) {

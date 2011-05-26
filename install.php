@@ -1,5 +1,5 @@
 <?php
-// $Id: install.php,v 1.113.2.13 2010/12/06 06:50:56 goba Exp $
+// $Id$
 
 require_once './includes/install.inc';
 

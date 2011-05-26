@@ -1,5 +1,5 @@
 <?php
-// $Id: form.inc,v 1.265.2.35 2010/11/04 09:55:29 goba Exp $
+// $Id$
 
 /**
  * @defgroup forms Form builder functions

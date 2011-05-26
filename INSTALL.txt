@@ -1,4 +1,4 @@
-// $Id: INSTALL.txt,v 1.61.2.5 2010/12/06 06:50:55 goba Exp $
+// $Id$
 
 CONTENTS OF THIS FILE
 ---------------------

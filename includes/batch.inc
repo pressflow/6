@@ -1,5 +1,5 @@
 <?php
-// $Id: batch.inc,v 1.14.2.1 2010/08/06 11:52:19 goba Exp $
+// $Id$
 
 /**
  * @file Batch processing API for processes to run in multiple HTTP requests.

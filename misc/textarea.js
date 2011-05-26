@@ -1,4 +1,4 @@
-// $Id: textarea.js,v 1.22 2008/01/17 19:31:56 goba Exp $
+// $Id$
 
 Drupal.behaviors.textarea = function(context) {
   $('textarea.resizable:not(.textarea-processed)', context).each(function() {

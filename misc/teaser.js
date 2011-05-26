@@ -1,4 +1,4 @@
-// $Id: teaser.js,v 1.12.2.2 2010/03/01 10:13:18 goba Exp $
+// $Id$
 
 /**
  * Auto-attach for teaser behavior.

@@ -1,5 +1,5 @@
 <?php
-// $Id: profile.admin.inc,v 1.8.2.2 2010/03/01 10:20:28 goba Exp $
+// $Id$
 
 /**
  * @file

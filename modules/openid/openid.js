@@ -1,4 +1,4 @@
-// $Id: openid.js,v 1.6 2008/01/30 22:11:22 goba Exp $
+// $Id$
 
 Drupal.behaviors.openid = function (context) {
   var $loginElements = $("#edit-name-wrapper, #edit-pass-wrapper, li.openid-link");

@@ -1,5 +1,5 @@
 <?php
-// $Id: update.report.inc,v 1.10.2.6 2009/11/06 07:26:21 goba Exp $
+// $Id$
 
 /**
  * @file

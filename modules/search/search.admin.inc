@@ -1,5 +1,5 @@
 <?php
-// $Id: search.admin.inc,v 1.4 2008/01/08 10:35:42 goba Exp $
+// $Id$
 
 /**
  * @file

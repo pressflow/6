@@ -1,5 +1,5 @@
 <?php
-// $Id: menu.admin.inc,v 1.26.2.7 2010/06/02 12:56:20 goba Exp $
+// $Id$
 
 /**
  * @file

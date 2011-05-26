@@ -1,4 +1,4 @@
-// $Id: jquery.form.js,v 1.2 2007/11/19 10:05:48 goba Exp $
+// $Id$
 
 /*
  * jQuery Form Plugin

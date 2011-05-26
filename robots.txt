@@ -1,4 +1,4 @@
-# $Id: robots.txt,v 1.9.2.2 2010/09/06 10:37:16 goba Exp $
+# $Id$
 #
 # robots.txt
 #

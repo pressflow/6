@@ -1,4 +1,4 @@
-; $Id: minnelli.info,v 1.7 2007/12/04 20:58:44 goba Exp $
+; $Id$
 name = Minnelli
 description = Tableless, recolorable, multi-column, fixed width theme.
 version = VERSION
@@ -6,8 +6,8 @@ core = 6.x
 base theme = garland
 stylesheets[all][] = minnelli.css
 
-; Information added by drupal.org packaging script on 2010-12-15
-version = "6.20"
+; Information added by drupal.org packaging script on 2011-05-25
+version = "6.21"
 project = "drupal"
-datestamp = "1292447788"
+datestamp = "1306354917"
 

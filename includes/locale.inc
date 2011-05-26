@@ -1,5 +1,5 @@
 <?php
-// $Id: locale.inc,v 1.174.2.14 2010/08/11 19:42:26 goba Exp $
+// $Id$
 
 /**
  * @file

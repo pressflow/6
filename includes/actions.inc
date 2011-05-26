@@ -1,5 +1,5 @@
 <?php
-// $Id: actions.inc,v 1.8.2.13 2010/08/11 20:35:47 goba Exp $
+// $Id$
 
 /**
  * @file

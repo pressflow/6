@@ -1,5 +1,5 @@
 <?php
-// $Id: system.admin.inc,v 1.63.2.16 2010/09/06 10:49:14 goba Exp $
+// $Id$
 
 /**
  * @file

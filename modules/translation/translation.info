@@ -1,4 +1,4 @@
-; $Id: translation.info,v 1.1 2007/06/15 18:40:14 goba Exp $
+; $Id$
 name = Content translation
 description = Allows content to be translated into different languages.
 dependencies[] = locale
@@ -6,8 +6,8 @@ package = Core - optional
 version = VERSION
 core = 6.x
 
-; Information added by drupal.org packaging script on 2010-12-15
-version = "6.20"
+; Information added by drupal.org packaging script on 2011-05-25
+version = "6.21"
 project = "drupal"
-datestamp = "1292447788"
+datestamp = "1306354917"
 

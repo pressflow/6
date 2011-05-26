@@ -1,5 +1,5 @@
 <?php
-// $Id: search.pages.inc,v 1.4 2007/12/06 09:51:01 goba Exp $
+// $Id$
 
 /**
  * @file

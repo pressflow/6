@@ -1,5 +1,5 @@
 <?php
-// $Id: default.settings.php,v 1.8.2.5 2010/12/15 13:21:14 goba Exp $
+// $Id$
 
 /**
  * @file

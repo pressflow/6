@@ -1,5 +1,5 @@
 <?php
-// $Id: install.inc,v 1.56.2.4 2009/02/16 10:25:02 goba Exp $
+// $Id$
 
 define('SCHEMA_UNINSTALLED', -1);
 define('SCHEMA_INSTALLED', 0);
