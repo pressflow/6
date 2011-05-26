@@ -1,4 +1,11 @@
 
+Drupal 6.22, 2011-05-25
+----------------------
+- Made Drupal 6 work better with IIS and Internet Explorer.
+- Fixed .po file imports to work better with custom textgroups.
+- Improved code documentation at various places.
+- Fixed a variety of other bugs.
+
 Drupal 6.21, 2011-05-25
 ----------------------
 - Fixed security issues (Cross site scripting), see SA-CORE-2011-001.

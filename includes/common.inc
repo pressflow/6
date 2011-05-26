@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -194,7 +193,7 @@ function drupal_get_feeds($delimiter = "\n") {
 }
 
 /**
- * @name HTTP handling
+ * @defgroup http_handling HTTP handling
  * @{
  * Functions to properly handle HTTP responses.
  */
@@ -1642,7 +1641,8 @@ function drupal_page_footer() {
  *   A linear array.
  * @param $function
  *   A name of a function to apply to all values before output.
- * @result
+ *
+ * @return
  *   An associative array.
  */
 function drupal_map_assoc($array, $function = NULL) {
