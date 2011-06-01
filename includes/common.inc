@@ -1419,11 +1419,6 @@ function format_date($timestamp, $type = 'medium', $format = '', $timezone = NUL
  *   A string containing a URL to the given path.
  */
 function url($path = NULL, $options = array()) {
-  // Prevent misuse caused by sending in an absolute path.
-  if (isset($path)) {
-    $path = ltrim($path, '/');
-  }
-
   // Merge in defaults.
   $options += array(
     'fragment' => '',
