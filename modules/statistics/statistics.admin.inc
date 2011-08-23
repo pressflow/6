@@ -81,7 +81,7 @@ function statistics_top_visitors() {
     array('data' => t('Operations'))
   );
 
-  $sql = "SELECT COUNT(a.uid) AS hits, a.uid, u.name, a.hostname, SUM(a.timer) AS total, ac.aid FROM {accesslog} a LEFT JOIN {access} ac ON ac.type = 'host' AND LOWER(a.hostname) LIKE (ac.mask) LEFT JOIN {users} u ON a.uid = u.uid GROUP BY a.hostname, a.uid, u.name, ac.aid". tablesort_sql($header);
+  $sql = "SELECT COUNT(a.uid) AS hits, a.uid, u.name, a.hostname, SUM(a.timer) AS total, ac.aid FROM {accesslog} a LEFT JOIN {access} ac ON ac.type = 'host' AND a.hostname LIKE (ac.mask) LEFT JOIN {users} u ON a.uid = u.uid GROUP BY a.hostname, a.uid, u.name, ac.aid". tablesort_sql($header);
   $sql_cnt = "SELECT COUNT(*) FROM (SELECT DISTINCT uid, hostname FROM {accesslog}) AS unique_visits";
   $result = pager_query($sql, 30, 0, $sql_cnt);
 

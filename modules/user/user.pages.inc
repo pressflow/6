@@ -11,7 +11,7 @@
 function user_autocomplete($string = '') {
   $matches = array();
   if ($string) {
-    $result = db_query_range("SELECT name FROM {users} WHERE LOWER(name) LIKE LOWER('%s%%')", $string, 0, 10);
+    $result = db_query_range("SELECT name FROM {users} WHERE name LIKE '%s%%'", $string, 0, 10);
     while ($user = db_fetch_object($result)) {
       $matches[$user->name] = check_plain($user->name);
     }
@@ -147,11 +147,12 @@ function user_logout() {
 
   watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
 
-  // Destroy the current session:
-  session_destroy();
   // Only variables can be passed by reference workaround.
   $null = NULL;
   user_module_invoke('logout', $null, $user);
+
+  // Destroy the current session, and reset $user to the anonymous user.
+  drupal_session_destroy();
 
   // Load the anonymous user
   $user = drupal_anonymous_user();

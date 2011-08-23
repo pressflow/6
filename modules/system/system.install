@@ -16,7 +16,7 @@ function system_requirements($phase) {
   // Report Drupal version
   if ($phase == 'runtime') {
     $requirements['drupal'] = array(
-      'title' => $t('Drupal'),
+      'title' => $t('Pressflow'),
       'value' => VERSION,
       'severity' => REQUIREMENT_INFO,
       'weight' => -10,
@@ -145,14 +145,24 @@ function system_requirements($phase) {
     if (time() - $cron_last > $threshold_error) {
       $severity = REQUIREMENT_ERROR;
     }
-    else if ($never_run || (time() - $cron_last > $threshold_warning)) {
+    else if ($never_run) {
+      // In "smart start" mode, suppress a warning if we're
+      // within the normal cron threshold from installation.
+      if (variable_get('pressflow_smart_start', FALSE)) {
+        $severity = REQUIREMENT_OK;
+      }
+      else {
+        $severity = REQUIREMENT_WARNING;
+      }
+    }
+    else if (time() - $cron_last > $threshold_warning) {
       $severity = REQUIREMENT_WARNING;
     }
 
     // If cron hasn't been run, and the user is viewing the main
     // administration page, instead of an error, we display a helpful reminder
     // to configure cron jobs.
-    if ($never_run && $severity != REQUIREMENT_ERROR && $_GET['q'] == 'admin' && user_access('administer site configuration')) {
+    if ($never_run && $severity != REQUIREMENT_ERROR && $_GET['q'] == 'admin' && user_access('administer site configuration') && !variable_get('pressflow_smart_start', FALSE)) {
       drupal_set_message($t('Cron has not run. Please visit the <a href="@status">status report</a> for more information.', array('@status' => url('admin/reports/status'))));
     }
 
@@ -369,13 +379,13 @@ function system_install() {
   // uid 2 which is not what we want. So we insert the first user here, the
   // anonymous user. uid is 1 here for now, but very soon it will be changed
   // to 0.
-  db_query("INSERT INTO {users} (name, mail) VALUES('%s', '%s')", '', '');
+  db_query("INSERT INTO {users} (uid, name, mail) VALUES(%d, '%s', '%s')", 1, '', '');
 
   // We need some placeholders here as name and mail are uniques and data is
   // presumed to be a serialized array. Install will change uid 1 immediately
   // anyways. So we insert the superuser here, the uid is 2 here for now, but
   // very soon it will be changed to 1.
-  db_query("INSERT INTO {users} (name, mail, created, data) VALUES('%s', '%s', %d, '%s')", 'placeholder-for-uid-1', 'placeholder-for-uid-1', time(), serialize(array()));
+  db_query("INSERT INTO {users} (uid, name, mail, created, data) VALUES(%d, '%s', '%s', %d, '%s')", 2, 'placeholder-for-uid-1', 'placeholder-for-uid-1', time(), serialize(array()));
 
   // This sets the above two users uid 0 (anonymous). We avoid an explicit 0
   // otherwise MySQL might insert the next auto_increment value.
@@ -2670,6 +2680,10 @@ function system_update_6053() {
  */
 function system_update_6054() {
   $ret = array();
+
+  if (db_table_exists('pf_semaphore')) {
+    db_drop_table($ret, 'pf_semaphore');
+  }
 
   // The table may have already been added by update_fix_d6_requirements(), so
   // check for its existence before creating.

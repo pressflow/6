@@ -47,7 +47,7 @@ function taxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
 
         case 'feed':
           $channel['link'] = url('taxonomy/term/'. $str_tids .'/'. $depth, array('absolute' => TRUE));
-          $channel['title'] = variable_get('site_name', 'Drupal') .' - '. $title;
+          $channel['title'] = variable_get('site_name', 'Pressflow') .' - '. $title;
           // Only display the description if we have a single term, to avoid clutter and confusion.
           if (count($tids) == 1) {
             $term = taxonomy_get_term($tids[0]);
@@ -118,7 +118,7 @@ function taxonomy_autocomplete($vid, $string = '') {
   $last_string = trim(array_pop($array));
   $matches = array();
   if ($last_string != '') {
-    $result = db_query_range(db_rewrite_sql("SELECT t.tid, t.name FROM {term_data} t WHERE t.vid = %d AND LOWER(t.name) LIKE LOWER('%%%s%%')", 't', 'tid'), $vid, $last_string, 0, 10);
+    $result = db_query_range(db_rewrite_sql("SELECT t.tid, t.name FROM {term_data} t WHERE t.vid = %d AND t.name LIKE '%%%s%%'", 't', 'tid'), $vid, $last_string, 0, 10);
 
     $prefix = count($array) ? implode(', ', $array) .', ' : '';
 

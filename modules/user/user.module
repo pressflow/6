@@ -161,7 +161,7 @@ function user_load($user_info = array()) {
       $params[] = md5($value);
     }
     else {
-      $query[]= "LOWER($key) = LOWER('%s')";
+      $query[]= "$key = '%s'";
       $params[] = $value;
     }
   }
@@ -272,7 +272,7 @@ function user_save($account, $array = array(), $category = 'account') {
     if (!empty($array['pass'])) {
       sess_destroy_uid($account->uid);
       if ($account->uid == $GLOBALS['user']->uid) {
-        sess_regenerate();
+        drupal_session_regenerate();
       }
     }
 
@@ -529,7 +529,7 @@ function user_access($string, $account = NULL, $reset = FALSE) {
  * @return boolean TRUE for blocked users, FALSE for active.
  */
 function user_is_blocked($name) {
-  $deny = db_fetch_object(db_query("SELECT name FROM {users} WHERE status = 0 AND name = LOWER('%s')", $name));
+  $deny = db_fetch_object(db_query("SELECT name FROM {users} WHERE status = 0 AND name = '%s'", $name));
 
   return $deny;
 }
@@ -586,13 +586,13 @@ function user_search($op = 'search', $keys = NULL, $skip_access_check = FALSE) {
         $keys = preg_replace('!\*+!', '%', $keys);
         if (user_access('administer users')) {
           // Administrators can also search in the otherwise private email field.
-          $result = pager_query("SELECT name, uid, mail FROM {users} WHERE LOWER(name) LIKE LOWER('%%%s%%') OR LOWER(mail) LIKE LOWER('%%%s%%')", 15, 0, NULL, $keys, $keys);
+          $result = pager_query("SELECT name, uid, mail FROM {users} WHERE name LIKE '%%%s%%' OR mail LIKE '%%%s%%'", 15, 0, NULL, $keys, $keys);
           while ($account = db_fetch_object($result)) {
             $find[] = array('title' => $account->name .' ('. $account->mail .')', 'link' => url('user/'. $account->uid, array('absolute' => TRUE)));
           }
         }
         else {
-          $result = pager_query("SELECT name, uid FROM {users} WHERE LOWER(name) LIKE LOWER('%%%s%%')", 15, 0, NULL, $keys);
+          $result = pager_query("SELECT name, uid FROM {users} WHERE name LIKE '%%%s%%'", 15, 0, NULL, $keys);
           while ($account = db_fetch_object($result)) {
             $find[] = array('title' => $account->name, 'link' => url('user/'. $account->uid, array('absolute' => TRUE)));
           }
@@ -1275,7 +1275,7 @@ function user_login(&$form_state) {
     '#required' => TRUE,
   );
 
-  $form['name']['#description'] = t('Enter your @s username.', array('@s' => variable_get('site_name', 'Drupal')));
+  $form['name']['#description'] = t('Enter your @s username.', array('@s' => variable_get('site_name', 'Pressflow')));
   $form['pass'] = array('#type' => 'password',
     '#title' => t('Password'),
     '#description' => t('Enter the password that accompanies your username.'),
@@ -1395,8 +1395,10 @@ function user_authenticate_finalize(&$edit) {
   $user->login = time();
   db_query("UPDATE {users} SET login = %d WHERE uid = %d", $user->login, $user->uid);
 
-  // Regenerate the session ID to prevent against session fixation attacks.
-  sess_regenerate();
+  // This is called before hook_user in case one of those functions fails
+  // or incorrectly does a redirect which would leave the old session in place.
+  drupal_session_regenerate();
+
   user_module_invoke('login', $edit, $user);
 }
 
@@ -1592,7 +1594,7 @@ function _user_edit_validate($uid, &$edit) {
     if ($error = user_validate_name($edit['name'])) {
       form_set_error('name', $error);
     }
-    else if (db_result(db_query("SELECT COUNT(*) FROM {users} WHERE uid != %d AND LOWER(name) = LOWER('%s')", $uid, $edit['name'])) > 0) {
+    else if (db_result(db_query("SELECT COUNT(*) FROM {users} WHERE uid != %d AND name = '%s'", $uid, $edit['name'])) > 0) {
       form_set_error('name', t('The name %name is already taken.', array('%name' => $edit['name'])));
     }
     else if (drupal_is_denied('user', $edit['name'])) {
@@ -1604,7 +1606,7 @@ function _user_edit_validate($uid, &$edit) {
   if ($error = user_validate_mail($edit['mail'])) {
     form_set_error('mail', $error);
   }
-  else if (db_result(db_query("SELECT COUNT(*) FROM {users} WHERE uid != %d AND LOWER(mail) = LOWER('%s')", $uid, $edit['mail'])) > 0) {
+  else if (db_result(db_query("SELECT COUNT(*) FROM {users} WHERE uid != %d AND mail = '%s'", $uid, $edit['mail'])) > 0) {
     form_set_error('mail', t('The e-mail address %email is already registered. <a href="@password">Have you forgotten your password?</a>', array('%email' => $edit['mail'], '@password' => url('user/password'))));
   }
   else if (drupal_is_denied('mail', $edit['mail'])) {
@@ -2120,7 +2122,7 @@ function user_mail_tokens($account, $language) {
   global $base_url;
   $tokens = array(
     '!username' => $account->name,
-    '!site' => variable_get('site_name', 'Drupal'),
+    '!site' => variable_get('site_name', 'Pressflow'),
     '!login_url' => user_pass_reset_url($account),
     '!uri' => $base_url,
     '!uri_brief' => preg_replace('!^https?://!', '', $base_url),

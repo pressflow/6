@@ -34,19 +34,57 @@ define('FILE_STATUS_PERMANENT', 1);
 /**
  * Create the download path to a file.
  *
- * @param $path A string containing the path of the file to generate URL for.
- * @return A string containing a URL that can be used to download the file.
+ * There are two kinds of local files:
+ * - "created files", i.e. those in the files directory (which is stored in
+ *   the file_directory_path variable and can be retrieved using
+ *   file_directory_path()). These are files that have either been uploaded by
+ *   users or were generated automatically (for example through CSS
+ *   aggregation).
+ * - "shipped files", i.e. those outside of the files directory, which ship as
+ *   part of Drupal core or contributed modules or themes.
+ *
+ * @param $path
+ *   A string containing the Drupal path (i.e. path relative to the Drupal
+ *   root directory) of the file to generate the URL for.
+ * @return
+ *   A string containing a URL that can be used to download the file.
  */
 function file_create_url($path) {
-  // Strip file_directory_path from $path. We only include relative paths in urls.
-  if (strpos($path, file_directory_path() .'/') === 0) {
-    $path = trim(substr($path, strlen(file_directory_path())), '\\/');
+  // Clean up Windows paths.
+  $old_path = $path = str_replace('\\', '/', $path);
+
+  drupal_alter('file_url', $path);
+
+  // If any module has altered the path, then return the alteration.
+  if ($path != $old_path) {
+    return $path;
   }
-  switch (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC)) {
-    case FILE_DOWNLOADS_PUBLIC:
-      return $GLOBALS['base_url'] .'/'. file_directory_path() .'/'. str_replace('\\', '/', $path);
-    case FILE_DOWNLOADS_PRIVATE:
-      return url('system/files/'. $path, array('absolute' => TRUE));
+
+  // Otherwise serve the file from Drupal's web server. This point will only
+  // be reached when either no custom_file_url_rewrite() function has been
+  // defined, or when that function returned FALSE, thereby indicating that it
+  // cannot (or doesn't wish to) rewrite the URL. This is typically because
+  // the file doesn't match some conditions to be served from a CDN or static
+  // file server, or because the file has not yet been synced to the CDN or
+  // static file server.
+
+  // Shipped files.
+  if (strpos($path, file_directory_path() . '/') !== 0) {
+    return base_path() . $path;
+  }
+  // Created files.
+  else {
+    switch (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC)) {
+      case FILE_DOWNLOADS_PUBLIC:
+        return $GLOBALS['base_url'] . '/' . $path;
+      case FILE_DOWNLOADS_PRIVATE:
+        // Strip file_directory_path from $path. Private downloads' URLs are
+        // rewritten to be served relatively to system/files (which is a menu
+        // callback that streams the file) instead of relatively to the file
+        // directory path.
+        $path = file_directory_strip($path);
+        return url('system/files/' . $path, array('absolute' => TRUE));
+    }
   }
 }
 
@@ -1029,6 +1067,23 @@ function file_directory_temp() {
  */
 function file_directory_path() {
   return variable_get('file_directory_path', conf_path() .'/files');
+}
+
+/**
+ * Remove a possible leading file directory path from the given path.
+ *
+ * @param $path
+ *   Path to a file that may be in Drupal's files directory.
+ * @return
+ *   String with Drupal's files directory removed from it.
+ */
+function file_directory_strip($path) {
+  // Strip file_directory_path from $path. We only include relative paths in
+  // URLs.
+  if (strpos($path, file_directory_path() . '/') === 0) {
+    $path = trim(substr($path, strlen(file_directory_path())), '\\/');
+  }
+  return $path;
 }
 
 /**

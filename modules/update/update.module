@@ -404,7 +404,7 @@ function update_refresh() {
 function update_mail($key, &$message, $params) {
   $language = $message['language'];
   $langcode = $language->language;
-  $message['subject'] .= t('New release(s) available for !site_name', array('!site_name' => variable_get('site_name', 'Drupal')), $langcode);
+  $message['subject'] .= t('New release(s) available for !site_name', array('!site_name' => variable_get('site_name', 'Pressflow')), $langcode);
   foreach ($params as $msg_type => $msg_reason) {
     $message['body'][] = _update_message_text($msg_type, $msg_reason, FALSE, $language);
   }
