@@ -687,6 +687,8 @@ function node_invoke_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 }
 
 /**
+ * Replacement for node_load() to redirect to an alternative function when available.
+ *
  * Load a node object from the database.
  *
  * @param $param
@@ -700,6 +702,43 @@ function node_invoke_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
  *   A fully-populated node object.
  */
 function node_load($param = array(), $revision = NULL, $reset = NULL) {
+  static $hook_module;
+  $hook = 'node_load_cache';
+
+  if (!isset($hook_module)) {
+    $modules = module_implements($hook);
+    if (!empty($modules)) {
+      $hook_module = reset($modules);
+    }
+    else {
+      $hook_module = FALSE;
+    }
+  }
+
+  if ($hook_module !== FALSE) {
+    $function = $hook_module . '_' . $hook;
+    $return = $function($param, $revision, $reset);
+  }
+   else {
+    $return = _node_load_direct($param, $revision, $reset);
+  }
+  return $return;
+}
+
+/**
+ * Load a node object from the database.
+ *
+ * @param $param
+ *   Either the nid of the node or an array of conditions to match against in the database query
+ * @param $revision
+ *   Which numbered revision to load. Defaults to the current version.
+ * @param $reset
+ *   Whether to reset the internal node_load cache.
+ *
+ * @return
+ *   A fully-populated node object.
+ */
+function _node_load_direct($param = array(), $revision = NULL, $reset = NULL) {
   static $nodes = array();
 
   if ($reset) {

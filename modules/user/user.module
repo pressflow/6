@@ -127,6 +127,46 @@ function user_external_login($account, $edit = array()) {
 }
 
 /**
+ * Replacement for user_load() to redirect to an alternative implementation when available.
+ *
+ * Fetch a user object.
+ *
+ * @param $array
+ *   An associative array of attributes to search for in selecting the
+ *   user, such as user name or e-mail address.
+ *
+ * @param $reset
+ *   Whether to reset the user_load() cache.
+ *
+ * @return
+ *   A fully-loaded $user object upon successful user load or FALSE if user
+ *   cannot be loaded.
+ */
+function user_load($array = array(), $reset = FALSE) {
+  static $hook_module;
+  $hook = 'user_load_cache_load';
+
+  if (!isset($hook_module)) {
+    $modules = module_implements('user_load_cache_load');
+    if (!empty($modules)) {
+      $hook_module = reset($modules);
+    }
+    else {
+      $hook_module = FALSE;
+    }
+  }
+
+  if ($hook_module !== FALSE) {
+    $function = $hook_module . '_' . $hook;
+    $return = $function($array, $reset);
+  }
+   else {
+    $return = _user_load_direct($array);
+  }
+  return $return;
+}
+
+/**
  * Fetch a user object.
  *
  * @param $user_info
@@ -139,7 +179,7 @@ function user_external_login($account, $edit = array()) {
  *   A fully-loaded $user object upon successful user load or FALSE if user
  *   cannot be loaded.
  */
-function user_load($user_info = array()) {
+function _user_load_direct($user_info = array()) {
   // Dynamically compose a SQL query:
   $query = array();
   $params = array();
@@ -191,6 +231,8 @@ function user_load($user_info = array()) {
 }
 
 /**
+ * Replacement for user_save that redirects to an alternative implementation if available.
+ *
  * Save changes to a user account or add a new user.
  *
  * @param $account
@@ -209,6 +251,49 @@ function user_load($user_info = array()) {
  *   A fully-loaded $user object upon successful save or FALSE if the save failed.
  */
 function user_save($account, $array = array(), $category = 'account') {
+  static $hook_module;
+  $hook = 'user_load_cache_save';
+
+  if (!isset($hook_module)) {
+    $modules = module_implements($hook);
+    if (!empty($modules)) {
+      $hook_module = reset($modules);
+    }
+    else {
+      $hook_module = FALSE;
+    }
+  }
+
+  if ($hook_module !== FALSE) {
+    $function = $hook_module . '_' . $hook;
+    $return = $function($account, $array, $category);
+  }
+   else {
+    $return = _user_save_direct($account, $array, $category);
+  }
+  return $return;
+}
+
+
+/**
+ * Save changes to a user account or add a new user.
+ *
+ * @param $account
+ *   The $user object for the user to modify or add. If $user->uid is
+ *   omitted, a new user will be added.
+ *
+ * @param $array
+ *   (optional) An array of fields and values to save. For example,
+ *   array('name' => 'My name'); Setting a field to NULL deletes it from
+ *   the data column.
+ *
+ * @param $category
+ *   (optional) The category for storing profile information in.
+ *
+ * @return
+ *   A fully-loaded $user object upon successful save or FALSE if the save failed.
+ */
+function _user_save_direct($account, $array = array(), $category = 'account') {
   // Dynamically compose a SQL query:
   $user_fields = user_fields();
   if (is_object($account) && $account->uid) {
