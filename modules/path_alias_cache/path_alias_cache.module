@@ -28,18 +28,17 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
 
   // Retrieve the path alias whitelist.
   if (!isset($cache['whitelist'])) {
-    if ($cached = cache_get('path_alias_whitelist', 'cache_path')) {
-      $cache['whitelist'] = $cached->data;
-    } else {
-      $cache['whitelist'] = path_alias_cache_path_alias_whitelist_rebuild();
+    $whitelist = variable_get('path_alias_whitelist', NULL);
+    if (!isset($whitelist)) {
+      $whitelist = path_alias_cache_path_alias_whitelist_rebuild();
     }
+    $cache['whitelist'] = $whitelist;
   }
 
   $path_language = $path_language ? $path_language : $language->language;
 
   if ($action == 'wipe') {
     $cache = array();
-    $cache['whitelist'] = path_alias_cache_path_alias_whitelist_rebuild();
   }
   elseif ($cache['whitelist'] && $path != '') {
     if ($action == 'alias') {
@@ -198,7 +197,14 @@ function &path_alias_cache_static($name, $default_value = NULL, $reset = FALSE) 
  * @return
  *   An array containing a white list of path aliases.
  */
-function path_alias_cache_path_alias_whitelist_rebuild() {
+function path_alias_cache_path_alias_whitelist_rebuild($path  = NULL) {
+  // Don't rebuild the path alias whitelist for already whitelisted paths.
+  if (!empty($path) && $whitelist = variable_get('path_alias_whitelist', NULL)) {
+    if (isset($whitelist[strtok($path, '/')])) {
+      return TRUE;
+    }
+  }
+
   // For each alias in the database, get the top level component of the system
   // path it corresponds to. This is the portion of the path before the first "/"
   // if present, otherwise the whole path itself.
@@ -207,7 +213,7 @@ function path_alias_cache_path_alias_whitelist_rebuild() {
   while ($row = db_fetch_object($result)) {
     $whitelist[$row->path] = TRUE;
   }
-  cache_set('path_alias_whitelist', $whitelist, 'cache_path');
+  variable_set('path_alias_whitelist', $whitelist);
   return $whitelist;
 }
 

@@ -127,8 +127,13 @@ function drupal_get_html_head() {
 /**
  * Reset the static variable which holds the aliases mapped for this request.
  */
-function drupal_clear_path_cache() {
+function drupal_clear_path_cache($path = NULL) {
   drupal_lookup_path('wipe');
+  $modules = module_implements('lookup_path');
+  if (!empty($modules)) {
+    $module = reset($modules);
+    module_invoke($module, 'path_alias_whitelist_rebuild', $path);
+  }
 }
 
 /*
