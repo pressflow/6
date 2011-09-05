@@ -20,11 +20,14 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
   $cache = &path_alias_cache_static(__FUNCTION__, array(
     'map' => array(),
     'no_src' => array(),
-    'whitelist' => new PathAliasWhitelist('path_alias_whitelist', 'cache'),
+    'whitelist' => NULL,
     'system_paths' => array(),
     'no_aliases' => array(),
     'first_call' => TRUE,
   ));
+  if (!isset($cache['whitelist'])) {
+    $cache['whitelist'] = new PathAliasWhitelist('path_alias_whitelist', 'cache'),
+  }
 
   $path_language = $path_language ? $path_language : $language->language;
 
