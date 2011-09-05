@@ -20,20 +20,11 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
   $cache = &path_alias_cache_static(__FUNCTION__, array(
     'map' => array(),
     'no_src' => array(),
-    'whitelist' => NULL,
+    'whitelist' => new PathAliasWhitelist('path_alias_whitelist', 'cache'),
     'system_paths' => array(),
     'no_aliases' => array(),
     'first_call' => TRUE,
   ));
-
-  // Retrieve the path alias whitelist.
-  if (!isset($cache['whitelist'])) {
-    $whitelist = variable_get('path_alias_whitelist', NULL);
-    if (!isset($whitelist)) {
-      $whitelist = path_alias_cache_path_alias_whitelist_rebuild();
-    }
-    $cache['whitelist'] = $whitelist;
-  }
 
   $path_language = $path_language ? $path_language : $language->language;
 
@@ -115,6 +106,20 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
 
   return FALSE;
 }
+
+/**
+ * Extends DrupalCacheArray to build the path alias whitelist over time.
+ */ 
+class PathAliasWhitelist extends DrupalCacheArray {
+  function resolveCacheMiss($offset) {
+    $exists = (bool) db_result(db_query_range("SELECT 1 FROM {url_alias} WHERE source LIKE '%s'", $offset . '%', 0, 1));
+    // If a path prefix does not exist, store it as NULL rather than FALSE
+    // since DrupalCacheArray uses isset() in offsetExists().
+    $value = $exists ? TRUE : NULL;
+    $this->storage[$offset] = $value;
+    $this->persist($offset);
+    return $value;
+  }
 
 /**
  * Implementation of hook_exit
@@ -199,21 +204,12 @@ function &path_alias_cache_static($name, $default_value = NULL, $reset = FALSE) 
  */
 function path_alias_cache_path_alias_whitelist_rebuild($path  = NULL) {
   // Don't rebuild the path alias whitelist for already whitelisted paths.
-  if (!empty($path) && $whitelist = variable_get('path_alias_whitelist', NULL)) {
+  if (!empty($path)) {
+    $whitelist = new PathAliasWhitelist('path_alias_whitelist', 'cache');
     if (isset($whitelist[strtok($path, '/')])) {
-      return TRUE;
+      return $whitelist;
     }
   }
-
-  // For each alias in the database, get the top level component of the system
-  // path it corresponds to. This is the portion of the path before the first "/"
-  // if present, otherwise the whole path itself.
-  $whitelist = array();
-  $result = db_query("SELECT SUBSTRING_INDEX(src, '/', 1) AS path FROM {url_alias} GROUP BY path");
-  while ($row = db_fetch_object($result)) {
-    $whitelist[$row->path] = TRUE;
-  }
-  variable_set('path_alias_whitelist', $whitelist);
-  return $whitelist;
+  cache_clear_all('path_alias_whitelist', 'cache');
+  return new PathAliasWhitelist('path_alias_whitelist', 'cache');
 }
-
