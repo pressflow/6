@@ -1,0 +1,325 @@
+<?php
+
+/**
+ * @file
+ *  Add static and persistent caching to user_load().
+ */
+
+/**
+ * Implementation of hook_user_load_cache_load().
+ *
+ * Fetch a user object.
+ *
+ * @param $array
+ *   An associative array of attributes to search for in selecting the
+ *   user, such as user name or e-mail address.
+ * @param $reset
+ *   (optional) Resets the static user cache, necessary when the user account
+ *   has been saved.
+ *
+ * @return
+ *   A fully-loaded $user object upon successful user load or FALSE if user
+ *   cannot be loaded.
+ */
+function user_load_cache_user_load_cache_load($array = array(), $reset = FALSE) {
+  static $user_cache = array();
+  // Dynamically compose a SQL query:
+  $query = array();
+  $params = array();
+
+  if (is_numeric($array)) {
+    $array = array('uid' => $array);
+  }
+  elseif (!is_array($array)) {
+    return FALSE;
+  }
+
+  // Retrieve user from cache
+  if (count($array) === 1 && isset($array['uid']) && $array['uid']) {
+    if (!$reset && isset($user_cache[$array['uid']])) {
+      return $user_cache[$array['uid']];
+    }
+    $cid = 'user/' . $array['uid'];
+    $cache = cache_get($cid, 'cache_user');
+    if (is_object($cache)) {
+      $user_cache[$array['uid']] = $cache->data;
+      return $cache->data;
+    }
+  }
+  else {
+    $cid = 0;
+  }
+
+  foreach ($array as $key => $value) {
+    if ($key == 'uid' || $key == 'status') {
+      $query[] = "$key = %d";
+      $params[] = $value;
+    }
+    else if ($key == 'pass') {
+      $query[] = "pass = '%s'";
+      $params[] = md5($value);
+    }
+    else {
+      $query[]= "$key = '%s'";
+      $params[] = $value;
+    }
+  }
+  $result = db_query('SELECT * FROM {users} u WHERE '. implode(' AND ', $query), $params);
+
+  if ($user = db_fetch_object($result)) {
+    $user = drupal_unpack($user);
+
+    $user->roles = array();
+    if ($user->uid) {
+      $user->roles[DRUPAL_AUTHENTICATED_RID] = 'authenticated user';
+    }
+    else {
+      $user->roles[DRUPAL_ANONYMOUS_RID] = 'anonymous user';
+    }
+    $result = db_query('SELECT r.rid, r.name FROM {role} r INNER JOIN {users_roles} ur ON ur.rid = r.rid WHERE ur.uid = %d', $user->uid);
+    while ($role = db_fetch_object($result)) {
+      $user->roles[$role->rid] = $role->name;
+    }
+    user_module_invoke('load', $array, $user);
+  }
+  else {
+    $user = FALSE;
+  }
+
+  if ($user->uid && $cid) {
+    // Add the user to the static cache.
+    $user_cache[$array['uid']] = $user;
+
+    // Add the user to the persistent cache.
+    cache_set($cid, $user, 'cache_user');
+  }
+
+  return $user;
+}
+
+/**
+ * Implementation of hook_user_load_cache_save().
+ */
+function user_load_cache_user_load_cache_save($account, $array = array(), $category = 'account') {
+  // Dynamically compose a SQL query:
+  $user_fields = user_fields();
+  if (is_object($account) && $account->uid) {
+    $cid = "user/$account->uid";
+    user_module_invoke('update', $array, $account, $category);
+    $query = '';
+    $data = unserialize(db_result(db_query('SELECT data FROM {users} WHERE uid = %d', $account->uid)));
+    // Consider users edited by an administrator as logged in, if they haven't
+    // already, so anonymous users can view the profile (if allowed).
+    if (empty($array['access']) && empty($account->access) && user_access('administer users')) {
+      $array['access'] = time();
+    }
+    foreach ($array as $key => $value) {
+      if ($key == 'pass' && !empty($value)) {
+        $query .= "$key = '%s', ";
+        $v[] = md5($value);
+      }
+      else if ((substr($key, 0, 4) !== 'auth') && ($key != 'pass')) {
+        if (in_array($key, $user_fields)) {
+          // Save standard fields.
+          $query .= "$key = '%s', ";
+          $v[] = $value;
+        }
+        else if ($key != 'roles') {
+          // Roles is a special case: it used below.
+          if ($value === NULL) {
+            unset($data[$key]);
+          }
+          elseif (!empty($key)) {
+            $data[$key] = $value;
+          }
+        }
+      }
+    }
+    $query .= "data = '%s' ";
+    $v[] = serialize($data);
+
+    $success = db_query("UPDATE {users} SET $query WHERE uid = %d", array_merge($v, array($account->uid)));
+    if (!$success) {
+      // The query failed - better to abort the save than risk further data loss.
+      return FALSE;
+    }
+
+    // Reload user roles if provided.
+    if (isset($array['roles']) && is_array($array['roles'])) {
+      db_query('DELETE FROM {users_roles} WHERE uid = %d', $account->uid);
+
+      foreach (array_keys($array['roles']) as $rid) {
+        if (!in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
+          db_query('INSERT INTO {users_roles} (uid, rid) VALUES (%d, %d)', $account->uid, $rid);
+        }
+      }
+    }
+
+    // Delete a blocked user's sessions to kick them if they are online.
+    if (isset($array['status']) && $array['status'] == 0) {
+      sess_destroy_uid($account->uid);
+    }
+
+    // If the password changed, delete all open sessions and recreate
+    // the current one.
+    if (!empty($array['pass'])) {
+      sess_destroy_uid($account->uid);
+      if ($account->uid == $GLOBALS['user']->uid) {
+        sess_regenerate();
+      }
+    }
+
+    // Flush user from cache.
+    cache_clear_all($cid, 'cache_user');
+
+    // Refresh user object.
+    $user = user_load(array('uid' => $account->uid), TRUE);
+
+    // Send emails after we have the new user object.
+    if (isset($array['status']) && $array['status'] != $account->status) {
+      // The user's status is changing; conditionally send notification email.
+      $op = $array['status'] == 1 ? 'status_activated' : 'status_blocked';
+      _user_mail_notify($op, $user);
+    }
+
+    user_module_invoke('after_update', $array, $user, $category);
+  }
+  else {
+    // Allow 'created' to be set by the caller.
+    if (!isset($array['created'])) {
+      $array['created'] = time();
+    }
+    // Consider users created by an administrator as already logged in, so
+    // anonymous users can view the profile (if allowed).
+    if (empty($array['access']) && user_access('administer users')) {
+      $array['access'] = time();
+    }
+
+    // Note: we wait to save the data column to prevent module-handled
+    // fields from being saved there. We cannot invoke hook_user('insert') here
+    // because we don't have a fully initialized user object yet.
+    foreach ($array as $key => $value) {
+      switch ($key) {
+        case 'pass':
+          $fields[] = $key;
+          $values[] = md5($value);
+          $s[] = "'%s'";
+          break;
+        case 'mode':       case 'sort':     case 'timezone':
+        case 'threshold':  case 'created':  case 'access':
+        case 'login':      case 'status':
+          $fields[] = $key;
+          $values[] = $value;
+          $s[] = "%d";
+          break;
+        default:
+          if (substr($key, 0, 4) !== 'auth' && in_array($key, $user_fields)) {
+            $fields[] = $key;
+            $values[] = $value;
+            $s[] = "'%s'";
+          }
+          break;
+      }
+    }
+    $success = db_query('INSERT INTO {users} ('. implode(', ', $fields) .') VALUES ('. implode(', ', $s) .')', $values);
+    if (!$success) {
+      // On a failed INSERT some other existing user's uid may be returned.
+      // We must abort to avoid overwriting their account.
+      return FALSE;
+    }
+
+    // Build the initial user object.
+    $array['uid'] = db_last_insert_id('users', 'uid');
+    $user = user_load(array('uid' => $array['uid']), TRUE);
+
+    $cid = 'user/' . $array['uid'];
+    user_module_invoke('insert', $array, $user, $category);
+
+    // Build and save the serialized data field now.
+    $data = array();
+    foreach ($array as $key => $value) {
+      if ((substr($key, 0, 4) !== 'auth') && ($key != 'roles') && (!in_array($key, $user_fields)) && ($value !== NULL)) {
+        $data[$key] = $value;
+      }
+    }
+    db_query("UPDATE {users} SET data = '%s' WHERE uid = %d", serialize($data), $user->uid);
+
+    // Save user roles (delete just to be safe).
+    if (isset($array['roles']) && is_array($array['roles'])) {
+      db_query('DELETE FROM {users_roles} WHERE uid = %d', $array['uid']);
+      foreach (array_keys($array['roles']) as $rid) {
+        if (!in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
+          db_query('INSERT INTO {users_roles} (uid, rid) VALUES (%d, %d)', $array['uid'], $rid);
+        }
+      }
+    }
+
+    // Flush user from cache.
+    cache_clear_all($cid, 'cache_user');
+
+    // Build the finished user object.
+    $user = user_load(array('uid' => $array['uid']), TRUE);
+  }
+
+  // Save distributed authentication mappings.
+  $authmaps = array();
+  foreach ($array as $key => $value) {
+    if (substr($key, 0, 4) == 'auth') {
+      $authmaps[$key] = $value;
+    }
+  }
+  if (sizeof($authmaps) > 0) {
+    user_set_authmaps($user, $authmaps);
+  }
+  cache_clear_all($cid, 'cache_user');
+
+  return $user;
+}
+
+
+/**
+ * Clear the user_load() cache.
+ *
+ * $param $uid
+ *  The user ID.
+ */
+function user_load_cache_clear($uid) {
+  cache_clear_all("user/$uid", 'cache_user');
+  // memcache-session.inc caches the user object too, ensure that gets cleared.
+  cache_clear_all($uid, 'users');
+}
+
+/**
+ * Implementation of hook_user().
+ */
+function user_load_cache_user($op, &$edit, &$account, $category = NULL) {
+  if ($op == 'update' || $op == 'delete' || $op == 'login') {
+    user_load_cache_clear($account->uid);
+  }
+}
+
+/**
+ * Implementation of hook_flush_caches().
+ */
+function user_load_cache_flush_caches() {
+  return array('cache_user');
+}
+
+/**
+ * Implementation of hook_form_FORM_ID_alter().
+ *
+ * @todo: is this necessary?
+ */
+function user_load_cache_form_user_profile_form_alter(&$form, &$form_state) {
+  $form['#submit'][] = '_user_load_cache_profile_form_submit';
+}
+
+/**
+ * Submit handler for the user profile form.
+ */
+function _user_load_cache_profile_form_submit($form, &$form_state) {
+  if (user_access('select different theme')) {
+    // This prevents the system theme from getting corrupted.
+    init_theme();
+  }
+}

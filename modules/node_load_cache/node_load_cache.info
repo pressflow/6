@@ -1,0 +1,4 @@
+name = Node load cache
+description = Peristent caching for nodes.
+version = VERSION
+core = 6.x
