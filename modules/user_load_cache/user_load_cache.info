@@ -1,0 +1,4 @@
+name = User load caching
+description = Static and persistent caching for users.
+version = VERSION
+core = 6.x
