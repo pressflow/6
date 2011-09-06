@@ -467,10 +467,19 @@ function taxonomy_form_all($free_tags = 0) {
  *   If set, return only those vocabularies associated with this node type.
  */
 function taxonomy_get_vocabularies($type = NULL) {
+  static $vocabularies_cache = array();
+  static $vocabularies_null;
+
   if ($type) {
+    if (isset($vocabularies_cache[$type])) {
+      return $vocabularies_cache[$type];
+    }
     $result = db_query(db_rewrite_sql("SELECT v.vid, v.*, n.type FROM {vocabulary} v LEFT JOIN {vocabulary_node_types} n ON v.vid = n.vid WHERE n.type = '%s' ORDER BY v.weight, v.name", 'v', 'vid'), $type);
   }
   else {
+    if (is_array($vocabularies_null)) {
+      return $vocabularies_null;
+    }
     $result = db_query(db_rewrite_sql('SELECT v.*, n.type FROM {vocabulary} v LEFT JOIN {vocabulary_node_types} n ON v.vid = n.vid ORDER BY v.weight, v.name', 'v', 'vid'));
   }
 
@@ -490,7 +499,15 @@ function taxonomy_get_vocabularies($type = NULL) {
     $vocabularies[$voc->vid] = $voc;
   }
 
+  if ($type) {
+    $vocabularies_cache[$type] = $vocabularies;
+  }
+  else {
+    $vocabularies_null = $vocabularies;
+  }
+
   return $vocabularies;
+
 }
 
 /**
@@ -997,20 +1014,7 @@ function taxonomy_vocabulary_load($vid, $reset = FALSE) {
   }
 
   if (!isset($vocabularies[$vid])) {
-    // Initialize so if this vocabulary does not exist, we have
-    // that cached, and we will not try to load this later.
-    $vocabularies[$vid] = FALSE;
-    // Try to load the data and fill up the object.
-    $result = db_query('SELECT v.*, n.type FROM {vocabulary} v LEFT JOIN {vocabulary_node_types} n ON v.vid = n.vid WHERE v.vid = %d', $vid);
-    $node_types = array();
-    while ($voc = db_fetch_object($result)) {
-      if (!empty($voc->type)) {
-        $node_types[$voc->type] = $voc->type;
-      }
-      unset($voc->type);
-      $voc->nodes = $node_types;
-      $vocabularies[$vid] = $voc;
-    }
+    $vocabularies = taxonomy_get_vocabularies();
   }
 
   // Return FALSE if this vocabulary does not exist.
