@@ -1,0 +1,148 @@
+<?php
+
+/**
+ * Builds the run-time theme registry.
+ *
+ * This class extends the CacheArrayObject class to allow the theme registry to be
+ * accessed as a complete registry, while internally caching only the parts of
+ * the registry that are actually in use on the site. On cache misses the
+ * complete theme registry is loaded and used to update the run-time cache.
+ */
+class ThemeRegistry Extends DrupalCacheArray {
+  protected $persistable;
+  protected $completeRegistry;
+  protected $theme;
+  protected $base_theme;
+  protected $theme_engine;
+  function __construct($theme, $base_theme = NULL, $theme_engine = NULL) {
+    $this->cid = 'theme_registry:runtime:' . $theme->name;
+    $this->bin = 'cache';
+    $this->theme = $theme;
+    $this->base_theme = $base_theme;
+    $this->theme_engine = $theme_engine;
+    // Only use cumulative caching if the request method is GET.
+    // theme() should be very rarely called durin $_POST and this
+    // avoids polluting the runtime cache.
+    $this->persistable = $_SERVER['REQUEST_METHOD'] == 'GET';
+    $data = array();
+    if ($this->persistable && $cached = cache_get($this->cid, $this->bin)) {
+      $data = $cached->data;
+    }
+    else {
+      $complete_registry = theme_registry_load_registry_complete($theme, $base_theme, $theme_engine);
+      if ($this->persistable) {
+        // If there is no runtime cache stored, fetch the full theme registry,
+        // but then initialize each value to NULL. This allows
+        // offsetExists() to function correctly on non-registered theme hooks
+        // without triggering a call to resolveCacheMiss().
+        $data = array_fill_keys(array_keys($complete_registry), NULL);
+        $this->set($this->cid, $data, $this->bin);
+        $this->completeRegistry = $complete_registry;
+      }
+      else {
+        $data = $complete_registry;
+      }
+    }
+    $this->storage = $data;
+  }
+
+  public function offsetExists($offset) {
+    // Since the theme registry allows for theme hooks to be requested that
+    // are not registered, avoid triggering a cache miss.
+    return array_key_exists($offset, $this->storage);
+  }
+
+  public function offsetGet($offset) {
+    // If the offset is set but empty, it is a registered theme hook that has
+    // not yet been requested. Offsets that do not exist at all were not
+    // registered in hook_theme().
+    if (array_key_exists($offset, $this->storage)) {
+      $value = $this->storage[$offset];
+      if ($value) {
+        return $value;
+      }
+      else {
+        $this->resolveCacheMiss($offset);
+        return ArrayObject::offsetGet($offset);
+      }
+    }
+  }
+
+  public function resolveCacheMiss($offset) {
+    if (!isset($this->completeRegistry)) {
+      $this->completeRegistry = theme_registry_load_registry_complete($this->theme, $this->base_theme, $this->theme_engine);
+    }
+    $this->storage[$offset] = $this->completeRegistry[$offset];
+    if ($this->persistable) {
+      $this->persist($offset);
+    }
+    return $this->completeRegistry[$offset];
+  }
+
+  public function set($cid, $data, $bin, $lock = TRUE) {
+    $lock_name = $cid . ':' . $bin;
+    if (!$lock || lock_acquire($lock_name)) {
+      if ($cached = cache_get($cid, $bin)) {
+        // Use array merge instead of union so that filled in values in $data
+        // overwrite empty values in the current cache.
+        $data = array_merge($cached->data, $data);
+      }
+      cache_set($cid, $data, $bin);
+      if ($lock) {
+        lock_release($lock_name);
+      }
+    }
+  }
+
+  public function __destruct() {
+    $data = array();
+    foreach ($this->keysToPersist as $offset => $persist) {
+      if ($persist) {
+        $data[$offset] = $this->storage[$offset];
+      }
+    }
+    if (!empty($data)) {
+      $this->set($this->cid, $data, $this->bin);
+    }
+  }
+}
+
+/**
+ * Implementation of hook_theme_registry_load().
+ *
+ * Get the theme_registry cache from the database; if it doesn't exist, build
+ * it.
+ *
+ * @param $theme
+ *   The loaded $theme object.
+ * @param $base_theme
+ *   An array of loaded $theme objects representing the ancestor themes in
+ *   oldest first order.
+ * @param theme_engine
+ *   The name of the theme engine.
+ */
+function theme_registry_theme_registry_load($theme, $base_theme = NULL, $theme_engine = NULL) {
+  $registry = new ThemeRegistry($theme, $base_theme, $theme_engine);
+  _theme_set_registry($registry);
+}
+
+/**
+ * Load the full theme registry from cache, or rebuild it.
+ */
+function theme_registry_load_registry_complete($theme, $base_theme = NULL, $theme_engine = NULL) {
+  static $registry;
+  if (!isset($registry)) {
+    // Check the theme registry cache; if it exists, use it.
+    $cache = cache_get("theme_registry:$theme->name", 'cache');
+    if (isset($cache->data)) {
+      $registry = $cache->data;
+    }
+    else {
+      // If not, build one and cache it.
+      $registry = _theme_build_registry($theme, $base_theme, $theme_engine);
+      _theme_save_registry($theme, $registry);
+    }
+  }
+  return $registry;
+}
+

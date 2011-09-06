@@ -1,0 +1,4 @@
+name = Theme registry 
+description = A low memory implementation of the theme registry cache.
+core = 6.x
+package = Pressflow
