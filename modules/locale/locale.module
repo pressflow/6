@@ -326,13 +326,17 @@ function locale_node_type($op, $info) {
  * @param $reset
  *   Set to TRUE to reset the in-memory cache.
  */
-function locale($string = NULL, $langcode = NULL, $reset = FALSE) {
+function locale($string = NULL, $langcode = NULL, $reset = FALSE, $return_static = FALSE) {
   global $language;
   static $locale_t;
+  static $write_cache = FALSE;
 
   if ($reset) {
     // Reset in-memory cache.
     $locale_t = NULL;
+  }
+  if ($return_static) {
+    return $locale_t;
   }
 
   if (!isset($string)) {
@@ -369,6 +373,13 @@ function locale($string = NULL, $langcode = NULL, $reset = FALSE) {
 
   // If we have the translation cached, skip checking the database
   if (!isset($locale_t[$langcode][$string])) {
+    // The first time there is a cache miss, register a shutdown function to
+    // write to the locale cache at the end of this request.
+    if (!$write_cache) {
+      $write_cache = TRUE;
+      register_shutdown_function('_locale_write_cache');
+    }
+    $locale_t[$langcode]['#write_cache'][$string] = TRUE;
 
     // We do not have this translation cached, so get it from the DB.
     $translation = db_fetch_object(db_query("SELECT s.lid, t.translation, s.version FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = '%s' WHERE s.source = '%s' AND s.textgroup = 'default'", $langcode, $string));
@@ -382,19 +393,41 @@ function locale($string = NULL, $langcode = NULL, $reset = FALSE) {
         // and clear cache, to include the string into caching next time. Saved version is
         // also a string-history information for later pruning of the tables.
         db_query("UPDATE {locales_source} SET version = '%s' WHERE lid = %d", VERSION, $translation->lid);
-        cache_clear_all('locale:', 'cache', TRUE);
       }
     }
     else {
       // We don't have the source string, cache this as untranslated.
       db_query("INSERT INTO {locales_source} (location, source, textgroup, version) VALUES ('%s', '%s', 'default', '%s')", request_uri(), $string, VERSION);
       $locale_t[$langcode][$string] = TRUE;
-      // Clear locale cache so this string can be added in a later request.
-      cache_clear_all('locale:', 'cache', TRUE);
     }
   }
 
   return ($locale_t[$langcode][$string] === TRUE ? $string : $locale_t[$langcode][$string]);
+}
+
+/**
+ * Update the locale cache, called via register_shutdown_function().
+ */
+function _locale_write_cache() {
+  $locale_t = locale(NULL, NULL, FALSE, TRUE);
+  foreach ($locale_t as $langcode => $strings) {
+    $lock_name = "locale_cache_$langcode";
+    if (!empty($strings['#write_cache']) && lock_acquire($lock_name)) {
+      $cid = 'locale:' . $langcode;
+      $data = array();
+      // Get a fresh version of the locale cache, this ensures that if multiple
+      // requests are setting the cache simultaneously, we will not remove
+      // recently cached entries.
+      if ($cached = cache_get($cid)) {
+        $data = $cached->data;
+      }
+      foreach ($strings['#write_cache'] as $string => $value) {
+        $data[$string] = $locale_t[$langcode][$string];
+      }
+      cache_set($cid, $data);
+      lock_release($lock_name);
+    }
+  }
 }
 
 /**
