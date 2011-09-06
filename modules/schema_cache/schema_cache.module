@@ -1,0 +1,99 @@
+<?php
+
+/**
+ * Implementation of hook_schema_get().
+ *
+ * Get the schema definition of a table, or the whole database schema.
+ *
+ * The returned schema will include any modifications made by any
+ * module that implements hook_schema_alter().
+ *
+ * @param $table
+ *   The name of the table. If not given, the schema of all tables is returned.
+ * @param $rebuild
+ *   If true, the schema will be rebuilt instead of retrieved from the cache.
+ */
+function schema_cache_schema_get($table = NULL, $rebuild = FALSE) {
+  static $schema;
+
+  if ($rebuild || !isset($table)) {
+    $schema = schema_cache_get_complete_schema($rebuild);
+  }
+  elseif (!isset($schema)) {
+    $schema = new schemaCache();
+  }
+
+  if (!isset($table)) {
+    return $schema;
+  }
+  if (isset($schema[$table])) {
+    return $schema[$table];
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Extends CacheArrayObject to allow for dynamic building of the schema cache.
+ */
+class SchemaCache extends DrupalCacheArray {
+
+  public function __construct() {
+    // Cache by request method.
+    parent::__construct('schema:runtime:' . $_SERVER['REQUEST_METHOD'] == 'GET', 'cache');
+  }
+
+  protected function resolveCacheMiss($offset) {
+    $complete_schema = schema_cache_get_complete_schema();
+    $value = isset($complete_schema[$offset]) ? $complete_schema[$offset] :  NULL;
+    $this->storage[$offset] = $value;
+    $this->persist($offset);
+    return $value;
+  }
+}
+
+/**
+ * Get the whole database schema.
+ *
+ * The returned schema will include any modifications made by any
+ * module that implements hook_schema_alter().
+ *
+ * @param $rebuild
+ *   If true, the schema will be rebuilt instead of retrieved from the cache.
+ */
+function schema_cache_get_complete_schema($rebuild = FALSE) {
+  static $schema = array();
+
+  if (empty($schema) || $rebuild) {
+    // Try to load the schema from cache.
+    if (!$rebuild && $cached = cache_get('schema')) {
+      $schema = $cached->data;
+    }
+    // Otherwise, rebuild the schema cache.
+    else {
+      $schema = array();
+      // Load the .install files to get hook_schema.
+      module_load_all_includes('install');
+
+      // Invoke hook_schema for all modules.
+      foreach (module_implements('schema') as $module) {
+        // Cast the result of hook_schema() to an array, as a NULL return value
+        // would cause array_merge() to set the $schema variable to NULL as well.
+        // That would break modules which use $schema further down the line.
+        $current = (array) module_invoke($module, 'schema');
+        _drupal_initialize_schema($module, $current);
+        $schema = array_merge($schema, $current);
+      }
+
+      drupal_alter('schema', $schema);
+      cache_set('schema', $schema);
+      if ($rebuild) {
+        cache_clear_all('schema:', 'cache', TRUE);
+      }
+    }
+  }
+
+  return $schema;
+}
+
