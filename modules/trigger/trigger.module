@@ -142,12 +142,16 @@ function trigger_access_check($module) {
  *   An array of action IDs.
  */
 function _trigger_get_hook_aids($hook, $op = '') {
-  $aids = array();
-  $result = db_query("SELECT aa.aid, a.type FROM {trigger_assignments} aa LEFT JOIN {actions} a ON aa.aid = a.aid WHERE aa.hook = '%s' AND aa.op = '%s' ORDER BY weight", $hook, $op);
-  while ($action = db_fetch_object($result)) {
-    $aids[$action->aid]['type'] = $action->type;
+  static $hooks;
+  if (!isset($hooks[$hook][$op])) {
+    $aids = array();
+    $result = db_query("SELECT aa.aid, a.type FROM {trigger_assignments} aa LEFT JOIN {actions} a ON aa.aid = a.aid WHERE aa.hook = '%s' AND aa.op = '%s' ORDER BY weight", $hook, $op);
+    while ($action = db_fetch_object($result)) {
+      $aids[$action->aid]['type'] = $action->type;
+    }
+    $hooks[$hook][$op] = $aids;
   }
-  return $aids;
+  return $hooks[$hook][$op];
 }
 
 /**
