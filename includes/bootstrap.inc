@@ -505,6 +505,17 @@ abstract class DrupalCacheArray implements ArrayAccess {
   protected $storage = array();
 
   /**
+   * Workaround for issues with Drupal 6 database layer object destruction.
+   *
+   * The database connection is destroyed by PHP garbage collection before
+   * this object's destructor gets called. However __destruct() calls set()
+   * which calls the cache and lock APIs. To avoid this, add a reference to
+   * $GLOBALS['active_db'], this guarantees that DrupalCacheArray has it's
+   * destructor called before the connection object is destroyed.
+   */
+  private $_connection;
+
+  /**
    * Constructor.
    *
    * @param $cid
@@ -513,6 +524,7 @@ abstract class DrupalCacheArray implements ArrayAccess {
    *   The bin to cache the array.
    */
   public function __construct($cid, $bin) {
+    $this->_connection = &$GLOBALS['active_db'];
     $this->cid = $cid;
     $this->bin = $bin;
 
