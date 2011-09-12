@@ -26,7 +26,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
     'first_call' => TRUE,
   ));
   if (!isset($cache['whitelist'])) {
-    $cache['whitelist'] = new PathAliasWhitelist('path_alias_whitelist', 'cache'),
+    $cache['whitelist'] = new PathAliasWhitelist('path_alias_whitelist', 'cache');
   }
 
   $path_language = $path_language ? $path_language : $language->language;
@@ -123,6 +123,7 @@ class PathAliasWhitelist extends DrupalCacheArray {
     $this->persist($offset);
     return $value;
   }
+}
 
 /**
  * Implementation of hook_exit
