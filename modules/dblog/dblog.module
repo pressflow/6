@@ -129,7 +129,20 @@ function _dblog_get_message_types() {
  * Implementation of hook_watchdog().
  */
 function dblog_watchdog($log = array()) {
-  $current_db = db_set_active();
+  // Custom patch. When running MySQL in read only mode, all writes to
+  // watchdog fail, causing php warnings to appear to error_log. To retain
+  // those messages in watchdog so they can be easily reviewed, allow for an
+  // optional 'watchdog' database to be specified - this should be the db
+  // on the master site.
+  if (is_array($GLOBALS['db_url']) && isset($GLOBALS['db_url']['watchdog'])) {
+    $current_db = db_set_active('watchdog');
+    // Add a prefix to $log['type'] to identify it as coming from a slave. This
+    // can't be too long due to column restrictions.
+    $log['type'] = 's:' . $log['type'];
+  }
+  else {
+    $current_db = db_set_active();
+  }
   db_query("INSERT INTO {watchdog}
     (uid, type, message, variables, severity, link, location, referer, hostname, timestamp)
     VALUES
