@@ -115,7 +115,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
  */ 
 class PathAliasWhitelist extends DrupalCacheArray {
   function resolveCacheMiss($offset) {
-    $exists = (bool) db_result(db_query_range("SELECT 1 FROM {url_alias} WHERE source LIKE '%s'", $offset . '%', 0, 1));
+    $exists = (bool) db_result(db_query_range("SELECT 1 FROM {url_alias} WHERE src LIKE '%s'", $offset . '%', 0, 1));
     // If a path prefix does not exist, store it as NULL rather than FALSE
     // since DrupalCacheArray uses isset() in offsetExists().
     $value = $exists ? TRUE : NULL;
