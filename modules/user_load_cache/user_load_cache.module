@@ -22,7 +22,6 @@
  *   cannot be loaded.
  */
 function user_load_cache_user_load_cache_load($array = array(), $reset = FALSE) {
-  static $user_cache = array();
   // Dynamically compose a SQL query:
   $query = array();
   $params = array();
@@ -36,13 +35,9 @@ function user_load_cache_user_load_cache_load($array = array(), $reset = FALSE) 
 
   // Retrieve user from cache
   if (count($array) === 1 && isset($array['uid']) && $array['uid']) {
-    if (!$reset && isset($user_cache[$array['uid']])) {
-      return $user_cache[$array['uid']];
-    }
     $cid = 'user/' . $array['uid'];
     $cache = cache_get($cid, 'cache_user');
     if (is_object($cache)) {
-      $user_cache[$array['uid']] = $cache->data;
       return $cache->data;
     }
   }
@@ -87,9 +82,6 @@ function user_load_cache_user_load_cache_load($array = array(), $reset = FALSE) 
   }
 
   if ($user->uid && $cid) {
-    // Add the user to the static cache.
-    $user_cache[$array['uid']] = $user;
-
     // Add the user to the persistent cache.
     cache_set($cid, $user, 'cache_user');
   }
