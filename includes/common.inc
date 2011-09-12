@@ -3259,6 +3259,29 @@ function drupal_common_theme() {
  *   If true, the schema will be rebuilt instead of retrieved from the cache.
  */
 function drupal_get_schema($table = NULL, $rebuild = FALSE) {
+  static $hook_module;
+
+  if (!isset($hook_module)) {
+    $modules = module_implements('schema_get');
+    if (!empty($modules)) {
+      $hook_module = reset($modules);
+    }
+    else {
+      $hook_module = FALSE;
+    }
+  }
+
+  if ($hook_module) {
+    $return = module_invoke($hook_module, 'schema_get', $table, $rebuild);
+  }
+  else {
+    $return = _drupal_get_schema_direct($table, $rebuild);
+  }
+
+  return $return;
+}
+
+function _drupal_get_schema_direct($table = NULL, $rebuild = FALSE) {
   static $schema = array();
 
   if (empty($schema) || $rebuild) {

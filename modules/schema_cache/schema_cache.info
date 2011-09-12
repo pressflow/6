@@ -1,0 +1,4 @@
+name = Schema cache
+description = A low memory implementation of the schema cache.
+core = 6.x
+package = Pressflow

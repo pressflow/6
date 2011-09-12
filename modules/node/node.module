@@ -2049,6 +2049,7 @@ function node_search_validate($form, &$form_state) {
  */
 function node_access($op, $node, $account = NULL) {
   global $user;
+  static $rights;
 
   if (!$node || !in_array($op, array('view', 'update', 'delete', 'create'), TRUE)) {
     // If there was no node to check against, or the $op was not one of the
@@ -2059,20 +2060,44 @@ function node_access($op, $node, $account = NULL) {
   if ($op != 'create') {
     $node = (object)$node;
   }
+
   // If no user object is supplied, the access check is for the current user.
   if (empty($account)) {
     $account = $user;
   }
+  $cid = '';
+  if (is_object($node)) {
+    if (isset($node->nid)) {
+      $cid .= $node->nid;
+    }
+    else {
+      $cid .= $node->type;
+    }
+  }
+  else {
+    $cid .= $node;
+  }
+  $cid .= $op;
+  $cid .= $account->uid;
+
+
+  // Return cached value if it exists.
+  if (isset($node->nid) && isset($rights[$cid])) {
+    return $rights[$cid];
+  }
   // If the node is in a restricted format, disallow editing.
   if ($op == 'update' && !filter_access($node->format)) {
+    $rights[$cid] = FALSE;
     return FALSE;
   }
 
   if (user_access('administer nodes', $account)) {
+    $rights[$cid] = TRUE;
     return TRUE;
   }
 
   if (!user_access('access content', $account)) {
+    $rights[$cid] = FALSE;
     return FALSE;
   }
 
@@ -2084,6 +2109,9 @@ function node_access($op, $node, $account = NULL) {
   }
   $access = module_invoke($module, 'access', $op, $node, $account);
   if (!is_null($access)) {
+    if (isset($node->nid)) {
+      $rights[$cid] = $access;
+    }
     return $access;
   }
 
@@ -2104,11 +2132,13 @@ function node_access($op, $node, $account = NULL) {
 
     $sql = "SELECT 1 FROM {node_access} WHERE (nid = 0 OR nid = %d) $grants_sql AND grant_$op >= 1";
     $result = db_query_range($sql, $node->nid, 0, 1);
-    return (bool) db_result($result);
+    $rights[$cid] = (bool) db_result($result);
+    return $rights[$cid];
   }
 
   // Let authors view their own nodes.
   if ($op == 'view' && $account->uid == $node->uid && $account->uid != 0) {
+    $rights[$cid] = TRUE;
     return TRUE;
   }
 
