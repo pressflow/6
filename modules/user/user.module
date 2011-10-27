@@ -195,7 +195,7 @@ function user_load($array = array(), $reset = FALSE) {
 
   if ($return && $return->uid) {
     // Add the user to the static cache.
-    $user_cache[$array['uid']] = $return;
+    $user_cache[$return->uid] = $return;
   }
 
   return $return;
