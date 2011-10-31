@@ -52,7 +52,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
           $cache['map'][$path_language] = array();
         }
         // Load system paths from cache.
-        $cid = $_GET['q'];
+        $cid = request_uri();
         if ($cached = cache_get($cid, 'cache_path')) {
           $cache['system_paths'] = $cached->data;
           // Now fetch the aliases corresponding to these system paths.
@@ -139,7 +139,7 @@ function path_alias_cache_cache_system_paths() {
   $cache = &path_alias_cache_static('path_alias_cache_lookup_path', array());
   if (empty($cache['system_paths']) && !empty($cache['map'])) {
     // Generate a cache ID (cid) specifically for this page.
-    $cid = $_GET['q'];
+    $cid = request_uri();
     // The static $map array used by drupal_lookup_path() includes all
     // system paths for the page request.
     if (array_key_exists('map', $cache) && is_array($cache['map']) && $paths = current($cache['map'])) {
