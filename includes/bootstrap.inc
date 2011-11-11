@@ -427,6 +427,49 @@ abstract class DrupalCacheArray implements ArrayAccess {
   }
 }
 
+function &drupal_static($name, $default_value = NULL, $reset = FALSE) {
+  static $data = array(), $default = array();
+  // First check if dealing with a previously defined static variable.
+  if (isset($data[$name]) || array_key_exists($name, $data)) {
+    // Non-NULL $name and both $data[$name] and $default[$name] statics exist.
+    if ($reset) {
+      // Reset pre-existing static variable to its default value.
+      $data[$name] = $default[$name];
+    }
+    return $data[$name];
+  }
+  // Neither $data[$name] nor $default[$name] static variables exist.
+  if (isset($name)) {
+    if ($reset) {
+      // Reset was called before a default is set and yet a variable must be
+      // returned.
+      return $data;
+    }
+    // First call with new non-NULL $name. Initialize a new static variable.
+    $default[$name] = $data[$name] = $default_value;
+    return $data[$name];
+  }
+  // Reset all: ($name == NULL). This needs to be done one at a time so that
+  // references returned by earlier invocations of drupal_static() also get
+  // reset.
+  foreach ($default as $name => $value) {
+    $data[$name] = $value;
+  }
+  // As the function returns a reference, the return should always be a
+  // variable.
+  return $data;
+}
+
+/**
+ * Reset one or all centrally stored static variable(s).
+ *
+ * @param $name
+ *   Name of the static variable to reset. Omit to reset all variables.
+ */
+function drupal_static_reset($name = NULL) {
+  drupal_static($name, NULL, TRUE);
+}
+
 /**
  * Start the timer with the specified name. If you start and stop
  * the same timer multiple times, the measured intervals will be
@@ -751,49 +794,51 @@ function drupal_get_filename($type, $name, $filename = NULL) {
 }
 
 /**
+ * Extends DrupalCacheArray to allow for cumulative caching of variables.
+ */
+class VariableCache extends DrupalCacheArray {
+  protected function resolveCacheMiss($offset) {
+    $result = db_result(db_query("SELECT value FROM {variable} WHERE name = '%s'", $offset));
+    $value = $result ? unserialize($result) : NULL;
+    $this->storage[$offset] = $value;
+    $this->persist($offset);
+    return $value;
+  }
+
+  /**
+   * Replace the storage variable with a separate array.
+   *
+   * @return
+   *   The value of the storage variable before it was replaced.
+   */
+  public function replaceStorage($array) {
+    $return = $this->storage;
+    $this->storage = $array;
+    $this->keysToPersist = array();
+    return $return;
+  }
+}
+
+/**
  * Load the persistent variable table.
  *
  * The variable table is composed of values that have been saved in the table
  * with variable_set() as well as those explicitly specified in the configuration
  * file.
  */
-function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 0) {
-  // NOTE: caching the variables improves performance by 20% when serving cached pages.
-  if (!$regenerate && $cached = cache_get('variables', 'cache')) {
-    $variables = $cached->data;
-  }
-  else {
-    if (defined('MAINTENANCE_MODE') || lock_acquire('variable_cache_regenerate')) {
-      $result = db_query('SELECT * FROM {variable}');
-      while ($variable = db_fetch_object($result)) {
-        $variables[$variable->name] = unserialize($variable->value);
-      }
-      cache_set('variables', $variables);
-      if (!defined('MAINTENANCE_MODE')) {
-        lock_release('variable_cache_regenerate');
-      }
-    }
-    else {
-      // Wait for another request that is already doing this work.
-      lock_wait('variable_cache_regenerate');
-
-      // Run the function again. Try a limited number of times to avoid 
-      // infinite recursion if the database connection is invalid for  
-      // some reason, e.g., mysqld restart, loss of network, etc.
-      $recursion_depth++;
-      if ($recursion_depth < 50) {
-        return variable_init($conf, $regenerate, $recursion_depth);
-      }
-
-      $variables = array();
-    }
-  }
+function variable_init($conf = array()) {
+  $cache = &drupal_static('variables');
+  $cache = new VariableCache('variables', 'cache_bootstrap');
+  // Copy the cached variables, free memory in the cache array by setting it
+  // to empty.
+  $variables = $cache->replaceStorage(array());
 
   foreach ($conf as $name => $value) {
     $variables[$name] = $value;
   }
 
   return $variables;
+
 }
 
 /**
@@ -814,8 +859,16 @@ function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 
  */
 function variable_get($name, $default) {
   global $conf;
+  if (isset($conf[$name])) {
+    return $conf[$name];
+  }
+  $cache = &drupal_static('variables');
+  if (isset($cache) && isset($cache[$name])) {
+    $conf[$name] = $cache[$name];
+    return $conf[$name];
+  }
+  return $default;
 
-  return isset($conf[$name]) ? $conf[$name] : $default;
 }
 
 /**
@@ -841,17 +894,22 @@ function variable_set($name, $value) {
   if (!db_affected_rows()) {
     @db_query("INSERT INTO {variable} (name, value) VALUES ('%s', '%s')", $name, $serialized_value);
   }
-
   $conf[$name] = $value;
 
-  // The write-through rebuild optimization isn't compatible with SimpleTest.
-  // Because array-based prefixes don't work with SimpleTest, we can assume
-  // that a non-string prefix indicates lack of SimpleTest operations.
-  if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
+  $cache = &drupal_static('variables');
+  if (is_object($cache)) {
+    // Write through to the variable cache.
+    $replace = array();
+    if ($cached = cache_get('variables')) {
+      $cached->data[$name] = $value;
+      cache_set('variables', $cached->data);
+      $replace = $cached->data;
+    }
+    $cache->replaceStorage($replace);
+  }
+  else {
     cache_clear_all('variables', 'cache');
   }
-  
-  variable_cache_rebuild();
 }
 
 /**
@@ -872,25 +930,16 @@ function variable_del($name) {
   db_query("DELETE FROM {variable} WHERE name = '%s'", $name);
 
   unset($conf[$name]);
-
-  // The write-through rebuild optimization isn't compatible with SimpleTest.
-  // Because array-based prefixes don't work with SimpleTest, we can assume
-  // that a non-string prefix indicates lack of SimpleTest operations.
-  if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
-    cache_clear_all('variables', 'cache');
+  $cache = &drupal_static('variables');
+  if (is_object($cache)) {
+    unset($cache[$name]);
+    if ($cached = cache('bootstrap')->get('variables')) {
+      unset($cache->data[$name]);
+      cache_set('variables', $cached->data);
+    }
   }
-  
-  variable_cache_rebuild();
-}
-
-/**
- * Schedules a rebuild of the variable cache on shutdown.
- */
-function variable_cache_rebuild() {
-  static $shutdown_registered = FALSE;
-  if (!$shutdown_registered) {
-    register_shutdown_function('variable_init', array(), TRUE);
-    $shutdown_registered = TRUE;
+  else {
+    cache_clear_all('variables', 'cache');
   }
 }
 
