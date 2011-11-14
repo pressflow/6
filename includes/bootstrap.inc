@@ -1022,6 +1022,11 @@ class VariableCache extends DrupalCacheArray {
     $this->keysToPersist = array();
     return $return;
   }
+
+  public function offsetUnset($offset) {
+    unset($this->keysToPersist[$offset]);
+    unset($this->storage[$offset]);
+  }
 }
 
 /**
