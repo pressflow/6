@@ -24,7 +24,7 @@ function node_load_cache_node_load_cache($param = array(), $revision = NULL, $re
   global $user;
   static $nodes = array();
 
-  $cachable = ($revision == NULL && is_numeric($param)) ? "node/$param" : 0;
+  $cacheable = ($revision == NULL && is_numeric($param)) ? "node/$param" : 0;
   if ($reset) {
     $nodes = array();
     if ($cacheable) {
