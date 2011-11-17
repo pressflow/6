@@ -26,7 +26,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
     'first_call' => TRUE,
   ));
   if (!isset($cache['whitelist'])) {
-    $cache['whitelist'] = new PathAliasWhitelist('path_alias_whitelist', 'cache'),
+    $cache['whitelist'] = new PathAliasWhitelist('path_alias_whitelist', 'cache');
   }
 
   $path_language = $path_language ? $path_language : $language->language;
@@ -75,7 +75,7 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
       // Check the path whitelist, if the top_level part before the first "/"
       // is not in the list, then there is no need to do anything further,
       // it is not in the database.
-      elseif (!isset($cache['whitelist'][strtok($path, '/')])) {
+      elseif (!isset($cache['whitelist'][$path])) {
         return FALSE;
       }
       // For system paths which were not cached, query aliases individually.
@@ -112,17 +112,96 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
 
 /**
  * Extends DrupalCacheArray to build the path alias whitelist over time.
- */ 
+ */
 class PathAliasWhitelist extends DrupalCacheArray {
-  function resolveCacheMiss($offset) {
-    $exists = (bool) db_result(db_query_range("SELECT 1 FROM {url_alias} WHERE source LIKE '%s'", $offset . '%', 0, 1));
+
+  /**
+   * The substring length for whitelisted paths.
+   *
+   * The path alias whitelist is an array of path substrings, and whether
+   * that substring matches any aliases. The size of this array must be
+   * restricted, but the longer the substring, the more opportunity there is
+   * to avoid looking up paths that don't match. Therefore the length of
+   * the substring is maintained dynamically and reduced when there are more
+   * than 100 paths in the array. Since the cache has to be rebuilt each time
+   * the variable is shortened, it defaults to 5 at first.
+   */
+  protected $length;
+
+  function __construct($cid, $bin) {
+    $this->length = variable_get('path_alias_whitelist_length', 5);
+    $this->cid = $cid;
+    $this->bin = $bin;
+    parent::__construct($this->cid, $this->bin);
+  }
+
+  /**
+   * Substring a path to a standard length.
+   */
+  protected function substr($offset) {
+    return drupal_substr($offset, 0, $this->length);
+  }
+
+  /**
+   * Check the size of the whitelist cache and modify it if necessary.
+   *
+   * @return
+   *   True if the size of the storage exceeded the limit.
+   */
+  function checkStorage() {
+    // If the whitelist is larger than 100 items, reduce the allowed key length
+    // by one to reduce the number of possible unique keys. If the allowed
+    // length is already one, leave it as it is since it is not possible to
+    // subdivide any more.
+    if ($this->length > 1 && count($this->storage) >= 100) {
+      // Reduce the length by 1,
+      $this->length = max(1, $this->length - 1);
+      $this->keysToPersist = array();
+      $this->storage = array();
+      // Acquire a lock to prevent other processes writing to the cache with
+      // whitelist items using the old variable value. Since checkStorage() is
+      // called by resolveCacheMiss(), a new cache item will be entered when
+      // the class goes out of scope in DrupalCacheArray::set() before the lock
+      // is released. 
+      lock_acquire($this->bin . ':' . $this->cid);
+      variable_set('path_alias_whitelist_length', $this->length);
+      cache_clear_all($this->cid, $this->bin);
+      return TRUE;
+    }
+  }
+
+
+  function offsetExists($offset) {
+    return parent::offsetExists($this->substr($offset));
+  }
+
+  function offsetGet($offset) {
+    return parent::offsetGet($this->substr($offset));
+  }
+
+  function offsetSet($offset, $value) {
+    parent::offsetSet($this->substr($offset), $value);
+  }
+
+  function offsetUnset($offset) {
+    parent::offsetUnset($this->substr($offset));
+  }
+
+  function resolveCacheMiss($path_root) {
+    // Check the size of the storage. If it's too big, reduce the substring
+    // length by one.
+    if ($this->checkStorage()) {
+      $path_root = $this->substr($path_root);
+    }
+    $exists = (bool) db_result(db_query_range("SELECT 1 FROM {url_alias} WHERE src LIKE '%s'", $path_root . '%', 0, 1));
     // If a path prefix does not exist, store it as NULL rather than FALSE
     // since DrupalCacheArray uses isset() in offsetExists().
     $value = $exists ? TRUE : NULL;
-    $this->storage[$offset] = $value;
-    $this->persist($offset);
+    $this->storage[$path_root] = $value;
+    $this->persist($path_root);
     return $value;
   }
+}
 
 /**
  * Implementation of hook_exit
@@ -209,7 +288,7 @@ function path_alias_cache_path_alias_whitelist_rebuild($path  = NULL) {
   // Don't rebuild the path alias whitelist for already whitelisted paths.
   if (!empty($path)) {
     $whitelist = new PathAliasWhitelist('path_alias_whitelist', 'cache');
-    if (isset($whitelist[strtok($path, '/')])) {
+    if (isset($whitelist[$path])) {
       return $whitelist;
     }
   }

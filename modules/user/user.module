@@ -144,7 +144,18 @@ function user_external_login($account, $edit = array()) {
  */
 function user_load($array = array(), $reset = FALSE) {
   static $hook_module;
+  static $user_cache = array();
   $hook = 'user_load_cache_load';
+
+  // Retrieve user from cache
+  if (count($array) === 1 && isset($array['uid']) && $array['uid']) {
+    if (!$reset && isset($user_cache[$array['uid']])) {
+      return $user_cache[$array['uid']];
+    }
+  }
+  else {
+    $cid = 0;
+  }
 
   if (!isset($hook_module)) {
     $modules = module_implements('user_load_cache_load');
@@ -162,7 +173,13 @@ function user_load($array = array(), $reset = FALSE) {
   }
    else {
     $return = _user_load_direct($array);
+   }
+
+  if ($return && $return->uid) {
+    // Add the user to the static cache.
+    $user_cache[$return->uid] = $return;
   }
+
   return $return;
 }
 
