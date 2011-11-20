@@ -1356,8 +1356,16 @@ function drupal_get_messages($type = NULL, $clear_queue = TRUE) {
  *   TRUE if access is denied, FALSE if access is allowed.
  */
 function drupal_is_denied($type, $mask) {
-  // Because this function is called for every page request, both cached
-  // and non-cached pages, we tried to optimize it as much as possible.
+  if ($type == 'host') {
+    // Because this function is called with $type == 'host' on every page
+    // request, we first check for an array of IP addresses in settings.php
+    // before querying the database. In the former case there is no wildcard
+    // support.
+    $blocked_ips = variable_get('blocked_ips', NULL);
+    if (isset($blocked_ips) && is_array($blocked_ips)) {
+      return in_array($mask, $blocked_ips);
+    }
+  }
   // We deny access if the only matching records in the {access} table have
   // status 0 (deny). If any have status 1 (allow), or if there are no
   // matching records, we allow access.
