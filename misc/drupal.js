@@ -4,7 +4,7 @@ var Drupal = Drupal || { 'settings': {}, 'behaviors': {}, 'themes': {}, 'locale'
 /**
  * Set the variable that indicates if JavaScript behaviors should be applied
  */
-Drupal.jsEnabled = true;
+Drupal.jsEnabled = document.getElementsByTagName && document.createElement && document.createTextNode && document.documentElement && document.getElementById;
 
 /**
  * Attach all registered behaviors to a page element.
@@ -35,10 +35,12 @@ Drupal.jsEnabled = true;
  */
 Drupal.attachBehaviors = function(context) {
   context = context || document;
-  // Execute all of them.
-  jQuery.each(Drupal.behaviors, function() {
-    this(context);
-  });
+  if (Drupal.jsEnabled) {
+    // Execute all of them.
+    jQuery.each(Drupal.behaviors, function() {
+      this(context);
+    });
+  }
 };
 
 /**
@@ -264,11 +266,16 @@ Drupal.ahahError = function(xmlhttp, uri) {
 }
 
 // Global Killswitch on the <html> element
-$(document.documentElement).addClass('js');
-// Attach all behaviors.
-$(document).ready(function() {
-  Drupal.attachBehaviors(this);
-});
+if (Drupal.jsEnabled) {
+  // Global Killswitch on the <html> element
+  $(document.documentElement).addClass('js');
+  // 'js enabled' cookie
+  document.cookie = 'has_js=1; path=/';
+  // Attach all behaviors.
+  $(document).ready(function() {
+    Drupal.attachBehaviors(this);
+  });
+}
 
 /**
  * The default themes.
