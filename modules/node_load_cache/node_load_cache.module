@@ -34,12 +34,12 @@ function node_load_cache_node_load_cache($param = array(), $revision = NULL, $re
 
   $arguments = array();
   if (is_numeric($param)) {
-    if ($cachable) {
+    if ($cacheable) {
       // Is the node statically cached?
       if (isset($nodes[$param])) {
         return is_object($nodes[$param]) ? drupal_clone($nodes[$param]) : $nodes[$param];
       }
-      $cache = cache_get($cachable, 'cache_node');
+      $cache = cache_get($cacheable, 'cache_node');
       if (is_object($cache)) {
         $cache = $cache->data;
         // Cache the node statically so we don't have to re-request.
@@ -105,13 +105,13 @@ function node_load_cache_node_load_cache($param = array(), $revision = NULL, $re
         $node->$key = $value;
       }
     }
-    if ($cachable) {
+    if ($cacheable) {
       // To completely exclude a node type from the cache, add it to the
       // cache_node_exclude_types variable (as an array).  To exclude a
       // node type from the cache only for logged in users, add it to the
       // cache_node_anyonmous_types variable (as an array).
       if (!in_array($node->type, variable_get('cache_node_exclude_types', array())) || ($user->uid && !in_array($node->type, variable_get('cache_node_anonymous_types', array('poll'))))) {
-        cache_set($cachable, $node, 'cache_node');
+        cache_set($cacheable, $node, 'cache_node');
       }
       $nodes[$node->nid] = is_object($node) ? drupal_clone($node) : $node;
     }
