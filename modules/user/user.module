@@ -147,6 +147,13 @@ function user_load($array = array(), $reset = FALSE) {
   static $user_cache = array();
   $hook = 'user_load_cache_load';
 
+  if (is_numeric($array)) {
+    $array = array('uid' => $array);
+  }
+  elseif (!is_array($array)) {
+    return FALSE;
+  }
+
   // Retrieve user from cache
   if (count($array) === 1 && isset($array['uid']) && $array['uid']) {
     if (!$reset && isset($user_cache[$array['uid']])) {
