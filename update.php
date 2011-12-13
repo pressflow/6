@@ -594,7 +594,7 @@ require_once './includes/bootstrap.inc';
 $op = isset($_REQUEST['op']) ? $_REQUEST['op'] : '';
 if (empty($op)) {
   // Minimum load of components.
-  drupal_bootstrap(DRUPAL_BOOTSTRAP_CONFIGURATION);
+  drupal_bootstrap(DRUPAL_BOOTSTRAP_DATABASE);
 
   require_once './includes/install.inc';
   require_once './includes/file.inc';
@@ -605,6 +605,8 @@ if (empty($op)) {
   $module_list['system']['filename'] = 'modules/system/system.module';
   $module_list['filter']['filename'] = 'modules/filter/filter.module';
   module_list(TRUE, FALSE, FALSE, $module_list);
+  module_implements('', FALSE, TRUE);
+
   drupal_load('module', 'system');
   drupal_load('module', 'filter');
 
