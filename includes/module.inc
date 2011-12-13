@@ -7,10 +7,24 @@
 
 /**
  * Load all the modules that have been enabled in the system table.
+ *
+ * @param $check
+ *   If set, instead of loading modules, return whether the function has run 
+ *   during this request.
+ *
+ * @return
+ *   If $check is TRUE, returns whether it has previously run.
  */
-function module_load_all() {
-  foreach (module_list(TRUE, FALSE) as $module) {
-    drupal_load('module', $module);
+function module_load_all($check = FALSE) {
+  static $has_run = FALSE;
+  if (!$check) {
+    $has_run = TRUE;
+    foreach (module_list(TRUE, FALSE) as $module) {
+      drupal_load('module', $module);
+    }
+  }
+  if ($check) {
+    return $has_run;
   }
 }
 
