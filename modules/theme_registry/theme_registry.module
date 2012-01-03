@@ -50,7 +50,7 @@ class ThemeRegistry Extends DrupalCacheArray {
    *   initialized to NULL.
    */
   function initializeRegistry() {
-    $this->completeRegistry = theme_registry_load_registry_complete();
+    $this->completeRegistry = theme_registry_load_registry_complete($this->theme, $this->base_theme, $this->theme_engine);
 
     return array_fill_keys(array_keys($this->completeRegistry), NULL);
   }
