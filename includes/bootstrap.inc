@@ -390,24 +390,20 @@ abstract class DrupalCacheArray implements ArrayAccess {
   /**
    * Immediately write a value to the persistent cache.
    *
-   * @param $cid
-   *   The cache ID.
-   * @param $bin
-   *   The cache bin.
    * @param $data
    *   The data to write to the persistent cache.
    * @param $lock
    *   Whether to acquire a lock before writing to cache.
    */
-  protected function set($cid, $data, $bin, $lock = TRUE) {
+  protected function set($data, $lock = TRUE) {
     // Lock cache writes to help avoid stampedes.
     // To implement locking for cache misses, override __construct().
-    $lock_name = $cid . ':' . $bin;
+    $lock_name = $this->cid . ':' . $this->bin;
     if (!$lock || lock_acquire($lock_name)) {
-      if ($cached = cache_get($cid, $bin)) {
+      if ($cached = cache_get($this->cid, $this->bin)) {
         $data = $cached->data + $data;
       }
-      cache_set($cid, $data, $bin);
+      cache_set($this->cid, $data, $this->bin);
       if ($lock) {
         lock_release($lock_name);
       }
@@ -422,7 +418,7 @@ abstract class DrupalCacheArray implements ArrayAccess {
       }
     }
     if (!empty($data)) {
-      $this->set($this->cid, $data, $this->bin);
+      $this->set($data);
     }
   }
 }
