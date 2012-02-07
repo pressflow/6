@@ -5,9 +5,3 @@ core = 6.x
 engine = phptemplate
 stylesheets[all][] = style.css
 stylesheets[print][] = print.css
-
-; Information added by drupal.org packaging script on 2012-02-01
-version = "6.23"
-project = "drupal"
-datestamp = "1328134250"
-

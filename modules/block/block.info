@@ -3,9 +3,3 @@ description = Controls the boxes that are displayed around the main content.
 package = Core - required
 version = VERSION
 core = 6.x
-
-; Information added by drupal.org packaging script on 2012-02-01
-version = "6.23"
-project = "drupal"
-datestamp = "1328134250"
-
