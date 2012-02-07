@@ -78,7 +78,7 @@ class ThemeRegistry Extends DrupalCacheArray {
 
   public function resolveCacheMiss($offset) {
     if (!isset($this->completeRegistry)) {
-      $this->completeRegistry = theme_registry_load_registry_complete($this->theme, $this->base_theme, $this->theme_engine);
+      $this->initializeRegistry();
     }
     $this->storage[$offset] = $this->completeRegistry[$offset];
     if ($this->persistable) {
