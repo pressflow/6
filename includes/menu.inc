@@ -573,7 +573,7 @@ function _menu_translate(&$router_item, $map, $to_arg = FALSE) {
   // Generate the link path for the page request or local tasks.
   $link_map = explode('/', $router_item['path']);
   for ($i = 0; $i < $router_item['number_parts']; $i++) {
-    if ($link_map[$i] == '%') {
+    if (!empty($link_map[$i] && $link_map[$i] == '%') {
       $link_map[$i] = $path_map[$i];
     }
   }
