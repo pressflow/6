@@ -1,3 +1,4 @@
+(function($) {
 
 /**
  * Internal function to check using Ajax if clean URLs can be enabled on the
@@ -73,7 +74,7 @@ Drupal.behaviors.copyFieldValue = function (context) {
   for (var sourceId in Drupal.settings.copyFieldValue) {
     // Get the list of target fields.
     targetIds = Drupal.settings.copyFieldValue[sourceId];
-    if (!$('#'+ sourceId + '.copy-field-values-processed').size(), context) {
+    if (!$('#'+ sourceId + '.copy-field-values-processed', context).size()) {`
       // Add the behavior to update target fields on blur of the primary field.
       sourceField = $('#' + sourceId);
       sourceField.bind('blur', function() {
@@ -110,3 +111,5 @@ Drupal.behaviors.dateTime = function(context) {
   // Trigger the event handler to show the form input if necessary.
   $('select.date-format', context).trigger('change');
 };
+
+})(jQuery);

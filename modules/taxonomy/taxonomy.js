@@ -1,3 +1,4 @@
+(function($) {
 
 /**
  * Move a block in the blocks table from one region to another via select list.
@@ -33,3 +34,5 @@ Drupal.behaviors.termDrag = function(context) {
     }
   };
 };
+
+})(jQuery);

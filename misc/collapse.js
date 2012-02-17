@@ -1,3 +1,4 @@
+(function($) {
 
 /**
  * Toggle the visibility of a fieldset using smooth animations
@@ -74,3 +75,5 @@ Drupal.behaviors.collapse = function (context) {
       .addClass('collapse-processed');
   });
 };
+
+})(jQuery);

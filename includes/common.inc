@@ -2122,6 +2122,8 @@ function drupal_clear_css_cache() {
  *   Executes a piece of JavaScript code on the current page by placing the code
  *   directly in the page. This can, for example, be useful to tell the user that
  *   a new message arrived, by opening a pop up, alert box etc.
+ *   When adding inline code, make sure that you are not relying ont $ being jQuery.
+ *   Wrap your code in (function($) { ... })(jQuery); or use jQuery instead of $.
  *
  * - Add settings ('setting'):
  *   Adds a setting to Drupal's global storage of JavaScript settings. Per-page

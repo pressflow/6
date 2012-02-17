@@ -1,3 +1,4 @@
+(function($) {
 
 Drupal.tableHeaderDoScroll = function() {
   if (typeof(Drupal.tableHeaderOnScroll)=='function') {
@@ -114,3 +115,5 @@ Drupal.behaviors.tableHeader = function (context) {
   };
   $(window).resize(resize);
 };
+
+})(jQuery);

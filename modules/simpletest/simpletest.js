@@ -1,6 +1,6 @@
 // $Id: simpletest.js,v 1.2.4.6 2009/12/14 23:29:36 boombatower Exp $
 // Core: Id: simpletest.js,v 1.11 2009/04/27 20:19:37 webchick Exp
-//(function ($) {
+(function ($) {
 
 /**
  * Add the cool table collapsing on the testing overview page.
@@ -111,4 +111,4 @@ Drupal.behaviors.simpleTestSelectAll = function() {
 //  }
 };
 
-//})(jQuery);
+})(jQuery);

@@ -745,7 +745,7 @@ function install_tasks($profile, $task) {
       drupal_add_js('
 // Global Killswitch
 if (Drupal.jsEnabled) {
-  $(document).ready(function() {
+  jQuery(document).ready(function() {
     Drupal.cleanURLsInstallCheck();
     Drupal.setDefaultTimezone();
   });

@@ -1,3 +1,4 @@
+(function($) {
 
 /**
  * Attach handlers to evaluate the strength of any password fields and to check
@@ -185,3 +186,4 @@ Drupal.behaviors.userSettings = function (context) {
   });
 };
 
+})(jQuery);

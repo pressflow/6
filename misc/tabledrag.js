@@ -1,3 +1,4 @@
+(function($) {
 
 /**
  * Drag and drop table rows with field manipulation.
@@ -321,7 +322,9 @@ Drupal.tableDrag.prototype.makeDraggable = function(item) {
             var groupHeight = 0;
             nextGroup = new self.row(nextRow, 'keyboard', self.indentEnabled, self.maxDepth, false);
             if (nextGroup) {
-              $(nextGroup.group).each(function () {groupHeight += $(this).is(':hidden') ? 0 : this.offsetHeight});
+              $(nextGroup.group).each(function () { 
+                groupHeight += $(this).is(':hidden') ? 0 : this.offsetHeight;
+              });
               nextGroupRow = $(nextGroup.group).filter(':last').get(0);
               self.rowObject.swap('after', nextGroupRow);
               // No need to check for indentation, 0 is the only valid one.
@@ -958,7 +961,7 @@ Drupal.tableDrag.prototype.row.prototype.validIndentInterval = function (prevRow
   }
 
   return {'min':minIndent, 'max':maxIndent};
-}
+};
 
 /**
  * Indent a row within the legal bounds of the table.
@@ -1022,7 +1025,7 @@ Drupal.tableDrag.prototype.row.prototype.findSiblings = function(rowSettings) {
         // Either add immediately if this is a flat table, or check to ensure
         // that this row has the same level of indentaiton.
         if (this.indentEnabled) {
-          var checkRowIndentation = $('.indentation', checkRow).length
+          var checkRowIndentation = $('.indentation', checkRow).length;
         }
 
         if (!(this.indentEnabled) || (checkRowIndentation == rowIndentation)) {
@@ -1097,3 +1100,5 @@ Drupal.theme.prototype.tableDragIndentation = function () {
 Drupal.theme.prototype.tableDragChangedWarning = function () {
   return '<div class="warning">' + Drupal.theme('tableDragChangedMarker') + ' ' + Drupal.t("Changes made in this table will not be saved until the form is submitted.") + '</div>';
 };
+
+})(jQuery);

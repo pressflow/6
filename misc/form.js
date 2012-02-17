@@ -1,3 +1,4 @@
+(function($) {
 
 Drupal.behaviors.multiselectSelector = function() {
   // Automatically selects the right radio button in a multiselect control.
@@ -7,3 +8,5 @@ Drupal.behaviors.multiselectSelector = function() {
         .attr('checked', true);
   });
 };
+
+})(jQuery);

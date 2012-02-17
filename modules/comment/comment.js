@@ -1,3 +1,4 @@
+(function($) {
 
 Drupal.behaviors.comment = function (context) {
   var parts = new Array("name", "homepage", "mail");
@@ -32,3 +33,5 @@ Drupal.comment.getCookie = function(name) {
 
   return returnValue;
 };
+
+})(jQuery);
