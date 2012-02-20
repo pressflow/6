@@ -115,10 +115,11 @@ function db_prefix_tables($sql) {
  * code.
  *
  * @param $name
- *   The name assigned to the newly active database connection. If omitted, the
+ *   The key in the $db_url global variable from settings.php. If omitted, the
  *   default connection will be made active.
  *
- * @return the name of the previously active database or FALSE if non was found.
+ * @return
+ *   The name of the previously active database, or FALSE if none was found.
  */
 function db_set_active($name = 'default') {
   global $db_url, $db_slave_url, $db_type, $active_db, $active_slave_db;
@@ -196,7 +197,7 @@ function _db_error_page($error = '') {
   global $db_type;
   drupal_init_language();
   drupal_maintenance_theme();
-  drupal_set_header('HTTP/1.1 503 Service Unavailable');
+  drupal_set_header($_SERVER['SERVER_PROTOCOL'] .' 503 Service Unavailable');
   drupal_set_title('Site off-line');
 
   $message = '<p>The site is currently not available due to technical problems. Please try again later. Thank you for your understanding.</p>';
