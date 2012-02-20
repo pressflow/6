@@ -41,8 +41,8 @@
  *
  * For information on the format of the structured arrays used to define forms,
  * and more detailed explanations of the Form API workflow, see the
- * @link http://api.drupal.org/api/file/developer/topics/forms_api_reference.html reference @endlink
- * and the @link http://api.drupal.org/api/file/developer/topics/forms_api.html quickstart guide. @endlink
+ * @link http://api.drupal.org/api/file/developer/topics/forms_api_reference.html/6 reference @endlink
+ * and the @link http://drupal.org/node/204270 Form API guide. @endlink
  */
 
 /**
@@ -1720,9 +1720,9 @@ function expand_date($element) {
 /**
  * Validates the date type to stop dates like February 30, 2006.
  */
-function date_validate($form) {
-  if (!checkdate($form['#value']['month'], $form['#value']['day'], $form['#value']['year'])) {
-    form_error($form, t('The specified date is invalid.'));
+function date_validate($element) {
+  if (!checkdate($element['#value']['month'], $element['#value']['day'], $element['#value']['year'])) {
+    form_error($element, t('The specified date is invalid.'));
   }
 }
 
@@ -2324,8 +2324,9 @@ function form_clean_id($id = NULL, $flush = FALSE) {
  *   'file' => 'path_to_file_containing_myfunctions',
  * );
  * batch_set($batch);
- * // only needed if not inside a form _submit handler :
- * batch_process();
+ * // Only needed if not inside a form _submit handler.
+ * // Setting redirect in batch_process.
+ * batch_process('node/1');
  * @endcode
  *
  * Note: if the batch 'title', 'init_message', 'progress_message', or
