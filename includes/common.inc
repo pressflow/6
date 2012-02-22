@@ -2224,7 +2224,7 @@ function drupal_add_js($data = NULL, $type = 'module', $scope = 'header', $defer
       // user_is_anonymous() is not used here because it is unavailable during
       // installation.
       // @see user_is_anonymous()
-      if (!empty($GLOBALS['user']->uid) || isset($GLOBALS['menu_admin'])) {
+      if (!empty($GLOBALS['user']->uid) || !empty($GLOBALS['menu_admin'])) {
         $javascript['footer']['inline'][] = array('code' => "document.cookie = 'has_js=1; path=/';", 'defer' => TRUE);
       }
     }
