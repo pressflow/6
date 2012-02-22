@@ -2218,6 +2218,13 @@ function drupal_add_js($data = NULL, $type = 'module', $scope = 'header', $defer
         ),
         'inline' => array(),
       );
+
+      // We never cache authenticated user pages, so if they are logged in we
+      // allow setting of the has_js cookie so batch API functions use the JS
+      // version.
+      if (!user_is_anonymous()) {
+        $javascript['header']['core']['misc/jsenabled.js'] = array('cache' => TRUE, 'defer' => FALSE, 'preprocess' => TRUE);
+      }
     }
 
     if (isset($scope) && !isset($javascript[$scope])) {
