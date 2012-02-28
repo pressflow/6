@@ -358,7 +358,7 @@ function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response
  */
 function drupal_site_offline() {
   drupal_maintenance_theme();
-  drupal_set_header('HTTP/1.1 503 Service unavailable');
+  drupal_set_header($_SERVER['SERVER_PROTOCOL'] .' 503 Service unavailable');
   drupal_set_title(t('Site off-line'));
   print theme('maintenance_page', filter_xss_admin(variable_get('site_offline_message',
     t('@site is currently under maintenance. We should be back shortly. Thank you for your patience.', array('@site' => variable_get('site_name', 'Pressflow'))))));
@@ -368,7 +368,7 @@ function drupal_site_offline() {
  * Generates a 404 error if the request can not be handled.
  */
 function drupal_not_found() {
-  drupal_set_header('HTTP/1.1 404 Not Found');
+  drupal_set_header($_SERVER['SERVER_PROTOCOL'] .' 404 Not Found');
 
   watchdog('page not found', check_plain($_GET['q']), NULL, WATCHDOG_WARNING);
 
@@ -398,7 +398,7 @@ function drupal_not_found() {
  * Generates a 403 error if the request is not allowed.
  */
 function drupal_access_denied() {
-  drupal_set_header('HTTP/1.1 403 Forbidden');
+  drupal_set_header($_SERVER['SERVER_PROTOCOL'] .' 403 Forbidden');
 
   watchdog('access denied', check_plain($_GET['q']), NULL, WATCHDOG_WARNING);
 
@@ -680,7 +680,9 @@ function drupal_error_handler($errno, $message, $filename, $line, $context) {
       }
     }
 
-    $entry = check_plain($types[$errno]) .': '. filter_xss($message) .' in '. check_plain($filename) .' on line '. check_plain($line) .'.';
+    // Try to use filter_xss(). If it's too early in the bootstrap process for
+    // filter_xss() to be loaded, use check_plain() instead.
+    $entry = check_plain($types[$errno]) .': '. (function_exists('filter_xss') ? filter_xss($message) : check_plain($message)) .' in '. check_plain($filename) .' on line '. check_plain($line) .'.';
 
     // Force display of error messages in update.php.
     if (variable_get('error_level', 1) == 1 || strstr($_SERVER['SCRIPT_NAME'], 'update.php')) {
@@ -992,7 +994,7 @@ function t($string, $args = array(), $langcode = NULL) {
  */
 function valid_email_address($mail) {
   $user = '[a-zA-Z0-9_\-\.\+\^!#\$%&*+\/\=\?\`\|\{\}~\']+';
-  $domain = '(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.?)+';
+  $domain = '(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])(\.[a-zA-Z0-9]+)*)+';
   $ipv4 = '[0-9]{1,3}(\.[0-9]{1,3}){3}';
   $ipv6 = '[0-9a-fA-F]{1,4}(\:[0-9a-fA-F]{1,4}){7}';
 
@@ -1824,8 +1826,11 @@ function drupal_add_link($attributes) {
  *
  *   Typical candidates for caching are for example styles for nodes across
  *   the site, or used in the theme.
+ *
  * @return
  *   An array of CSS files.
+ *
+ * @see drupal_get_css()
  */
 function drupal_add_css($path = NULL, $type = 'module', $media = 'all', $preprocess = TRUE) {
   static $css = array();
@@ -1871,8 +1876,11 @@ function drupal_add_css($path = NULL, $type = 'module', $media = 'all', $preproc
  * @param $css
  *   (optional) An array of CSS files. If no array is provided, the default
  *   stylesheets array is used instead.
+ *
  * @return
  *   A string of XHTML CSS tags.
+ *
+ * @see drupal_add_css()
  */
 function drupal_get_css($css = NULL) {
   $output = '';
