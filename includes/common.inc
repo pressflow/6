@@ -653,7 +653,7 @@ function drupal_error_handler($errno, $message, $filename, $line, $context) {
     return;
   }
 
-  if ($errno & (E_ALL ^ E_DEPRECATED ^ E_NOTICE)) {
+  if ($errno & (E_ALL ^ E_DEPRECATED)) {
     $types = array(1 => 'error', 2 => 'warning', 4 => 'parse error', 8 => 'notice', 16 => 'core error', 32 => 'core warning', 64 => 'compile error', 128 => 'compile warning', 256 => 'user error', 512 => 'user warning', 1024 => 'user notice', 2048 => 'strict warning', 4096 => 'recoverable fatal error');
 
     // For database errors, we want the line number/file name of the place that
@@ -989,7 +989,7 @@ function t($string, $args = array(), $langcode = NULL) {
  */
 function valid_email_address($mail) {
   $user = '[a-zA-Z0-9_\-\.\+\^!#\$%&*+\/\=\?\`\|\{\}~\']+';
-  $domain = '(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])(\.[a-zA-Z0-9]+)*)+';
+  $domain = '(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.?)+';
   $ipv4 = '[0-9]{1,3}(\.[0-9]{1,3}){3}';
   $ipv6 = '[0-9a-fA-F]{1,4}(\:[0-9a-fA-F]{1,4}){7}';
 
