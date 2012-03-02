@@ -2714,7 +2714,7 @@ function page_set_cache() {
     // This will fail in some cases, see page_get_cache() for the explanation.
     if ($data = ob_get_contents()) {
       ob_end_clean();
-      $cache_lifetime = variable_get('page_cache_lifetime', 0);
+      $cache_lifetime = variable_get('cache_lifetime', 0);
 
       if (variable_get('page_compression', TRUE) && extension_loaded('zlib')) {
         $data = gzencode($data, 9, FORCE_GZIP);
