@@ -1,3 +1,4 @@
+
 Drupal 6.25, 2012-02-29
 ----------------------
 - Fixed regressions introduced in Drupal 6.24 only.
