@@ -1034,7 +1034,7 @@ class VariableCache extends DrupalCacheArray {
  */
 function variable_init($conf = array()) {
   $cache = &drupal_static('variables');
-  $cache = new VariableCache('variables', 'cache_bootstrap');
+  $cache = new VariableCache('variables', 'cache');
   // Copy the cached variables, free memory in the cache array by setting it
   // to empty.
   $variables = $cache->replaceStorage(array());
@@ -1139,7 +1139,7 @@ function variable_del($name) {
   $cache = &drupal_static('variables');
   if (is_object($cache)) {
     unset($cache[$name]);
-    if ($cached = cache('bootstrap')->get('variables')) {
+    if ($cached = cache_get('variables')) {
       unset($cache->data[$name]);
       cache_set('variables', $cached->data);
     }
