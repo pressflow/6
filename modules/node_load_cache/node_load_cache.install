@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * @file
+ * Install and update functions for node_load_cache module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function node_load_cache_schema() {
+  $schema['cache_node'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_node']['description'] = 'Cache bin for node objects.';
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function node_load_cache_install() {
+  drupal_install_schema('node_load_cache');
+  db_query("UPDATE {system} SET weight = 500 WHERE name = 'node_load_cache'");
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function node_load_cache_uninstall() {
+  drupal_uninstall_schema('node_load_cache');
+}
+
+/**
+ * Update module to set a heavier weight.
+ */
+function node_load_cache_update_6000() {
+  db_query("UPDATE {system} SET weight = 500 WHERE name = 'node_load_cache'");
+  return array();
+}

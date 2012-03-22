@@ -115,10 +115,11 @@ function db_prefix_tables($sql) {
  * code.
  *
  * @param $name
- *   The name assigned to the newly active database connection. If omitted, the
+ *   The key in the $db_url global variable from settings.php. If omitted, the
  *   default connection will be made active.
  *
- * @return the name of the previously active database or FALSE if non was found.
+ * @return
+ *   The name of the previously active database, or FALSE if none was found.
  */
 function db_set_active($name = 'default') {
   global $db_url, $db_slave_url, $db_type, $active_db, $active_slave_db;
@@ -196,7 +197,7 @@ function _db_error_page($error = '') {
   global $db_type;
   drupal_init_language();
   drupal_maintenance_theme();
-  drupal_set_header('HTTP/1.1 503 Service Unavailable');
+  drupal_set_header($_SERVER['SERVER_PROTOCOL'] .' 503 Service Unavailable');
   drupal_set_title('Site off-line');
 
   $message = '<p>The site is currently not available due to technical problems. Please try again later. Thank you for your understanding.</p>';
@@ -679,3 +680,24 @@ function db_type_placeholder($type) {
 /**
  * @} End of "defgroup schemaapi".
  */
+
+/**
+ * Sets a session variable specifying the lag time for ignoring a slave server.
+ * Backport of D7 functionality.
+ */
+function db_ignore_slave() {
+  global $active_slave_db;
+
+  // Only set ignore_slave_server if there are slave servers being used, which
+  // is assumed db_url is an array.
+  if (isset($active_slave_db)) {
+    // Five minutes is long enough to allow the slave to break and resume
+    // interrupted replication without causing problems on the Drupal site from
+    // the old data.
+    $duration = variable_get('maximum_replication_lag', 300);
+    // Set session variable with amount of time to delay before using slave.
+    // This will stick around for 5 minutes by default. 
+    // There is another $_Session variable 'not_slavesafe' for single queries.
+    $_SESSION['ignore_slave_server'] = $_SERVER['REQUEST_TIME'] + $duration;
+  }
+}

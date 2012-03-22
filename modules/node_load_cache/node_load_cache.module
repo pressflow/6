@@ -1,0 +1,206 @@
+<?php
+
+/**
+ * @file
+ * Persistent caching for node_load().
+ */
+
+/**
+ * Implementation of hook_node_load_cache().
+ *
+ * Load a node object from the database.
+ *
+ * @param $param
+ *   Either the nid of the node or an array of conditions to match against in the database query
+ * @param $revision
+ *   Which numbered revision to load. Defaults to the current version.
+ * @param $reset
+ *   Whether to reset the internal node_load cache.
+ *
+ * @return
+ *   A fully-populated node object.
+ */
+function node_load_cache_node_load_cache($param = array(), $revision = NULL, $reset = NULL) {
+  global $user;
+  static $nodes = array();
+
+  $cacheable = ($revision == NULL && is_numeric($param)) ? "node/$param" : 0;
+  if ($reset) {
+    $nodes = array();
+    if ($cacheable) {
+      node_load_cache_clear($param);
+    }
+  }
+
+  $arguments = array();
+  if (is_numeric($param)) {
+    if ($cacheable) {
+      // Is the node statically cached?
+      if (isset($nodes[$param])) {
+        return is_object($nodes[$param]) ? drupal_clone($nodes[$param]) : $nodes[$param];
+      }
+      $cache = cache_get($cacheable, 'cache_node');
+      if (is_object($cache)) {
+        $cache = $cache->data;
+        // Cache the node statically so we don't have to re-request.
+        $nodes[$param] = is_object($cache) ? drupal_clone($cache) : $cache;
+        // Node types like polls need to do some custom logic when users are
+        // logged in and are more difficult to cache.  We still get benefit
+        // from caching these node types for anonymous users.
+        if (!(in_array($nodes[$param]->type, variable_get('cache_node_anonymous_types', array('poll'))) && $user->uid)) {
+          return drupal_clone($nodes[$param]);
+        }
+      }
+    }
+    $cond = 'n.nid = %d';
+    $arguments[] = $param;
+  }
+  elseif (is_array($param)) {
+    // Turn the conditions into a query.
+    foreach ($param as $key => $value) {
+      $cond[] = 'n.'. db_escape_table($key) ." = '%s'";
+      $arguments[] = $value;
+    }
+    $cond = implode(' AND ', $cond);
+  }
+  else {
+    return FALSE;
+  }
+
+  // Retrieve a field list based on the site's schema.
+  $fields = drupal_schema_fields_sql('node', 'n');
+  $fields = array_merge($fields, drupal_schema_fields_sql('node_revisions', 'r'));
+  $fields = array_merge($fields, array('u.name', 'u.picture', 'u.data'));
+  // Remove fields not needed in the query: n.vid and r.nid are redundant,
+  // n.title is unnecessary because the node title comes from the
+  // node_revisions table.  We'll keep r.vid, r.title, and n.nid.
+  $fields = array_diff($fields, array('n.vid', 'n.title', 'r.nid'));
+  $fields = implode(', ', $fields);
+  // Rename timestamp field for clarity.
+  $fields = str_replace('r.timestamp', 'r.timestamp AS revision_timestamp', $fields);
+  // Change name of revision uid so it doesn't conflict with n.uid.
+  $fields = str_replace('r.uid', 'r.uid AS revision_uid', $fields);
+
+  // Retrieve the node.
+  // No db_rewrite_sql is applied so as to get complete indexing for search.
+  if ($revision) {
+    array_unshift($arguments, $revision);
+    $node = db_fetch_object(db_query('SELECT '. $fields .' FROM {node} n INNER JOIN {users} u ON u.uid = n.uid INNER JOIN {node_revisions} r ON r.nid = n.nid AND r.vid = %d WHERE '. $cond, $arguments));
+  }
+  else {
+    $node = db_fetch_object(db_query('SELECT '. $fields .' FROM {node} n INNER JOIN {users} u ON u.uid = n.uid INNER JOIN {node_revisions} r ON r.vid = n.vid WHERE '. $cond, $arguments));
+  }
+
+  if ($node && $node->nid) {
+    // Call the node specific callback (if any) and piggy-back the
+    // results to the node or overwrite some values.
+    if ($extra = node_invoke($node, 'load')) {
+      foreach ($extra as $key => $value) {
+        $node->$key = $value;
+      }
+    }
+
+    if ($extra = node_invoke_nodeapi($node, 'load')) {
+      foreach ($extra as $key => $value) {
+        $node->$key = $value;
+      }
+    }
+    if ($cacheable) {
+      // To completely exclude a node type from the cache, add it to the
+      // cache_node_exclude_types variable (as an array).  To exclude a
+      // node type from the cache only for logged in users, add it to the
+      // cache_node_anyonmous_types variable (as an array).
+      if (!in_array($node->type, variable_get('cache_node_exclude_types', array())) || ($user->uid && !in_array($node->type, variable_get('cache_node_anonymous_types', array('poll'))))) {
+        cache_set($cacheable, $node, 'cache_node');
+      }
+      $nodes[$node->nid] = is_object($node) ? drupal_clone($node) : $node;
+    }
+  }
+
+  return $node;
+}
+
+/**
+ * Clear the persistent cache for a node.
+ *
+ * @param $nid
+ *   The node ID.
+ */
+function node_load_cache_clear($nid) {
+  cache_clear_all("node/$nid", 'cache_node');
+}
+
+/**
+ * Clear nodes that are related to the node being cleared.
+ */
+function node_load_cache_clear_related($node) {
+  // Support for translation module.
+  if (module_exists('translation') && translation_supported_type($node->type) && !empty($node->tnid)) {
+    $translations = translation_node_get_translations($node->tnid);
+    foreach ($translations as $translation) {
+      node_load_cache_clear($translation->nid);
+    }
+  }
+}
+
+/**
+ * Implements hook_nodeapi().
+ */
+function node_load_cache_nodeapi(&$node, $op, $a3, $a4) {
+  if ($op == 'update' || $op == 'delete') {
+    node_load_cache_clear($node->nid);
+    node_load_cache_clear_related($node);
+  }
+  if ($op == 'insert') {
+    node_load_cache_clear_related($node);
+  }
+}
+
+/**
+ * Implements hook_comment().
+ */
+function node_load_cache_comment(&$a1, $op) {
+  // Insert and update ops get passed an array.
+  if ($op == 'insert' || $op == 'update') {
+    node_load_cache_clear($a1['nid']);
+  }
+  // Delete op gets an object.
+  if ($op == 'delete') {
+    node_load_cache_clear($a1->nid);
+  }
+}
+
+/**
+ * Implements hook_user().
+ */
+function node_load_cache_user($op, &$edit, &$account, $category = NULL) {
+  // User module adds name, picture and other values to the node object
+  // in hook_node_load(). Clear the node cache when changes are made.
+  if ($op == 'update' || $op == 'delete') {
+    $result = db_query('SELECT nid FROM {node} WHERE uid = %d', $account->uid);
+    while ($record = db_fetch_object($result)) {
+      node_load_cache_clear($record->nid);
+    }
+  }
+}
+
+/**
+ * Implementation of hook_flush_caches().
+ */
+function node_load_cache_flush_caches() {
+  return array('cache_node');
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function node_load_cache_poll_view_voting_form_alter(&$form, &$form_state) {
+  $form['vote']['#submit'][] = '_node_load_cache_poll_vote_submit';
+}
+
+/**
+ * Clear the node_load() cache when a poll vote is submitted.
+ */
+function _node_load_cache_poll_vote_submit($form, &$form_state) {
+  node_load_cache_clear($form['#node']->nid);
+}
