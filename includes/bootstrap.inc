@@ -312,7 +312,7 @@ abstract class DrupalCacheArray implements ArrayAccess {
    * $GLOBALS['active_db'], this guarantees that DrupalCacheArray has it's
    * destructor called before the connection object is destroyed.
    */
-  private $_connection;
+  protected $_connection;
 
   /**
    * Constructor.
@@ -798,7 +798,16 @@ function drupal_get_filename($type, $name, $filename = NULL) {
  */
 class VariableCache extends DrupalCacheArray {
   protected function resolveCacheMiss($offset) {
-    $result = db_result(db_query("SELECT value FROM {variable} WHERE name = '%s'", $offset));
+    // In Drupal 6, db_query() calls variable_get('dev_query') which can lead
+    // to infinite recursion when dev_query is not set in settings.php. Avoid
+    // this by adding recursion protection.
+    static $recurse = FALSE;
+    $result = NULL;
+    if (!$recurse) {
+      $recurse = TRUE;
+      $result = db_result(db_query("SELECT value FROM {variable} WHERE name = '%s'", $offset));
+      $recurse = FALSE;
+    }
     $value = $result ? unserialize($result) : NULL;
     $this->storage[$offset] = $value;
     $this->persist($offset);
@@ -1757,7 +1766,7 @@ function _drupal_bootstrap($phase) {
     case DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE:
       // Initialize configuration variables, using values from settings.php if available.
       $conf = variable_init(isset($conf) ? $conf : array());
-
+      
       $cache_mode = variable_get('cache', CACHE_DISABLED);
       // Get the page from the cache, unless the cache is disabled or external.
       if ($cache_mode != CACHE_DISABLED && $cache_mode != CACHE_EXTERNAL) {
