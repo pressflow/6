@@ -829,7 +829,8 @@ class VariableCache extends DrupalCacheArray {
 
   public function offsetUnset($offset) {
     unset($this->keysToPersist[$offset]);
-    unset($this->storage[$offset]);
+    $this->storage[$offset] = NULL;
+    $this->persist($offset);
   }
 }
 
@@ -947,10 +948,6 @@ function variable_del($name) {
   $cache = &drupal_static('variables');
   if (is_object($cache)) {
     unset($cache[$name]);
-    if ($cached = cache_get('variables')) {
-      unset($cache->data[$name]);
-      cache_set('variables', $cached->data);
-    }
   }
   else {
     cache_clear_all('variables', 'cache');
