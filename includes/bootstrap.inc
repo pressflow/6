@@ -1105,6 +1105,12 @@ function variable_get($name, $default) {
 function variable_set($name, $value) {
   global $conf, $db_prefix;
 
+  // Allow an install to be set as read_only, this disables all calls to
+  // variable_set().
+  if (!empty($conf['read_only'])) {
+    return;
+  }
+
   $serialized_value = serialize($value);
   db_query("UPDATE {variable} SET value = '%s' WHERE name = '%s'", $serialized_value, $name);
   if (!db_affected_rows()) {
