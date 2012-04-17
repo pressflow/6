@@ -907,6 +907,7 @@ function variable_set($name, $value) {
   // Allow an install to be set as read_only, this disables all calls to
   // variable_set().
   if (!empty($conf['read_only'])) {
+    watchdog('read-only', t('variable_set() tried to write variable @variable in read-only mode.'), array('@variable' => $name), WATCHDOG_WARNING);
     return;
   }
 
