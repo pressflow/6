@@ -391,7 +391,7 @@ function profile_form_profile($edit, $user, $category, $register = FALSE) {
         );
         break;
       case 'selection':
-        $options = $field->required ? array() : array('--');
+        $options = array();
         $lines = split("[\n\r]", $field->options);
         foreach ($lines as $line) {
           if ($line = trim($line)) {
@@ -412,6 +412,7 @@ function profile_form_profile($edit, $user, $category, $register = FALSE) {
           '#default_value' => isset($edit[$field->name]) ? $edit[$field->name] : '',
           '#description' => _profile_form_explanation($field),
           '#required' => $field->required,
+          '#empty_value' => 0,
         );
         break;
     }
