@@ -853,7 +853,7 @@ class VariableCache extends DrupalCacheArray {
         }
         $data = $cached->data;
       }
-      cache_set($this->cid, $cached->data, $this->bin);
+      cache_set($this->cid, $data, $this->bin);
       if ($lock) {
         lock_release($lock_name);
       }
