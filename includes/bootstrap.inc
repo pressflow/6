@@ -797,6 +797,12 @@ function drupal_get_filename($type, $name, $filename = NULL) {
  * Extends DrupalCacheArray to allow for cumulative caching of variables.
  */
 class VariableCache extends DrupalCacheArray {
+
+  /**
+   * Force the cache to be updated if a lock is not acquired.
+   */ 
+  protected $forceCacheUpdate;
+
   protected function resolveCacheMiss($offset) {
     // In Drupal 6, db_query() calls variable_get('dev_query') which can lead
     // to infinite recursion when dev_query is not set in settings.php. Avoid
@@ -828,9 +834,36 @@ class VariableCache extends DrupalCacheArray {
   }
 
   public function offsetUnset($offset) {
-    unset($this->keysToPersist[$offset]);
     $this->storage[$offset] = NULL;
     $this->persist($offset);
+    $this->forceCacheUpdate = TRUE;
+  }
+  public function offsetSet($offset, $value) {
+    $this->storage[$offset] = $value;
+    $this->persist($offset);
+    $this->forceCacheUpdate = TRUE;
+  }
+
+  protected function set($data, $lock = TRUE) {
+    $lock_name = $this->cid . ':' . $this->bin;
+    if (!$lock || ($lock_acquired = lock_acquire($lock_name))) {
+      if ($cached = cache_get($this->cid, $this->bin)) {
+        foreach ($data as $key => $value) {
+          $cached->data[$key] = $data[$key];
+        }
+        $data = $cached->data;
+      }
+      cache_set($this->cid, $cached->data, $this->bin);
+      if ($lock) {
+        lock_release($lock_name);
+      }
+    }
+    elseif (empty($lock_acquired) && $this->forceCacheUpdate) {
+      // If the lock was not acquired, wait for the lock to be released or
+      // 30 seconds then clear the cache.
+      lock_wait($lock_name);
+      cache_clear_all($this->cid, $this->bin);
+    }
   }
 }
 

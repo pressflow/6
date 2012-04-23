@@ -344,6 +344,10 @@ function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response
   // Even though session_write_close() is registered as a shutdown function,
   // we need all session data written to the database before redirecting.
   drupal_session_commit();
+  // Destroy the variable cache object.
+  $variables = &drupal_static('variables');
+  unset($variables);
+
 
   header('Location: '. $url, TRUE, $http_response_code);
 
@@ -1661,6 +1665,10 @@ function drupal_page_footer() {
 
   // Update the hook implementation cache.
   module_implements('', FALSE, FALSE, TRUE);
+
+  // Destroy the variable cache object.
+  $variables = &drupal_static('variables');
+  unset($variables);
 }
 
 /**
