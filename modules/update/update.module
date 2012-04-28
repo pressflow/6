@@ -303,6 +303,7 @@ function update_cron() {
   if ((time() - variable_get('update_last_email_notification', 0)) > $interval) {
     // If configured time between notifications elapsed, send email about
     // updates possibly available.
+    module_load_include('inc', 'update', 'update.fetch');
     _update_cron_notify();
   }
 }
