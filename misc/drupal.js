@@ -1,4 +1,3 @@
-
 var Drupal = Drupal || { 'settings': {}, 'behaviors': {}, 'themes': {}, 'locale': {} };
 
 /**
@@ -265,10 +264,13 @@ Drupal.ahahError = function(xmlhttp, uri) {
 
 // Global Killswitch on the <html> element
 $(document.documentElement).addClass('js');
+// Allow batch operations to run using JS.
+document.cookie = 'has_js=1; path=/batch';
 // Attach all behaviors.
 $(document).ready(function() {
   Drupal.attachBehaviors(this);
 });
+
 
 /**
  * The default themes.
