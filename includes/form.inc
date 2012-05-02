@@ -305,6 +305,11 @@ function drupal_execute($form_id, &$form_state) {
   
   $form = call_user_func_array('drupal_retrieve_form', $args);
   $form['#post'] = $form_state['values'];
+
+  // Reset form validation.
+  $form_state['must_validate'] = TRUE;
+  form_set_error(NULL, '', TRUE);
+
   drupal_prepare_form($form_id, $form, $form_state);
   drupal_process_form($form_id, $form, $form_state);
 }
@@ -575,7 +580,7 @@ function drupal_prepare_form($form_id, &$form, &$form_state) {
 function drupal_validate_form($form_id, $form, &$form_state) {
   static $validated_forms = array();
 
-  if (isset($validated_forms[$form_id])) {
+  if (isset($validated_forms[$form_id]) && empty($form_state['must_validate'])) {
     return;
   }
 
@@ -2437,7 +2442,7 @@ function form_clean_id($id = NULL, $flush = FALSE) {
  * clean code independence, ensuring that several batches submitted by
  * different parts of the code (core / contrib modules) can be processed
  * correctly while not interfering or having to cope with each other. Each
- * batch set gets to specify his own UI messages, operates on its own set
+ * batch set gets to specify its own UI messages, operates on its own set
  * of operations and results, and triggers its own 'finished' callback.
  * Batch sets are processed sequentially, with the progress bar starting
  * fresh for every new set.
