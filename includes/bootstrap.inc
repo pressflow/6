@@ -386,6 +386,10 @@ function conf_init() {
   global $db_url, $db_slave_url, $db_prefix, $db_collation, $cookie_domain, $conf, $installed_profile, $update_free_access;
   $conf = array();
 
+  if (!isset($_SERVER['SERVER_PROTOCOL']) || ($_SERVER['SERVER_PROTOCOL'] != 'HTTP/1.0' && $_SERVER['SERVER_PROTOCOL'] != 'HTTP/1.1')) {
+    $_SERVER['SERVER_PROTOCOL'] = 'HTTP/1.0';
+  }
+
   if (isset($_SERVER['HTTP_HOST'])) {
     // As HTTP_HOST is user input, ensure it only contains characters allowed
     // in hostnames. See RFC 952 (and RFC 2181).
@@ -393,7 +397,7 @@ function conf_init() {
     $_SERVER['HTTP_HOST'] = strtolower($_SERVER['HTTP_HOST']);
     if (!drupal_valid_http_host($_SERVER['HTTP_HOST'])) {
       // HTTP_HOST is invalid, e.g. if containing slashes it may be an attack.
-      header('HTTP/1.1 400 Bad Request');
+      header($_SERVER['SERVER_PROTOCOL'] .' 400 Bad Request');
       exit;
     }
   }
@@ -1356,8 +1360,16 @@ function drupal_get_messages($type = NULL, $clear_queue = TRUE) {
  *   TRUE if access is denied, FALSE if access is allowed.
  */
 function drupal_is_denied($type, $mask) {
-  // Because this function is called for every page request, both cached
-  // and non-cached pages, we tried to optimize it as much as possible.
+  if ($type == 'host') {
+    // Because this function is called with $type == 'host' on every page
+    // request, we first check for an array of IP addresses in settings.php
+    // before querying the database. In the former case there is no wildcard
+    // support.
+    $blocked_ips = variable_get('blocked_ips', NULL);
+    if (isset($blocked_ips) && is_array($blocked_ips)) {
+      return in_array($mask, $blocked_ips);
+    }
+  }
   // We deny access if the only matching records in the {access} table have
   // status 0 (deny). If any have status 1 (allow), or if there are no
   // matching records, we allow access.
@@ -1480,7 +1492,7 @@ function _drupal_bootstrap($phase) {
     case DRUPAL_BOOTSTRAP_ACCESS:
       // Deny access to hosts which were banned - t() is not yet available.
       if (drupal_is_denied('host', ip_address())) {
-        header('HTTP/1.1 403 Forbidden');
+        header($_SERVER['SERVER_PROTOCOL'] .' 403 Forbidden');
         print 'Sorry, '. check_plain(ip_address()) .' has been banned.';
         exit();
       }

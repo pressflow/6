@@ -774,6 +774,10 @@ function comment_save($edit) {
       // Clear the cache so an anonymous user can see his comment being added.
       cache_clear_all();
 
+      // Ignore slave server temporarily to give time for the
+      // saved comment to be propagated to the slave.
+      db_ignore_slave();
+
       // Explain the approval queue if necessary, and then
       // redirect the user to the node he's commenting on.
       if ($edit['status'] == COMMENT_NOT_PUBLISHED) {

@@ -397,23 +397,30 @@ function node_teaser($body, $format = NULL, $size = NULL) {
 }
 
 /**
- * Builds a list of available node types, and returns all of part of this list
- * in the specified format.
+ * Builds a list of available node types, and returns all or part of this list.
  *
  * @param $op
- *   The format in which to return the list. When this is set to 'type',
- *   'module', or 'name', only the specified node type is returned. When set to
- *   'types' or 'names', all node types are returned.
+ *   The format in which to return the list: 'type', 'types', 'module', 'name',
+ *   or 'names'. See return value section below for details.
  * @param $node
- *   A node object, array, or string that indicates the node type to return.
- *   Leave at default value (NULL) to return a list of all node types.
+ *   A node object, an array representation of a node object, or a node type
+ *   name string. See return value section below for details.
  * @param $reset
  *   Whether or not to reset this function's internal cache (defaults to
  *   FALSE).
  *
  * @return
- *   Either an array of all available node types, or a single node type, in a
- *   variable format. Returns FALSE if the node type is not found.
+ *   If $node is supplied and it doesn't correspond to a known node type,
+ *   or if $op is 'type', 'name', or 'module' and $node is not given, the
+ *   function returns FALSE. Otherwise, the return value depends on the
+ *   value of $op:
+ *   - 'types': An array of all available node type objects, keyed by machine
+ *     name.
+ *   - 'type': The single node type object indicated by $node.
+ *   - 'names': An array of the display names of all available node types,
+ *     keyed by machine name and sorted by display name.
+ *   - 'name': The single node type display name indicated by $node.
+ *   - 'module': The name of the node type module indicated by $node.
  */
 function node_get_types($op = 'types', $node = NULL, $reset = FALSE) {
   static $_node_types, $_node_names;
@@ -787,7 +794,7 @@ function node_validate($node, $form = array()) {
   // Make sure the body has the minimum number of words.
   // TODO : use a better word counting algorithm that will work in other languages
   if (!empty($type->min_word_count) && isset($node->body) && count(explode(' ', $node->body)) < $type->min_word_count) {
-    form_set_error('body', t('The body of your @type is too short. You need at least %words words.', array('%words' => $type->min_word_count, '@type' => $type->name)));
+    form_set_error('body', t('The @body_label of your @type is too short. You need at least %words words.', array('@body_label' => $type->body_label, '@type' => $type->name, '%words' => $type->min_word_count)));
   }
 
   if (isset($node->nid) && (node_last_changed($node->nid) > $node->changed)) {
@@ -941,6 +948,10 @@ function node_save(&$node) {
 
   // Clear the page and block caches.
   cache_clear_all();
+
+  // Ignore slave server temporarily to give time for the
+  // saved node to be propagated to the slave.
+  db_ignore_slave();
 }
 
 /**
@@ -1069,8 +1080,8 @@ function node_prepare($node, $teaser = FALSE) {
  *   Whether the node is being displayed by itself as a page.
  *
  * @return
- *   An structured array containing the individual elements
- *   of the node's body.
+ *   A node object with its content property set to a structured array
+ *   containing the individual elements of the node's body.
  */
 function node_build_content($node, $teaser = FALSE, $page = FALSE) {
 
@@ -1625,7 +1636,7 @@ function node_last_changed($nid) {
  */
 function node_revision_list($node) {
   $revisions = array();
-  $result = db_query('SELECT r.vid, r.title, r.log, r.uid, n.vid AS current_vid, r.timestamp, u.name FROM {node_revisions} r LEFT JOIN {node} n ON n.vid = r.vid INNER JOIN {users} u ON u.uid = r.uid WHERE r.nid = %d ORDER BY r.timestamp DESC', $node->nid);
+  $result = db_query('SELECT r.vid, r.title, r.log, r.uid, n.vid AS current_vid, r.timestamp, u.name FROM {node_revisions} r LEFT JOIN {node} n ON n.vid = r.vid INNER JOIN {users} u ON u.uid = r.uid WHERE r.nid = %d ORDER BY r.vid DESC', $node->nid);
   while ($revision = db_fetch_object($result)) {
     $revisions[$revision->vid] = $revision;
   }

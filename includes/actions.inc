@@ -25,25 +25,6 @@
  */
 
 /**
- * @defgroup actions Actions
- * @{
- * Functions that perform an action on a certain system object.
- *
- * All modules should declare their action functions to be in this group and
- * each action function should reference its configuration form, validate, and
- * submit functions using \@see. Conversely, form, validate, and submit
- * functions should reference the action function using \@see. For examples of
- * this see comment_unpublish_by_keyword_action(), which has the following in
- * its doxygen documentation:
- *
- * \@ingroup actions
- * \@see comment_unpublish_by_keyword_action_form().
- * \@see comment_unpublish_by_keyword_action_submit().
- *
- * @} End of "defgroup actions".
- */
-
-/**
  * Perform a given list of actions by executing their callback functions.
  *
  * Given the IDs of actions to perform, find out what the callbacks
@@ -355,7 +336,7 @@ function actions_synchronize($actions_in_code = array(), $delete_orphans = FALSE
     else {
       $link = l(t('Remove orphaned actions'), 'admin/settings/actions/orphan');
       $count = count($actions_in_db);
-      watchdog('actions', format_plural($count, 'One orphaned action (%orphans) exists in the actions table. !link', '@count orphaned actions (%orphans) exist in the actions table. !link'), array('@count' => $count, '%orphans' => $orphans, '!link' => $link), WATCHDOG_WARNING);
+      watchdog('actions', format_plural($count, 'One orphaned action (%orphans) exists in the actions table. !link', '@count orphaned actions (%orphans) exist in the actions table. !link'), array('@count' => $count, '%orphans' => $orphans, '!link' => $link), WATCHDOG_INFO);
     }
   }
 }
