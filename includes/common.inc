@@ -351,7 +351,6 @@ function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response
   $variables = &drupal_static('variables');
   unset($variables);
 
-
   header('Location: '. $url, TRUE, $http_response_code);
 
   // The "Location" header sends a redirect status code to the HTTP daemon. In
@@ -1680,10 +1679,6 @@ function drupal_page_footer() {
 
   // Update the hook implementation cache.
   module_implements('', FALSE, FALSE, TRUE);
-
-  // Destroy the variable cache object.
-  $variables = &drupal_static('variables');
-  unset($variables);
 }
 
 /**

@@ -1111,6 +1111,9 @@ function variable_get($name, $default) {
   if (isset($conf[$name])) {
     return $conf[$name];
   }
+  elseif (array_key_exists($name, $conf)) {
+    return $default;
+  }
   $cache = &drupal_static('variables');
   if (isset($cache) && isset($cache[$name])) {
     $conf[$name] = $cache[$name];
