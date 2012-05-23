@@ -499,12 +499,6 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
     $result->code = -$errno;
     $result->error = trim($errstr);
 
-    // Mark that this request failed. This will trigger a check of the web
-    // server's ability to make outgoing HTTP requests the next time that
-    // requirements checking is performed.
-    // @see system_requirements()
-    variable_set('drupal_http_request_fails', TRUE);
-
     return $result;
   }
 
