@@ -50,13 +50,14 @@ function _update_refresh() {
     $url = _update_build_fetch_url($project, $site_key);
     $fetch_url_base = _update_get_fetch_url_base($project);
     if (empty($fail[$fetch_url_base]) || count($fail[$fetch_url_base]) < $max_fetch_attempts) {
-      $xml = drupal_http_request($url);
-      if (isset($xml->data)) {
-        $data[] = $xml->data;
-      }
-      else {
+      $result = drupal_http_request($url);
+      if (isset($result->error)) {
+        watchdog('update', 'HTTP request to @url failed with error: @error.', array('@url' => $url, '@error' => $result->error));
         // Connection likely broken; prepare to give up.
         $fail[$fetch_url_base][$key] = 1;
+      }
+      elseif (!isset($result->error) && isset($result->data)) {
+        $data = $result->data;
       }
     }
     else {

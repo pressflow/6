@@ -1960,7 +1960,6 @@ function system_check_http_request() {
   // We only care that we get a HTTP response - this means that Drupal
   // can make a HTTP request.
   $works = isset($result->code) && ($result->code >= 100) && ($result->code < 600);
-  variable_set('drupal_http_request_fails', !$works);
   return $works;
 }
 
