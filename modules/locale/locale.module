@@ -382,9 +382,12 @@ class LocaleLookup extends DrupalCacheArray {
     $translation = db_fetch_object(db_query("SELECT s.lid, t.translation, s.version FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = '%s' WHERE s.source = '%s' AND s.textgroup = 'default'", $this->langcode, $offset));
     if ($translation) {
       if ($translation->version != VERSION) {
-        // This is the first use of this string under current Drupal version.
-        // Update the {locales_source} table to indicate the string is current.
-        db_query("UPDATE {locales_source} SET version = '%s' WHERE lid = %d", VERSION, $translation->lid);
+        // Only update the database when the site is not in read-only mode.
+        if (!variable_get('read_only', FALSE)) {
+          // This is the first use of this string under current Drupal version.
+          // Update the {locales_source} table to indicate the string is current.
+          db_query("UPDATE {locales_source} SET version = '%s' WHERE lid = %d", VERSION, $translation->lid);
+        }
       }
       $value = !empty($translation->translation) ? $translation->translation : TRUE;
     }
