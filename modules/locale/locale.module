@@ -540,6 +540,16 @@ function locale_update_js_files() {
   if ($new_files) {
     variable_set('javascript_parsed', $parsed);
   }
+  if (!isset($language->javascript)) {
+    locale_inc_callback('_locale_rebuild_js', $language->langcode);
+  }
+
+
+  // If no refresh was attempted, but we have new source files, we need
+  // to store them too. This occurs if current page is in English.
+  else if ($new_files) {
+    variable_set('javascript_parsed', $parsed);
+  }
 
   if (!isset($language->javascript)) {
     locale_inc_callback('_locale_rebuild_js', $language->langcode);

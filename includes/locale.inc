@@ -899,13 +899,12 @@ function locale_translate_edit_form_submit($form, &$form_state) {
     }
 
     // Force JavaScript translation file recreation for this language.
-    _locale_invalidate_js($key);
+    _locale_rebuild_js($key);
   }
 
   drupal_set_message(t('The string has been saved.'));
 
   // Clear locale cache.
-  _locale_invalidate_js();
   cache_clear_all('locale:', 'cache', TRUE);
 
   $form_state['redirect'] = 'admin/build/translate/search';
@@ -946,8 +945,6 @@ function locale_translate_delete_form(&$form_state, $source) {
 function locale_translate_delete_form_submit($form, &$form_state) {
   db_query('DELETE FROM {locales_source} WHERE lid = %d', $form_state['values']['lid']);
   db_query('DELETE FROM {locales_target} WHERE lid = %d', $form_state['values']['lid']);
-  // Force JavaScript translation file recreation for all languages.
-  _locale_invalidate_js();
   cache_clear_all('locale:', 'cache', TRUE);
   drupal_set_message(t('The string has been removed.'));
   $form_state['redirect'] = 'admin/build/translate/search';
@@ -1009,9 +1006,6 @@ function locale_add_language($langcode, $name = NULL, $native = NULL, $direction
     variable_set('language_count', variable_get('language_count', 1) + 1);
   }
 
-  // Force JavaScript translation file creation for the newly added language.
-  _locale_invalidate_js($langcode);
-
   watchdog('locale', 'The %language language (%code) has been created.', array('%language' => $name, '%code' => $langcode));
 }
 /**
@@ -1062,7 +1056,7 @@ function _locale_import_po($file, $langcode, $mode, $group = NULL) {
   }
 
   // Clear cache and force refresh of JavaScript translations.
-  _locale_invalidate_js($langcode);
+  _locale_rebuild_js($langcode);
   cache_clear_all('locale:', 'cache', TRUE);
 
   // Rebuild the menu, strings may have changed.
@@ -2113,29 +2107,16 @@ function _locale_translate_seek_query() {
  * files are rebuilt (with locale_update_js_files()) the next time a
  * request is served in that language.
  *
+ * @deprecated
+ *
  * @param $langcode
  *   The language code for which the file needs to be refreshed.
  * @return
  *   New content of the 'javascript_parsed' variable.
  */
 function _locale_invalidate_js($langcode = NULL) {
-  $parsed = variable_get('javascript_parsed', array());
-
-  if (empty($langcode)) {
-    // Invalidate all languages.
-    $languages = language_list();
-    unset($languages['en']);
-    foreach ($languages as $lcode => $data) {
-      $parsed['refresh:'. $lcode] = 'waiting';
-    }
-  }
-  else {
-    // Invalidate single language.
-    $parsed['refresh:'. $langcode] = 'waiting';
-  }
-
-  variable_set('javascript_parsed', $parsed);
-  return $parsed;
+  _locale_rebuild_js($langcode);
+  return variable_get('javascript_parsed', array());
 }
 
 /**
