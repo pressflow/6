@@ -535,31 +535,21 @@ function locale_update_js_files() {
     }
   }
 
-  // If there are any new source files we parsed, invalidate existing
-  // JavaScript translation files for all languages, adding the refresh
-  // flags into the existing array.
+  // If there are any new source files we parsed, store them so that they will
+  // not be parsed on the next request.
   if ($new_files) {
-    $parsed += locale_inc_callback('_locale_invalidate_js');
+    variable_set('javascript_parsed', $parsed);
   }
 
-  // If necessary, rebuild the translation file for the current language.
-  if (!empty($parsed['refresh:'. $language->language])) {
-    // Don't clear the refresh flag on failure, so that another try will
-    // be performed later.
-    if (locale_inc_callback('_locale_rebuild_js')) {
-      unset($parsed['refresh:'. $language->language]);
-    }
-    // Store any changes after refresh was attempted.
-    variable_set('javascript_parsed', $parsed);
-  }
-  // If no refresh was attempted, but we have new source files, we need
-  // to store them too. This occurs if current page is in English.
-  else if ($new_files) {
-    variable_set('javascript_parsed', $parsed);
+  if (!isset($language->javascript)) {
+    locale_inc_callback('_locale_rebuild_js', $language->langcode);
   }
 
   // Add the translation JavaScript file to the page.
   if ($files && !empty($language->javascript)) {
+    if (!file_exists($dir .'/'. $language->language .'_'. $language->javascript .'.js')) {
+      locale_inc_callback('_locale_rebuild_js', $language->langcode);
+    }
     drupal_add_js($dir .'/'. $language->language .'_'. $language->javascript .'.js', 'core');
   }
 }

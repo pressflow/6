@@ -2537,6 +2537,8 @@ function drupal_build_js_cache($files, $filename) {
 function drupal_clear_js_cache() {
   file_scan_directory(file_create_path('js'), '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
   variable_set('javascript_parsed', array());
+  $dir = file_create_path(variable_get('locale_js_directory', 'languages'));
+  _file_unmanaged_delete_recursive($dir);
 }
 
 /**
