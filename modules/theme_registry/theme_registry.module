@@ -23,7 +23,7 @@ class ThemeRegistry Extends DrupalCacheArray {
     // Only use cumulative caching if the request method is GET.
     // theme() should be very rarely called durin $_POST and this
     // avoids polluting the runtime cache.
-    $this->persistable = $_SERVER['REQUEST_METHOD'] == 'GET';
+    $this->persistable = module_load_all(TRUE) && $_SERVER['REQUEST_METHOD'] == 'GET';
     $data = array();
     if ($this->persistable && $cached = cache_get($this->cid, $this->bin)) {
       $data = $cached->data;
