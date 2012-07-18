@@ -1,7 +1,11 @@
 <?php
 
 function cookie_cache_bypass_form_alter(&$form, $form_state, $form_id) {
-  $form['#submit'][] = 'cookie_cache_bypass_submit';
+  // Only add the custom bypass code if not executing via the command line,
+  // i.e. drush.
+  if (php_sapi_name() != 'cli') {
+    $form['#submit'][] = 'cookie_cache_bypass_submit';
+  }
 }
 
 function cookie_cache_bypass_submit() {
