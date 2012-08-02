@@ -561,39 +561,81 @@ function drupal_get_filename($type, $name, $filename = NULL) {
  * file.
  */
 function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 0) {
+  // using locks will install a shutdown function locks_release_all,
+  // so we install our variables_reset_cache shutdown function first
+  // to prevent locks from being released before it runs.
+  variable_cache_rebuild_shutdown();
+
   // NOTE: caching the variables improves performance by 20% when serving cached pages.
-  if (!$regenerate && $cached = cache_get('variables', 'cache')) {
+  if ($cached = cache_get('variables', 'cache')) {
     $variables = $cached->data;
   }
   else {
-    if (defined('MAINTENANCE_MODE') || lock_acquire('variable_cache_regenerate')) {
-      $result = db_query('SELECT * FROM {variable}');
-      while ($variable = db_fetch_object($result)) {
-        $variables[$variable->name] = unserialize($variable->value);
-      }
-      cache_set('variables', $variables);
-      if (!defined('MAINTENANCE_MODE')) {
-        lock_release('variable_cache_regenerate');
-      }
-    }
-    else {
-      // Wait for another request that is already doing this work.
-      lock_wait('variable_cache_regenerate');
-
-      // Run the function again. Try a limited number of times to avoid 
-      // infinite recursion if the database connection is invalid for  
-      // some reason, e.g., mysqld restart, loss of network, etc.
-      $recursion_depth++;
-      if ($recursion_depth < 50) {
-        return variable_init($conf, $regenerate, $recursion_depth);
-      }
-
-      $variables = array();
-    }
+    // grab the variables table and set the cache
+    $variables = variable_reset_cache(TRUE);
   }
 
   foreach ($conf as $name => $value) {
     $variables[$name] = $value;
+  }
+
+  return $variables;
+}
+
+/**
+ * Reset the variable cache safely.
+ *
+ * @param bool $force
+ *   Flag to force cache to be rebuilt and variables returned no matter what
+ */
+function variable_reset_cache($force = FALSE) {
+  // $variable_write indicates that a variable_set or variable_del has taken place
+  static $variable_write = FALSE;
+
+  $variables = array();
+  if ($force || $variable_write) {
+    $error_msg = '';
+    $lock_name = __FUNCTION__;
+    // try to acquire a lock, just in case we can
+    $lock_acquired = lock_acquire($lock_name, 1);
+    try {  // trap exceptions while we have the lock
+      // read current variables from DB
+      $result = db_query('SELECT name, value FROM {variable}');
+      if ($result) {
+        while ($variable = db_fetch_object($result)) {
+          $variables[$variable->name] = unserialize($variable->value);
+        }
+      }
+      else {
+        $error_msg = t('Failed to retrieve variables table.');
+      }
+    }
+    catch (Exception $e) {
+      $error_msg = 'Exception: ' . $e->getMessage();
+    }
+    if (!empty($error_msg)) {
+      // make sure lock is released and cache is cleared if we get an exception
+      // or error reading from the database
+      if ($lock_acquired) {
+        lock_release($lock_name);
+      }
+      if ($variable_write) {
+        cache_clear_all('variables', 'cache');
+      }
+      watchdog('variable_reset_cache', 'Error while locked: %msg', array('%msg' => $error_msg));
+    }
+    elseif ($lock_acquired) {
+      // if we acquired the lock, then update the drupal cache and release lock
+      cache_set('variables', $variables);
+      lock_release($lock_name);
+    }
+    elseif ($variable_write) {
+      // When we've made a change via variable_set() or variable_del() and failed
+      // to rebuild the cache, we need to clear it to ensure that subsequent
+      // requests pick up the changes.
+      cache_clear_all('variables', 'cache');
+    }
+    $variable_write = FALSE;  // don't need to write cache until next variable_set
   }
 
   return $variables;
@@ -638,6 +680,7 @@ function variable_get($name, $default) {
  */
 function variable_set($name, $value) {
   global $conf, $db_prefix;
+  static $variable_write; // see variable_reset_cache
 
   $serialized_value = serialize($value);
   db_query("UPDATE {variable} SET value = '%s' WHERE name = '%s'", $serialized_value, $name);
@@ -653,8 +696,11 @@ function variable_set($name, $value) {
   if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
     cache_clear_all('variables', 'cache');
   }
-  
-  variable_cache_rebuild();
+  else {
+    // indicate to variable_reset_cache that a variable_set has occured
+    $variable_write = TRUE;
+    variable_cache_rebuild_shutdown(); // ensure shutdown function is registered
+  }
 }
 
 /**
@@ -671,6 +717,7 @@ function variable_set($name, $value) {
  */
 function variable_del($name) {
   global $conf, $db_prefix;
+  static $variable_write;  // see variable_reset_cache
 
   db_query("DELETE FROM {variable} WHERE name = '%s'", $name);
 
@@ -682,17 +729,20 @@ function variable_del($name) {
   if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
     cache_clear_all('variables', 'cache');
   }
-  
-  variable_cache_rebuild();
+  else {
+    // indicate to variable_reset_cache that a variable_del has occured
+    $variable_write = TRUE;
+    variable_cache_rebuild_shutdown(); // ensure shutdown function is registered
+  }
 }
 
 /**
  * Schedules a rebuild of the variable cache on shutdown.
  */
-function variable_cache_rebuild() {
+function variable_cache_rebuild_shutdown() {
   static $shutdown_registered = FALSE;
   if (!$shutdown_registered) {
-    register_shutdown_function('variable_init', array(), TRUE);
+    register_shutdown_function('variable_reset_cache');
     $shutdown_registered = TRUE;
   }
 }
@@ -805,7 +855,7 @@ function drupal_set_header($name = NULL, $value = NULL, $append = FALSE) {
   if (!isset($name)) {
     return $headers;
   }
-  
+
   // Support the Drupal 6 header API
   if (!isset($value)) {
     if (strpos($name, ':') !== FALSE) {
@@ -1423,7 +1473,7 @@ function drupal_bootstrap($phase = NULL) {
       _drupal_bootstrap($current_phase);
     }
   }
-  
+
   return $phase_index;
 }
 
@@ -1483,7 +1533,7 @@ function _drupal_bootstrap($phase) {
       // those using APC or memcached.
       require_once variable_get('lock_inc', './includes/lock.inc');
       lock_init();
-      
+
       // Detect if an installation is present.
       detect_installation_or_run_installer();
 
@@ -1534,11 +1584,11 @@ function _drupal_bootstrap($phase) {
         // We are done.
         exit;
       }
-  
+
       if (!$cache && drupal_page_is_cacheable() && $cache_mode != CACHE_EXTERNAL) {
         header('X-Drupal-Cache: MISS');
       }
-      
+
       // If using an external cache and the page is cacheable, set headers.
       if ($cache_mode == CACHE_EXTERNAL && drupal_page_is_cacheable()) {
         drupal_page_cache_header_external();
@@ -1679,17 +1729,17 @@ function ip_address() {
 
   if (!isset($ip_address)) {
     $ip_address = $_SERVER['REMOTE_ADDR'];
-    
+
     // Only use parts of the X-Forwarded-For (XFF) header that have followed a trusted route.
     // Specifically, identify the leftmost IP address in the XFF header that is not one of ours.
     // An XFF header is: X-Forwarded-For: client1, proxy1, proxy2
     if (isset($_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]) && variable_get('reverse_proxy', 0)) {
       // Load trusted reverse proxy server IPs.
       $reverse_proxy_addresses = variable_get('reverse_proxy_addresses', array());
-      
+
       // Turn XFF header into an array.
       $forwarded = explode(',', $_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]);
-      
+
       // Trim the forwarded IPs; they may have been delimited by commas and spaces.
       $forwarded = array_map('trim', $forwarded);
 
@@ -1698,7 +1748,7 @@ function ip_address() {
 
       // Eliminate all trusted IPs.
       $untrusted = array_diff($forwarded, $reverse_proxy_addresses);
-      
+
       // The right-most IP is the most specific we can trust.
       $ip_address = array_pop($untrusted);
     }
@@ -1712,9 +1762,9 @@ function ip_address() {
  */
 function drupal_session_initialize() {
   global $user;
-   
+
   session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy_sid', 'sess_gc');
- 
+
   if (isset($_COOKIE[session_name()])) {
     // If a session cookie exists, initialize the session. Otherwise the
     // session is only started on demand in drupal_session_commit(), making
@@ -1776,7 +1826,7 @@ function drupal_session_commit() {
 
 /**
  * Return whether a session has been started.
- */  
+ */
 function drupal_session_started($set = NULL) {
   static $session_started = FALSE;
   if (isset($set)) {
@@ -1841,7 +1891,7 @@ function drupal_save_session($status = NULL) {
   }
   return $save_session;
 }
-	
+
 /**
  * Returns the current bootstrap phase for this Drupal process.
  *
@@ -1886,7 +1936,7 @@ function drupal_generate_test_ua($prefix) {
     // check the HMAC before the database is initialized. filectime()
     // and fileinode() are not easily determined from remote.
 //    $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
-    $filepath = './includes/bootstrap.inc';                
+    $filepath = './includes/bootstrap.inc';
 //    $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
     $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   }
@@ -1914,7 +1964,7 @@ function drupal_is_cli() {
  */
 function drupal_session_destroy() {
   session_destroy();
-  
+
   // Workaround PHP 5.2 fatal error "Failed to initialize storage module".
   // @see http://bugs.php.net/bug.php?id=32330
   session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy_sid', 'sess_gc');
