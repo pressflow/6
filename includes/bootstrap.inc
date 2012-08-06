@@ -560,7 +560,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
  * with variable_set() as well as those explicitly specified in the configuration
  * file.
  */
-function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 0) {
+function variable_init($conf = array()) {
   // using locks will install a shutdown function locks_release_all,
   // so we install our variables_reset_cache shutdown function first
   // to prevent locks from being released before it runs.
@@ -583,6 +583,18 @@ function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 
 }
 
 /**
+ * Local helper function Get/Set a persistent flag to indicate that
+ * a variable_set or variable_del has been done
+ */
+function _variable_write($new_value = NULL) {
+  static $variable_write = FALSE;
+  if (!is_null($new_value)) {
+    $variable_write = $new_value;
+  }
+  return $variable_write;
+}
+
+/**
  * Reset the variable cache safely.
  *
  * @param bool $force
@@ -593,6 +605,8 @@ function variable_reset_cache($force = FALSE) {
   static $variable_write = FALSE;
 
   $variables = array();
+  // check to see if a variable_set or variable_del has been done
+  $variable_write = _variable_write();
   if ($force || $variable_write) {
     $error_msg = '';
     $lock_name = __FUNCTION__;
@@ -635,7 +649,7 @@ function variable_reset_cache($force = FALSE) {
       // requests pick up the changes.
       cache_clear_all('variables', 'cache');
     }
-    $variable_write = FALSE;  // don't need to write cache until next variable_set
+    _variable_write(FALSE);  // don't need to write cache until next variable_set
   }
 
   return $variables;
@@ -680,7 +694,6 @@ function variable_get($name, $default) {
  */
 function variable_set($name, $value) {
   global $conf, $db_prefix;
-  static $variable_write; // see variable_reset_cache
 
   $serialized_value = serialize($value);
   db_query("UPDATE {variable} SET value = '%s' WHERE name = '%s'", $serialized_value, $name);
@@ -698,7 +711,7 @@ function variable_set($name, $value) {
   }
   else {
     // indicate to variable_reset_cache that a variable_set has occured
-    $variable_write = TRUE;
+    _variable_write(TRUE);
     variable_cache_rebuild_shutdown(); // ensure shutdown function is registered
   }
 }
@@ -717,7 +730,6 @@ function variable_set($name, $value) {
  */
 function variable_del($name) {
   global $conf, $db_prefix;
-  static $variable_write;  // see variable_reset_cache
 
   db_query("DELETE FROM {variable} WHERE name = '%s'", $name);
 
@@ -731,7 +743,7 @@ function variable_del($name) {
   }
   else {
     // indicate to variable_reset_cache that a variable_del has occured
-    $variable_write = TRUE;
+    _variable_write(TRUE);
     variable_cache_rebuild_shutdown(); // ensure shutdown function is registered
   }
 }
