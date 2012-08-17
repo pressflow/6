@@ -940,11 +940,33 @@ function variable_get($name, $default) {
 function variable_set($name, $value) {
   global $conf, $db_prefix;
 
-  // Allow an install to be set as read_only, this disables all calls to
-  // variable_set().
+
+  // Custom patch for read-only mode. Some systems such as JavaScript/CSS
+  // aggregate caching trigger variable_set() from normal anonymous page
+  // requests which can't be redirected to the 'master' site.
+  //
+  // Therefore,
+  // do the following:
+  //  - log when variable_set() is called in read only mode.
+  //  - allow site administrators to specify a 'variables' database connection
+  //    and direct variable writes to that database if it's set to ensure
+  //    consistency.
+  //  - if the 'variables' database connection is not set, disable variable
+  //    writes altogether to avoid triggering PHP errors.
   if (!empty($conf['read_only'])) {
+    // Log when variable_set() is called in this mode, this should be extremely
+    // rare, and if not can be indicative of other problems.
     watchdog('read-only', t('variable_set() tried to write variable @variable in read-only mode.'), array('@variable' => $name), WATCHDOG_WARNING);
-    return;
+
+    // Allow site adminstrators to specify a 'variables' databse connection. If
+    // this is set, direct writes to that database instead.
+    if (is_array($GLOBALS['db_url']) && isset($GLOBALS['db_url']['variables'])) {
+      $current_db = db_set_active('variables');
+    }
+    else {
+      // Otherwise return early since the variable_set() will fail anyway. 
+      return;
+    }
   }
 
   $serialized_value = serialize($value);
@@ -967,6 +989,9 @@ function variable_set($name, $value) {
   }
   else {
     cache_clear_all('variables', 'cache');
+  }
+  if (!empty($current_db)) {
+    db_set_active($current_db);
   }
 }
 
