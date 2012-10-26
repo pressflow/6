@@ -394,7 +394,7 @@ class LocaleLookup extends DrupalCacheArray {
     else {
       // We don't have the source string, update the {locales_source} table to
       // indicate the string is not translated.
-      db_query("INSERT INTO {locales_source} (location, source, textgroup, version) VALUES ('%s', '%s', 'default', '%s')", request_uri(), $string, VERSION);
+      db_query("INSERT INTO {locales_source} (location, source, textgroup, version) VALUES ('%s', '%s', 'default', '%s')", request_uri(), $offset, VERSION);
         $value = TRUE;
     }
     $this->storage[$offset] = $value;
