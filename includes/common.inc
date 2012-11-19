@@ -2305,6 +2305,9 @@ function drupal_get_js($scope = 'header', $javascript = NULL) {
     return '';
   }
 
+  // Invoke hook_js_alter().
+  drupal_alter('js', $javascript);
+
   $output = '';
   $preprocessed = '';
   $no_preprocess = array('core' => '', 'module' => '', 'theme' => '');
