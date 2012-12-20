@@ -145,12 +145,15 @@ function user_external_login($account, $edit = array()) {
  *   - An associative array whose keys are fields in the {users} table (such as
  *     uid, name, pass, mail, status) and whose values are the field's value.
  *   - A numeric user ID.
+ * @param $reset
+ *   Reset the cache for provided user ID and return.
  *
  * @return
  *   A fully-loaded $user object upon successful user load or FALSE if user
  *   cannot be loaded.
  */
-function user_load($user_info = array()) {
+function user_load($user_info = array(), $reset = FALSE) {
+  static $users;
   // Dynamically compose a SQL query:
   $query = array();
   $params = array();
@@ -160,6 +163,20 @@ function user_load($user_info = array()) {
   }
   elseif (!is_array($user_info)) {
     return FALSE;
+  }
+  if (isset($user_info['uid']) && count($user_info) == 1) {
+    if ($reset) {
+      unset($users[$user_info['uid']]);
+      cache_clear_all($user_info['uid'], 'cache_user');
+      return;
+    }
+    elseif (isset($users[$user_info['uid']])) {
+      return is_object($users[$user_info['uid']]) ? drupal_clone($users[$user_info['uid']]) : $users[$user_info['uid']];
+    }
+    elseif ($cache = cache_get($user_info['uid'], 'cache_user')) {
+      $users[$user_info['uid']] = $cache->data;
+      return drupal_clone($users[$user_info['uid']]);
+    }
   }
 
   foreach ($user_info as $key => $value) {
@@ -197,6 +214,8 @@ function user_load($user_info = array()) {
   else {
     $user = FALSE;
   }
+  $users[$user->uid] = $user;
+  cache_set($user->uid, $user, 'cache_user');
 
   return $user;
 }
@@ -291,6 +310,7 @@ function user_save($account, $array = array(), $category = 'account') {
     }
 
     // Refresh user object.
+    user_load(array('uid' => $account->uid), TRUE);
     $user = user_load(array('uid' => $account->uid));
 
     // Send emails after we have the new user object.
@@ -370,10 +390,9 @@ function user_save($account, $array = array(), $category = 'account') {
         }
       }
     }
-
-    // Build the finished user object.
-    $user = user_load(array('uid' => $array['uid']));
   }
+  user_load($user->uid, TRUE);
+  $user = user_load($user->uid);
 
   // Save distributed authentication mappings.
   $authmaps = array();
@@ -1661,6 +1680,7 @@ function user_delete($edit, $uid) {
   $variables = array('%name' => $account->name, '%email' => '<'. $account->mail .'>');
   watchdog('user', 'Deleted user: %name %email.', $variables, WATCHDOG_NOTICE);
   user_module_invoke('delete', $edit, $account);
+  user_load($uid, TRUE);
 }
 
 /**
@@ -2598,4 +2618,13 @@ function user_login_destination() {
  */
 function user_delete_access($account) {
   return user_access('administer users') && $account->uid > 0;
+}
+
+/**
+ * Implementation of hook_flush_caches().
+ */
+function user_flush_caches() {
+  return array(
+    'cache_user',
+  );
 }
