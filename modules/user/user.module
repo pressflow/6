@@ -1751,12 +1751,35 @@ function _user_mail_text($key, $language = NULL, $variables = array()) {
  * @param $permission
  *   A string containing a permission. If set, only roles containing that
  *   permission are returned.
+ * @param $reset
+ *   Reset the internal cache of roles. 
  *
  * @return
  *   An associative array with the role id as the key and the role name as
  *   value.
  */
-function user_roles($membersonly = FALSE, $permission = NULL) {
+function user_roles($membersonly = FALSE, $permission = NULL, $reset = FALSE) {
+  static $all_roles;
+
+  if ($reset) {
+    $all_roles = NULL;
+    cache_clear_all('user_roles', 'cache');
+    return;
+  }
+  if (!$permission) {
+    if (!isset($all_roles) && ($cache = cache_get('user_roles'))) {
+      $all_roles = $cache->data;
+    }
+    if (isset($all_roles)) {
+      if ($membersonly) {
+        $roles = $all_roles;
+        unset($roles[DRUPAL_ANONYMOUS_RID]);
+        return $roles;
+      }
+      return array_filter($all_roles);
+    }
+  }
+
   // System roles take the first two positions.
   $roles = array(
     DRUPAL_ANONYMOUS_RID => NULL,
@@ -1774,9 +1797,7 @@ function user_roles($membersonly = FALSE, $permission = NULL) {
     switch ($role->rid) {
       // We only translate the built in role names
       case DRUPAL_ANONYMOUS_RID:
-        if (!$membersonly) {
-          $roles[$role->rid] = t($role->name);
-        }
+        $roles[$role->rid] = t($role->name);
         break;
       case DRUPAL_AUTHENTICATED_RID:
         $roles[$role->rid] = t($role->name);
@@ -1786,7 +1807,15 @@ function user_roles($membersonly = FALSE, $permission = NULL) {
     }
   }
 
-  // Filter to remove unmatched system roles.
+  if (!$permission) {
+    $all_roles = $roles;
+    cache_set('user_roles', $all_roles);
+  }
+
+  if ($membersonly) {
+    unset($roles[DRUPAL_ANONYMOUS_RID]);
+  }
+
   return array_filter($roles);
 }
 
