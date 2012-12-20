@@ -702,15 +702,23 @@ function node_invoke_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
  *   Which numbered revision to load. Defaults to the current version.
  * @param $reset
  *   Whether to reset the internal node_load cache.
+ * @param $reset_single_node
+ *   Reset the cache for a single node instead of all.
  *
  * @return
  *   A fully-populated node object.
  */
-function node_load($param = array(), $revision = NULL, $reset = NULL) {
+function node_load($param = array(), $revision = NULL, $reset = NULL, $reset_single_node = FALSE) {
   static $nodes = array();
 
   if ($reset) {
     $nodes = array();
+    cache_clear_all(NULL, 'cache_node');
+  }
+  if ($reset_single_node) {
+    unset($nodes[$param]);
+    cache_clear_all($param, 'cache_node');
+    return;
   }
 
   $cachable = ($revision == NULL);
@@ -720,6 +728,10 @@ function node_load($param = array(), $revision = NULL, $reset = NULL) {
       // Is the node statically cached?
       if (isset($nodes[$param])) {
         return is_object($nodes[$param]) ? drupal_clone($nodes[$param]) : $nodes[$param];
+      }
+      elseif ($cache = cache_get($param, 'cache_node')) {
+        $nodes[$param] = $cache->data;
+        return drupal_clone($cache->data);
       }
     }
     $cond = 'n.nid = %d';
@@ -777,6 +789,7 @@ function node_load($param = array(), $revision = NULL, $reset = NULL) {
     }
     if ($cachable) {
       $nodes[$node->nid] = is_object($node) ? drupal_clone($node) : $node;
+      cache_set($node->nid, $node, 'cache_node');
     }
   }
 
@@ -2421,6 +2434,8 @@ function _node_access_rebuild_batch_finished($success, $results, $operations) {
     drupal_set_message(t('The content access permissions have not been properly rebuilt.'), 'error');
   }
   cache_clear_all();
+  // Clear out the cache for just this node.
+  node_load($node->nid, NULL, NULL, TRUE);
 }
 
 /**
@@ -2789,4 +2804,13 @@ function node_unpublish_by_keyword_action($node, $context) {
       break;
     }
   }
+}
+
+/**
+ * Implementation of hook_flush_caches().
+ */
+function node_flush_caches() {
+  return array(
+    'cache_node',
+  );
 }
