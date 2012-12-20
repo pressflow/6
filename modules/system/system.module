@@ -1046,7 +1046,8 @@ function system_region_list($theme_key) {
   static $list = array();
 
   if (!array_key_exists($theme_key, $list)) {
-    $info = unserialize(db_result(db_query("SELECT info FROM {system} WHERE type = 'theme' AND name = '%s'", $theme_key)));
+    $themes = list_themes();
+    $info = $themes[$theme_key]->info;
     $list[$theme_key] = array_map('t', $info['regions']);
   }
 
