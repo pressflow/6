@@ -204,7 +204,7 @@ Drupal.jsAC.prototype.found = function (matches) {
   // Prepare matches
   var ul = document.createElement('ul');
   var ac = this;
-  for (key in matches) {
+  $.each(matches, function(key, element) {
     var li = document.createElement('li');
     $(li)
       .html('<div>'+ matches[key] +'</div>')
@@ -213,7 +213,7 @@ Drupal.jsAC.prototype.found = function (matches) {
       .mouseout(function () { ac.unhighlight(this); });
     li.autocompleteValue = key;
     $(ul).append(li);
-  }
+  });
 
   // Show popup with matches, if any
   if (this.popup) {
