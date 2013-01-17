@@ -59,6 +59,10 @@ function file_create_url($path) {
   if ($path != $old_path) {
     return $path;
   }
+  // Strip file_directory_path from $path. We only include relative paths in URLs.
+  if (strpos($path, file_directory_path() .'/') === 0) {
+    $path = trim(substr($path, strlen(file_directory_path())), '\\/');
+  }
 
   // Otherwise serve the file from Drupal's web server. This point will only
   // be reached when either no custom_file_url_rewrite() function has been
@@ -872,7 +876,7 @@ function file_save_data($data, $dest, $replace = FILE_EXISTS_RENAME) {
 /**
  * Set the status of a file.
  *
- * @param $file 
+ * @param $file
  *   A Drupal file object.
  * @param $status
  *   A status value to set the file to. One of:
@@ -901,9 +905,9 @@ function file_transfer($source, $headers) {
   if (ob_get_level()) {
     ob_end_clean();
   }
-  
+
   // IE cannot download private files because it cannot store files downloaded
-  // over https in the browser cache. The problem can be solved by sending
+  // over HTTPS in the browser cache. The problem can be solved by sending
   // custom headers to IE. See http://support.microsoft.com/kb/323308/en-us
   if (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on')) {
     drupal_set_header('Cache-Control: private');
