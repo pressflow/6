@@ -8,7 +8,7 @@
 /**
  * The current system version.
  */
-define('VERSION', '6.26');
+define('VERSION', '6.28');
 
 /**
  * Core API compatibility.
@@ -1208,8 +1208,6 @@ function system_node_type($op, $info) {
  *   - A string containing a Drupal path.
  *   - An associative array with a 'path' key. Additional array values are
  *     passed as the $options parameter to l().
- *   If the 'destination' query parameter is set in the URL when viewing a
- *   confirmation form, that value will be used instead of $path.
  * @param $description
  *   Additional text to display. Defaults to t('This action cannot be undone.').
  * @param $yes
@@ -1959,8 +1957,8 @@ function _system_zonelist() {
 function system_check_http_request() {
   // Try to get the content of the front page via drupal_http_request().
   $result = drupal_http_request(url('', array('absolute' => TRUE)), array(), 'GET', NULL, 0);
-  // We only care that we get a http response - this means that Drupal
-  // can make a http request.
+  // We only care that we get a HTTP response - this means that Drupal
+  // can make a HTTP request.
   $works = isset($result->code) && ($result->code >= 100) && ($result->code < 600);
   variable_set('drupal_http_request_fails', !$works);
   return $works;

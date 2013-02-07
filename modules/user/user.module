@@ -540,7 +540,12 @@ function user_access($string, $account = NULL, $reset = FALSE) {
 /**
  * Checks for usernames blocked by user administration.
  *
- * @return boolean TRUE for blocked users, FALSE for active.
+ * @param $name
+ *   A string containing a name of the user.
+ *
+ * @return
+ *   Object with property 'name' (the user name), if the user is blocked;
+ *   FALSE if the user is not blocked.
  */
 function user_is_blocked($name) {
   $deny = db_fetch_object(db_query("SELECT name FROM {users} WHERE status = 0 AND name = '%s'", $name));
@@ -599,14 +604,17 @@ function user_search($op = 'search', $keys = NULL, $skip_access_check = FALSE) {
         // Replace wildcards with MySQL/PostgreSQL wildcards.
         $keys = preg_replace('!\*+!', '%', $keys);
         if (user_access('administer users')) {
-          // Administrators can also search in the otherwise private email field.
+          // Administrators can also search in the otherwise private email
+          // field, and they don't need to be restricted to only active users.
           $result = pager_query("SELECT name, uid, mail FROM {users} WHERE name LIKE '%%%s%%' OR mail LIKE '%%%s%%'", 15, 0, NULL, $keys, $keys);
           while ($account = db_fetch_object($result)) {
             $find[] = array('title' => $account->name .' ('. $account->mail .')', 'link' => url('user/'. $account->uid, array('absolute' => TRUE)));
           }
         }
         else {
-          $result = pager_query("SELECT name, uid FROM {users} WHERE name LIKE '%%%s%%'", 15, 0, NULL, $keys);
+          // Regular users can only search via user names, and we do not show
+          // them blocked accounts.
+          $result = pager_query("SELECT name, uid FROM {users} WHERE status = 1 AND name LIKE '%%%s%%'", 15, 0, NULL, $keys);
           while ($account = db_fetch_object($result)) {
             $find[] = array('title' => $account->name, 'link' => url('user/'. $account->uid, array('absolute' => TRUE)));
           }
