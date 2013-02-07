@@ -466,6 +466,26 @@ function drupal_static_reset($name = NULL) {
   drupal_static($name, NULL, TRUE);
 }
 
+
+/**
+ * Backport of Drupal 7's file_unmanaged_delete_recursive().
+ */
+function _file_unmanaged_delete_recursive($path, $delete_root = FALSE) {
+  if (is_dir($path)) {
+    $dir = dir($path);
+    while (($entry = $dir->read()) !== FALSE) {
+      if ($entry == '.' || $entry == '..') {
+        continue;
+      }
+      $entry_path = $path . '/' . $entry;
+      _file_unmanaged_delete_recursive($entry_path, TRUE);
+    }
+    $dir->close();
+    return $delete_root ? rmdir($path) : TRUE;
+  }
+  return file_delete($path);
+}
+
 /**
  * Start the timer with the specified name. If you start and stop
  * the same timer multiple times, the measured intervals will be
