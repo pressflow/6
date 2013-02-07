@@ -266,6 +266,8 @@ function _user_load_direct($user_info = array()) {
 }
 
 /**
+ * Replacement for user_save that redirects to an alternative implementation if available.
+ *
  * Save changes to a user account or add a new user.
  *
  * @param $account
