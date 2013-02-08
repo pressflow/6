@@ -57,7 +57,7 @@ function _update_refresh() {
         $fail[$fetch_url_base][$key] = 1;
       }
       elseif (!isset($result->error) && isset($result->data)) {
-        $data = $result->data;
+        $data[] = $result->data;
       }
     }
     else {
