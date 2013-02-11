@@ -1694,9 +1694,9 @@ function menu_cache_clear_all() {
  */
 function menu_rebuild() {
   if (!lock_acquire('menu_rebuild')) {
-    // Wait for another request that is already doing this work.
-    // We choose to block here since otherwise the router item may not 
-    // be avaiable in menu_execute_active_handler() resulting in a 404.
+    // In high traffic situations, calling lock_wait() here, as core does, can
+    // cause processes to stack up that could result in an outage. Since the
+    // work below is in a transaction the lock_wait() is unnecessary.
     return FALSE;
   }
 
