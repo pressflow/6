@@ -581,7 +581,7 @@ function _menu_translate(&$router_item, $map, $to_arg = FALSE) {
   $router_item['href'] = implode('/', $link_map);
   $router_item['options'] = array();
   _menu_check_access($router_item, $map);
-
+  
   // For performance, don't localize an item the user can't access.
   if ($router_item['access']) {
     _menu_item_localize($router_item, $map);
@@ -1695,7 +1695,7 @@ function menu_cache_clear_all() {
 function menu_rebuild() {
   if (!lock_acquire('menu_rebuild')) {
     // Wait for another request that is already doing this work.
-    // We choose to block here since otherwise the router item may not
+    // We choose to block here since otherwise the router item may not 
     // be avaiable in menu_execute_active_handler() resulting in a 404.
     return FALSE;
   }
@@ -1717,9 +1717,9 @@ function menu_rebuild() {
   _menu_clear_page_cache();
 
   lock_release('menu_rebuild');
-
+  
   db_query('COMMIT');
-
+  
   return TRUE;
 }
 
@@ -1904,7 +1904,7 @@ function _menu_delete_item($item, $force = FALSE) {
  *   - router_path: The path of the relevant router item.
  *
  * @return
- *   The mlid of the saved menu link, or FALSE if the menu link could not be
+ *   The mlid of the saved menu link, or FALSE if the menu link could not be 
  *   saved.
  */
 function menu_link_save(&$item) {
