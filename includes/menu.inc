@@ -206,7 +206,16 @@ function menu_get_ancestors($parts) {
   $ancestors = array();
   $length =  $number_parts - 1;
   $end = (1 << $number_parts) - 1;
-  $masks = variable_get('menu_masks', array());
+  $masks = variable_get('menu_masks', NULL);
+  // If the optimized menu_masks array is not available, try every character
+  // position to see if that matches up with a wildcard, slash, or the original
+  // value in order to get the correct $ancestors and $placeholders returned.
+  // Do not use this as the default value of the menu_masks variable to avoid
+  // building such a big array. Currently the maximum value for $end is 511
+  // (2^9) - 1. 9 comes from the MENU_MAX_PARTS constant.
+  if (!$masks) {
+    $masks = range($end, 1);
+  }
   // Only examine patterns that actually exist as router items (the masks).
   foreach ($masks as $i) {
     if ($i > $end) {
