@@ -159,6 +159,14 @@ function _db_query($query, $debug = 0, $slave = FALSE) {
     // If we can handle this error, then increment the counter, so we run again. Otherwise
     // use the default case to exit the while loop and return an error as per normal.
     switch($errno) {
+      case 1153: // Got a packet bigger than "max_allowed_packet" bytes
+        // If the MySQL Server rejected the query because it's too big,
+        // writing the query to database watchdog will fail as well
+        // Truncate the query ...
+        $retry = 2;
+        $query = substr($query, 0, 100);
+        break;
+
       case 1205:    // Lock wait timeout exceeded; try restarting transaction
       case 1213:    // Deadlock found when trying to get lock; try restarting transaction
         $retry++;   // Increment counter.
