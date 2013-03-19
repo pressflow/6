@@ -490,7 +490,7 @@ function node_types_rebuild() {
 function node_type_save($info) {
   $is_existing = FALSE;
   $existing_type = !empty($info->old_type) ? $info->old_type : $info->type;
-  $is_existing = db_result(db_query("SELECT COUNT(*) FROM {node_type} WHERE type = '%s'", $existing_type));
+  $is_existing = db_result(db_query_range("SELECT 1 FROM {node_type} WHERE type = '%s'", $existing_type, 0, 1));
   if (!isset($info->help)) {
     $info->help = '';
   }
@@ -2206,9 +2206,7 @@ function node_access_view_all_nodes() {
       $grants_sql = 'AND ('. implode(' OR ', $grants) .')';
     }
 
-    $sql = "SELECT COUNT(*) FROM {node_access} WHERE nid = 0 $grants_sql AND grant_view >= 1";
-    $result = db_query($sql);
-    $access = db_result($result);
+    $access = db_result(db_query_range("SELECT 1 FROM {node_access} WHERE nid = 0 $grants_sql AND grant_view >= 1", 0, 1));
   }
 
   return $access;
@@ -2766,7 +2764,7 @@ function node_assign_owner_action_form($context) {
 }
 
 function node_assign_owner_action_validate($form, $form_state) {
-  $count = db_result(db_query("SELECT COUNT(*) FROM {users} WHERE name = '%s'", $form_state['values']['owner_name']));
+  $count = db_result(db_query_range("SELECT 1 FROM {users} WHERE name = '%s'", $form_state['values']['owner_name'], 0, 1));
   if (intval($count) != 1) {
     form_set_error('owner_name', t('Please enter a valid username.'));
   }

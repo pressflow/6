@@ -14,7 +14,7 @@ function path_admin_overview($keys = NULL) {
   // Add the filter form above the overview table.
   $output = drupal_get_form('path_admin_filter_form', $keys);
   // Enable language column if locale is enabled or if we have any alias with language
-  $count = db_result(db_query("SELECT COUNT(*) FROM {url_alias} WHERE language != ''"));
+  $count = db_result(db_query_range("SELECT 1 FROM {url_alias} WHERE language != ''", 0, 1));
   $multilanguage = (module_exists('locale') || $count);
 
   if ($keys) {
@@ -134,7 +134,7 @@ function path_admin_form_validate($form, &$form_state) {
   // Language is only set if locale module is enabled, otherwise save for all languages.
   $language = isset($form_state['values']['language']) ? $form_state['values']['language'] : '';
 
-  if (db_result(db_query("SELECT COUNT(dst) FROM {url_alias} WHERE pid != %d AND dst = '%s' AND language = '%s'", $pid, $dst, $language))) {
+  if (db_result(db_query_range("SELECT 1 FROM {url_alias} WHERE pid != %d AND dst = '%s' AND language = '%s'", $pid, $dst, $language, 0, 1))) {
     form_set_error('dst', t('The alias %alias is already in use in this language.', array('%alias' => $dst)));
   }
   $item = menu_get_item($src);

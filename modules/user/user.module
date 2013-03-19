@@ -1616,7 +1616,7 @@ function _user_edit_validate($uid, &$edit) {
     if ($error = user_validate_name($edit['name'])) {
       form_set_error('name', $error);
     }
-    else if (db_result(db_query("SELECT COUNT(*) FROM {users} WHERE uid != %d AND name = '%s'", $uid, $edit['name'])) > 0) {
+    else if (db_result(db_query_range("SELECT 1 FROM {users} WHERE uid != %d AND name = '%s'", $uid, $edit['name'], 0, 1)) > 0) {
       form_set_error('name', t('The name %name is already taken.', array('%name' => $edit['name'])));
     }
     else if (drupal_is_denied('user', $edit['name'])) {
@@ -1628,7 +1628,7 @@ function _user_edit_validate($uid, &$edit) {
   if ($error = user_validate_mail($edit['mail'])) {
     form_set_error('mail', $error);
   }
-  else if (db_result(db_query("SELECT COUNT(*) FROM {users} WHERE uid != %d AND mail = '%s'", $uid, $edit['mail'])) > 0) {
+  else if (db_result(db_query_range("SELECT 1 FROM {users} WHERE uid != %d AND mail = '%s'", $uid, $edit['mail'], 0, 1)) > 0) {
     form_set_error('mail', t('The e-mail address %email is already registered. <a href="@password">Have you forgotten your password?</a>', array('%email' => $edit['mail'], '@password' => url('user/password'))));
   }
   else if (drupal_is_denied('mail', $edit['mail'])) {

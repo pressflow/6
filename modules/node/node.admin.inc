@@ -455,7 +455,7 @@ function node_admin_nodes() {
   $result = pager_query(db_rewrite_sql('SELECT n.*, u.name FROM {node} n '. $filter['join'] .' INNER JOIN {users} u ON n.uid = u.uid '. $filter['where'] .' ORDER BY n.changed DESC'), 50, 0, NULL, $filter['args']);
 
   // Enable language column if locale is enabled or if we have any node with language
-  $count = db_result(db_query("SELECT COUNT(*) FROM {node} n WHERE language != ''"));
+  $count = db_result(db_query_range("SELECT 1 FROM {node} n WHERE language != ''", 0, 1));
   $multilanguage = (module_exists('locale') || $count);
 
   $form['options'] = array(
