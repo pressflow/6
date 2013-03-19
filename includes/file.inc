@@ -520,7 +520,7 @@ function file_create_filename($basename, $directory) {
  */
 function file_delete($path) {
   if (is_file($path)) {
-    return unlink($path);
+    return @unlink($path);
   }
 }
 
