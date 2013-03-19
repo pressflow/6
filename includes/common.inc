@@ -1668,6 +1668,9 @@ function drupal_page_footer() {
   }
 
   module_invoke_all('exit');
+
+  // Update the hook implementation cache.
+  module_implements('', FALSE, FALSE, TRUE);
 }
 
 /**
