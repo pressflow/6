@@ -53,15 +53,28 @@ define('DB_ERROR', 'a515ac9c2796ca0e23adbe92c68fc9fc');
  * Perform an SQL query and return success or failure.
  *
  * @param $sql
- *   A string containing a complete SQL query.  %-substitution
- *   parameters are not supported.
+ *   A string containing an SQL query.
+ * @param ...
+ *   A variable number of arguments which are substituted into the query
+ *   using printf() syntax. Instead of a variable number of query arguments,
+ *   you may also pass a single array containing the query arguments.
+ *
+ *   Valid %-modifiers are: %s, %d, %f, %b (binary data, do not enclose
+ *   in '') and %%.
+ *
+ *   NOTE: using this syntax will cast NULL and FALSE values to decimal 0,
+ *   and TRUE values to decimal 1.
+ *
  * @return
  *   An array containing the keys:
  *      success: a boolean indicating whether the query succeeded
  *      query: the SQL query executed, passed through check_plain()
  */
 function update_sql($sql) {
-  $result = db_query($sql, true);
+  $args = func_get_args();
+  array_shift($args);
+  $result = db_query($sql, $args);
+  $sql = db_query_get_string($sql, $args);
   return array('success' => $result !== FALSE, 'query' => check_plain($sql));
 }
 
