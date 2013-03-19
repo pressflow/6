@@ -311,7 +311,34 @@ function file_copy(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
       return FALSE;
     }
 
-    if (!@copy($source, $dest)) {
+    // Perform the replace operation. Since there could be multiple processes
+    // writing to the same file, the best option is to create a temporary file in
+    // the same directory and then rename it to the destination. A temporary file
+    // is needed if the directory is mounted on a separate machine; thus ensuring
+    // the rename command stays local.
+    $result = FALSE;
+    if ($replace == FILE_EXISTS_REPLACE) {
+      // Get a temporary filename in the destination directory.
+      $temporary_file = tempnam(dirname($dest), 'file');
+      // Place contents in the temporary file.
+      if ($temporary_file && @copy($source, $temporary_file)) {
+        if (!$result = @rename($temporary_file, $dest)) {
+          // Unlink and try again for windows. Rename on windows does not replace
+          // the file if it already exists.
+          @unlink($dest);
+          $result = @rename($temporary_file, $dest);
+        }
+        // Remove temporary_file if rename failed.
+        if (!$result) {
+          @unlink($temporary_file);
+        }
+      }
+    }
+    // Perform the copy operation.
+    else {
+      $result = @copy($source, $dest);
+    }
+    if ($result === FALSE) {
       drupal_set_message(t('The selected file %file could not be copied.', array('%file' => $source)), 'error');
       return 0;
     }
