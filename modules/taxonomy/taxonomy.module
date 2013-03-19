@@ -200,6 +200,19 @@ function taxonomy_save_vocabulary(&$edit) {
     $edit['module'] = 'taxonomy';
   }
 
+  $return = module_invoke_all('taxonomy_vocabulary_presave', $edit);
+  if (is_array($return) && !empty($return)) {
+    $update = TRUE;
+    foreach ($return as $key => $value) {
+      if (is_numeric($key) && $value == FALSE) {
+        $update = FALSE;
+      }
+    }
+    if ($update) {
+      $edit = $return;
+    }
+  }
+
   if (!empty($edit['vid']) && !empty($edit['name'])) {
     drupal_write_record('vocabulary', $edit, 'vid');
     db_query("DELETE FROM {vocabulary_node_types} WHERE vid = %d", $edit['vid']);
@@ -308,6 +321,19 @@ function taxonomy_save_term(&$form_values) {
     'description' => '',
     'weight' => 0
   );
+
+  $return = module_invoke_all('taxonomy_term_presave', $form_values);
+  if (is_array($return) && !empty($return)) {
+    $update = TRUE;
+    foreach ($return as $key => $value) {
+      if (is_numeric($key) && $value == FALSE) {
+        $update = FALSE;
+      }
+    }
+    if ($update) {
+      $form_values = $return;
+    }
+  }
 
   if (!empty($form_values['tid']) && $form_values['name']) {
     drupal_write_record('term_data', $form_values, 'tid');
