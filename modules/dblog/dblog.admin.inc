@@ -191,8 +191,10 @@ function dblog_build_filter_query() {
   foreach ($_SESSION['dblog_overview_filter'] as $key => $filter) {
     $filter_where = array();
     foreach ($filter as $value) {
-      $filter_where[] = $filters[$key]['where'];
-      $args[] = $value;
+      if (isset($filters[$key]['where'])) {
+        $filter_where[] = $filters[$key]['where'];
+        $args[] = $value;
+      }
     }
     if (!empty($filter_where)) {
       $where[] = '('. implode(' OR ', $filter_where) .')';
