@@ -251,11 +251,14 @@ function theme_book_title_link($link) {
  *
  * This list may be used for generating a list of all the books, or for building
  * the options for a form select.
+ *
+ * @param $reset
+ *   Reset the cache of stored books.
  */
-function book_get_books() {
+function book_get_books($reset = FALSE) {
   static $all_books;
 
-  if (!isset($all_books)) {
+  if ($reset || !isset($all_books)) {
     $all_books = array();
     $result = db_query("SELECT DISTINCT(bid) FROM {book}");
     $nids = array();
@@ -463,12 +466,16 @@ function _book_update_outline(&$node) {
     if ($new) {
       // Insert new.
       db_query("INSERT INTO {book} (nid, mlid, bid) VALUES (%d, %d, %d)", $node->nid, $node->book['mlid'], $node->book['bid']);
+      // Reset the cache of stored books.
+      book_get_books(TRUE);
     }
     else {
       if ($node->book['bid'] != db_result(db_query("SELECT bid FROM {book} WHERE nid = %d", $node->nid))) {
         // Update the bid for this page and all children.
         book_update_bid($node->book);
       }
+      // Reset the cache of stored books.
+      book_get_books(TRUE);
     }
     return TRUE;
   }
@@ -712,6 +719,8 @@ function book_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
         }
         menu_link_delete($node->book['mlid']);
         db_query('DELETE FROM {book} WHERE mlid = %d', $node->book['mlid']);
+        // Reset the cache of stored books.
+        book_get_books(TRUE);
       }
       break;
     case 'prepare':
