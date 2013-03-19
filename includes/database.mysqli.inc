@@ -75,7 +75,7 @@ function db_connect($url) {
   @mysqli_real_connect($connection, $url['host'], $url['user'], $url['pass'], substr($url['path'], 1), $url['port'], NULL, MYSQLI_CLIENT_FOUND_ROWS);
 
   if (mysqli_connect_errno() > 0) {
-    _db_error_page(mysqli_connect_error());
+    return array(FALSE, mysqli_connect_error());
   }
 
   // Force MySQL to use the UTF-8 character set. Also set the collation, if a
@@ -88,7 +88,7 @@ function db_connect($url) {
     mysqli_query($connection, 'SET NAMES utf8');
   }
 
-  return $connection;
+  return array(TRUE, $connection);
 }
 
 /**

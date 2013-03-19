@@ -117,11 +117,13 @@ function db_prefix_tables($sql) {
  * @param $name
  *   The key in the $db_url global variable from settings.php. If omitted, the
  *   default connection will be made active.
+ * @param $abort
+ *   If database connection could not be made, should we abort here or continue.
  *
  * @return
  *   The name of the previously active database, or FALSE if none was found.
  */
-function db_set_active($name = 'default') {
+function db_set_active($name = 'default', $abort = TRUE) {
   global $db_url, $db_slave_url, $db_type, $active_db, $active_slave_db;
   static $db_conns, $db_slave_conns, $active_name = FALSE;
 
@@ -139,7 +141,7 @@ function db_set_active($name = 'default') {
         $slave_connect_url = $db_slave_url[$name][$slave_index];
       }
       else {
-        $slave_connect_url = $db_slave_url[$name];        
+        $slave_connect_url = $db_slave_url[$name];
       }
     }
     else {
@@ -149,7 +151,7 @@ function db_set_active($name = 'default') {
         $slave_connect_url = $db_slave_url[$slave_index];
       }
       else {
-        $slave_connect_url = $db_slave_url;        
+        $slave_connect_url = $db_slave_url;
       }
     }
 
@@ -163,9 +165,45 @@ function db_set_active($name = 'default') {
       _db_error_page("The database type '". $db_type ."' is unsupported. Please use either 'mysql' or 'mysqli' for MySQL, or 'pgsql' for PostgreSQL databases.");
     }
 
-    $db_conns[$name] = db_connect($connect_url);
+    $connection = db_connect($connect_url);
+    // db_connect is using array return notation.
+    if (is_array($connection)) {
+      list($success, $result) = $connection;
+      // Connection worked
+      if ($success) {
+        $db_conns[$name] = $result;
+      }
+      // Connection failed and abort page load.
+      elseif ($abort) {
+        _db_error_page($result);
+      }
+      // Connection failed but return false. Calling function will handle error.
+      else {
+        return FALSE;
+      }
+    }
+    // db_connect is not using array return notation; revert to old code style.
+    else {
+      $db_conns[$name] = $connection;
+    }
     if (!empty($slave_connect_url)) {
-      $db_slave_conns[$name] = db_connect($slave_connect_url); 
+      $connection = db_connect($slave_connect_url);
+      // db_connect is using array return notation.
+      if (is_array($connection)) {
+        list($success, $result) = $connection;
+        // Connection worked
+        if ($success) {
+          $db_slave_conns[$name] = $result;
+        }
+        // Connection failed, set to false.
+        else {
+          $db_slave_conns[$name] = FALSE;
+        }
+      }
+      // db_connect is not using array return notation; revert to old code style.
+      else {
+        $db_slave_conns[$name] = $connection;
+      }
     }
   }
 
@@ -173,7 +211,7 @@ function db_set_active($name = 'default') {
   // Set the active connection.
   $active_name = $name;
   $active_db = $db_conns[$name];
-  if (isset($db_slave_conns[$name])) {
+  if (!empty($db_slave_conns[$name])) {
     $active_slave_db = $db_slave_conns[$name];
   }
   else {
@@ -696,7 +734,7 @@ function db_ignore_slave() {
     // the old data.
     $duration = variable_get('maximum_replication_lag', 300);
     // Set session variable with amount of time to delay before using slave.
-    // This will stick around for 5 minutes by default. 
+    // This will stick around for 5 minutes by default.
     // There is another $_Session variable 'not_slavesafe' for single queries.
     $_SESSION['ignore_slave_server'] = $_SERVER['REQUEST_TIME'] + $duration;
   }
