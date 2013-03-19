@@ -1191,12 +1191,24 @@ function theme_status_messages($display = NULL) {
 }
 
 /**
- * Return a themed set of links.
+ * Returns HTML for a set of links.
  *
  * @param $links
- *   A keyed array of links to be themed.
+ *   An associative array of links to be themed. The key for each link
+ *   is used as its CSS class. Each link should be itself an array, with the
+ *   following elements:
+ *   - title: The link text.
+ *   - href: The link URL. If omitted, the 'title' is shown as a plain text
+ *     item in the links list.
+ *   - html: (optional) Whether or not 'title' is HTML. If set, the title
+ *     will not be passed through check_plain().
+ *   - attributes: (optional) Attributes for the anchor, or for the <span> tag
+ *     used in its place if no 'href' is supplied.
+ *   If the 'href' element is supplied, the entire link array is passed to l()
+ *   as its $options parameter.
  * @param $attributes
- *   A keyed array of attributes
+ *   An associative array of attributes for the UL containing the list of links.
+ *
  * @return
  *   A string containing an unordered list of links.
  */
@@ -1580,7 +1592,7 @@ function theme_more_help_link($url) {
  *
  * @see theme_feed_icon()
  * @param $url
- *   The url of the feed.
+ *   The URL of the feed.
  */
 function theme_xml_icon($url) {
   if ($image = theme('image', 'misc/xml.png', t('XML feed'), t('XML feed'))) {
@@ -1592,7 +1604,7 @@ function theme_xml_icon($url) {
  * Return code that emits an feed icon.
  *
  * @param $url
- *   The url of the feed.
+ *   The URL of the feed.
  * @param $title
  *   A descriptive title of the feed.
   */
@@ -1606,7 +1618,7 @@ function theme_feed_icon($url, $title) {
  * Returns code that emits the 'more' link used on blocks.
  *
  * @param $url
- *   The url of the main page
+ *   The URL of the main page
  * @param $title
  *   A descriptive verb for the link, like 'Read more'
  */
