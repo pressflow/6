@@ -77,7 +77,7 @@ function db_connect($url) {
 
   $connection = @pg_connect($conn_string);
   if (!$connection) {
-    require_once './includes/unicode.inc';
+    require_once DRUPAL_ROOT . '/includes/unicode.inc';
     return array(FALSE, decode_entities($php_errormsg));
   }
 

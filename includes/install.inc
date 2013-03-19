@@ -168,8 +168,8 @@ function drupal_detect_database_types() {
   $databases = array();
 
   foreach (array('mysql', 'mysqli', 'pgsql') as $type) {
-    if (file_exists('./includes/install.'. $type .'.inc')) {
-      include_once './includes/install.'. $type .'.inc';
+    if (file_exists(DRUPAL_ROOT . '/includes/install.'. $type .'.inc')) {
+      include_once DRUPAL_ROOT . '/includes/install.'. $type .'.inc';
       $function = $type .'_is_available';
       if ($function()) {
         $databases[$type] = $type;
@@ -188,8 +188,8 @@ function drupal_detect_database_types() {
  *   An array of settings that need to be updated.
  */
 function drupal_rewrite_settings($settings = array(), $prefix = '') {
-  $default_settings = './sites/default/default.settings.php';
-  $settings_file = './'. conf_path(FALSE, TRUE) .'/'. $prefix .'settings.php';
+  $default_settings = DRUPAL_ROOT . '/sites/default/default.settings.php';
+  $settings_file = DRUPAL_ROOT . '/' . conf_path(FALSE, TRUE) .'/'. $prefix .'settings.php';
 
   // Build list of setting names and insert the values into the global namespace.
   $keys = array();
@@ -283,10 +283,10 @@ function drupal_get_install_files($module_list = array()) {
  *   The list of modules to install.
  */
 function drupal_verify_profile($profile, $locale) {
-  include_once './includes/file.inc';
-  include_once './includes/common.inc';
+  include_once DRUPAL_ROOT . '/includes/file.inc';
+  include_once DRUPAL_ROOT . '/includes/common.inc';
 
-  $profile_file = "./profiles/$profile/$profile.profile";
+  $profile_file = DRUPAL_ROOT . "/profiles/$profile/$profile.profile";
 
   if (!isset($profile) || !file_exists($profile_file)) {
     install_no_profile_error();
@@ -371,7 +371,7 @@ function _drupal_install_module($module) {
  */
 function drupal_install_system() {
   $system_path = dirname(drupal_get_filename('module', 'system', NULL));
-  require_once './'. $system_path .'/system.install';
+  require_once DRUPAL_ROOT . '/' . $system_path . '/system.install';
   module_invoke('system', 'install');
   $system_versions = drupal_get_schema_versions('system');
   $system_version = $system_versions ? max($system_versions) : SCHEMA_INSTALLED;
@@ -646,16 +646,16 @@ function st($string, $args = array()) {
 
   if (!isset($locale_strings)) {
     $locale_strings = array();
-    $filename = './profiles/'. $profile .'/translations/'. $install_locale .'.po';
+    $filename = DRUPAL_ROOT . '/profiles/'. $profile .'/translations/'. $install_locale .'.po';
     if (file_exists($filename)) {
-      require_once './includes/locale.inc';
+      require_once DRUPAL_ROOT . '/includes/locale.inc';
       $file = (object) array('filepath' => $filename);
       _locale_import_read_po('mem-store', $file);
       $locale_strings = _locale_import_one_string('mem-report');
     }
   }
 
-  require_once './includes/theme.inc';
+  require_once DRUPAL_ROOT . '/includes/theme.inc';
   // Transform arguments before inserting them
   foreach ($args as $key => $value) {
     switch ($key[0]) {
@@ -682,9 +682,9 @@ function st($string, $args = array()) {
  *   Name of profile to check.
  */
 function drupal_check_profile($profile) {
-  include_once './includes/file.inc';
+  include_once DRUPAL_ROOT . '/includes/file.inc';
 
-  $profile_file = "./profiles/$profile/$profile.profile";
+  $profile_file = DRUPAL_ROOT . "/profiles/$profile/$profile.profile";
 
   if (!isset($profile) || !file_exists($profile_file)) {
     install_no_profile_error();
@@ -730,7 +730,7 @@ function drupal_check_module($module) {
   // Include install file
   $install = drupal_get_install_files(array($module));
   if (isset($install[$module])) {
-    require_once $install[$module]->filename;
+    require_once DRUPAL_ROOT . '/' . $install->filename;
 
     // Check requirements
     $requirements = module_invoke($module, 'requirements', 'install');

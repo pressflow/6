@@ -702,7 +702,7 @@ function system_theme_select_form($description = '', $default_value = '', $weigh
         $screenshot = NULL;
         $theme_key = $info->name;
         while ($theme_key) {
-          if (file_exists($themes[$theme_key]->info['screenshot'])) {
+          if (file_exists(DRUPAL_ROOT . '/' . $themes[$theme_key]->info['screenshot'])) {
             $screenshot = $themes[$theme_key]->info['screenshot'];
             break;
           }
@@ -885,7 +885,7 @@ function _system_theme_data() {
       }
       if (empty($themes[$key]->info['engine'])) {
         $filename = dirname($themes[$key]->filename) .'/'. $themes[$key]->name .'.theme';
-        if (file_exists($filename)) {
+        if (file_exists(DRUPAL_ROOT . '/' . $filename)) {
           $themes[$key]->owner = $filename;
           $themes[$key]->prefix = $key;
         }

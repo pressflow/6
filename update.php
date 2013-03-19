@@ -13,6 +13,11 @@
  */
 
 /**
+ * Root directory of Drupal installation.
+ */
+define('DRUPAL_ROOT', getcwd());
+
+/**
  * Global flag to identify update.php run, and so avoid various unwanted
  * operations, such as hook_init() and hook_exit() invokes, css/js preprocessing
  * and translation, and solve some theming issues. This flag is checked on several
@@ -590,7 +595,7 @@ function update_check_requirements() {
 // Our custom error handler is not yet installed, so we just suppress them.
 ini_set('display_errors', FALSE);
 
-require_once './includes/bootstrap.inc';
+require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
 
 // We only load DRUPAL_BOOTSTRAP_CONFIGURATION for the update requirements
 // check to avoid reaching the PHP memory limit.
@@ -599,12 +604,12 @@ if (empty($op)) {
   // Minimum load of components.
   drupal_bootstrap(DRUPAL_BOOTSTRAP_DATABASE);
 
-  require_once './includes/install.inc';
-  require_once './includes/file.inc';
-  require_once './modules/system/system.install';
+  require_once DRUPAL_ROOT . '/includes/install.inc';
+  require_once DRUPAL_ROOT . '/includes/file.inc';
+  require_once DRUPAL_ROOT . '/modules/system/system.install';
 
   // Load module basics.
-  include_once './includes/module.inc';
+  include_once DRUPAL_ROOT . '/includes/module.inc';
   $module_list['system']['filename'] = 'modules/system/system.module';
   $module_list['filter']['filename'] = 'modules/filter/filter.module';
   module_list(TRUE, FALSE, FALSE, $module_list);
@@ -648,8 +653,8 @@ ini_set('display_errors', TRUE);
 if (!empty($update_free_access) || $user->uid == 1) {
   drupal_session_start();
 
-  include_once './includes/install.inc';
-  include_once './includes/batch.inc';
+  include_once DRUPAL_ROOT . '/includes/install.inc';
+  include_once DRUPAL_ROOT . '/includes/batch.inc';
   drupal_load_updates();
 
   update_fix_d6_requirements();

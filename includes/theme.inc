@@ -164,7 +164,7 @@ function _init_theme($theme, $base_theme = array(), $registry_callback = '_theme
   // Initialize the theme.
   if (isset($theme->engine)) {
     // Include the engine.
-    include_once './'. $theme->owner;
+    include_once DRUPAL_ROOT . '/'. $theme->owner;
 
     $theme_engine = $theme->engine;
     if (function_exists($theme_engine .'_init')) {
@@ -179,12 +179,12 @@ function _init_theme($theme, $base_theme = array(), $registry_callback = '_theme
     foreach ($base_theme as $base) {
       // Include the theme file or the engine.
       if (!empty($base->owner)) {
-        include_once './'. $base->owner;
+        include_once DRUPAL_ROOT . '/'. $base->owner;
       }
     }
     // and our theme gets one too.
     if (!empty($theme->owner)) {
-      include_once './'. $theme->owner;
+      include_once DRUPAL_ROOT . '/'. $theme->owner;
     }
   }
 
@@ -298,23 +298,23 @@ function _theme_process_registry(&$cache, $name, $type, $theme, $path) {
       // files can prevent them from getting registered.
       if (isset($info['file']) && !isset($info['path'])) {
         // First, check to see if the fully qualified file exists.
-        $filename = './'. $path .'/'. $info['file'];
-        if (file_exists($filename)) {
-          require_once $filename;
+        $filename = $path .'/'. $info['file'];
+        if (file_exists(DRUPAL_ROOT . '/' . $filename)) {
+          require_once DRUPAL_ROOT . '/' . $filename;
           $result[$hook]['include files'][] = $filename;
         }
         else {
-          $filename = './'. $info['file'];
-          if (file_exists($filename)) {
-            require_once $filename;
+          $filename = $info['file'];
+          if (file_exists(DRUPAL_ROOT . '/' . $filename)) {
+            require_once DRUPAL_ROOT . '/' . $filename;
             $result[$hook]['include files'][] = $filename;
           }
         }
       }
       elseif (isset($info['file']) && isset($info['path'])) {
-        $filename = './'. $info['path'] .'/'. $info['file'];
-        if (file_exists($filename)) {
-          require_once $filename;
+        $filename = $info['path'] .'/'. $info['file'];
+        if (file_exists(DRUPAL_ROOT . '/' . $filename)) {
+          require_once DRUPAL_ROOT . '/' . $filename;
           $result[$hook]['include files'][] = $filename;
         }
       }
@@ -482,7 +482,7 @@ function list_themes($refresh = FALSE) {
     if (db_is_active() && !defined('MAINTENANCE_MODE')) {
       $result = db_query("SELECT * FROM {system} WHERE type = '%s'", 'theme');
       while ($theme = db_fetch_object($result)) {
-        if (file_exists($theme->filename)) {
+        if (file_exists(DRUPAL_ROOT . '/' . $theme->filename)) {
           $theme->info = unserialize($theme->info);
           $themes[] = $theme;
         }
@@ -500,7 +500,7 @@ function list_themes($refresh = FALSE) {
         }
       }
       foreach ($theme->info['scripts'] as $script => $path) {
-        if (file_exists($path)) {
+        if (file_exists(DRUPAL_ROOT . '/' . $path)) {
           $theme->scripts[$script] = $path;
         }
       }
@@ -606,7 +606,7 @@ function list_themes($refresh = FALSE) {
  *   implementations for named objects.
  * @param ...
  *   Additional arguments to pass along to the theme function.
- * 
+ *
  * @return
  *   An HTML string that generates the themed output.
  */
@@ -642,7 +642,7 @@ function theme() {
   // Include a file if the theme function or preprocess function is held elsewhere.
   if (!empty($info['include files'])) {
     foreach ($info['include files'] as $include_file) {
-      include_once($include_file);
+      include_once DRUPAL_ROOT . '/' . $include_file;
     }
   }
 
@@ -658,8 +658,8 @@ function theme() {
       // Statically cache files we've already tried to include so we don't
       // run unnecessary file_exists calls.
       $included_files[$include_file] = TRUE;
-      if (file_exists('./'. $include_file)) {
-        include_once('./'. $include_file);
+      if (file_exists(DRUPAL_ROOT . '/' . $include_file)) {
+        include_once DRUPAL_ROOT . '/' . $include_file;
       }
     }
   }
@@ -765,8 +765,8 @@ function drupal_discover_template($paths, $suggestions, $extension = '.tpl.php')
     if (!empty($suggestion)) {
       $suggestion = str_replace(array("/", "\\", "\0"), '', $suggestion);
       foreach ($paths as $path) {
-        if (file_exists($file = $path .'/'. $suggestion . $extension)) {
-          return $file;
+        if (file_exists(DRUPAL_ROOT . '/' . $path .'/'. $suggestion . $extension)) {
+          return $path .'/'. $suggestion . $extension;
         }
       }
     }
@@ -1076,7 +1076,7 @@ function theme_get_setting($setting_name, $refresh = FALSE) {
 function theme_render_template($template_file, $variables) {
   extract($variables, EXTR_SKIP);  // Extract the variables to a local namespace
   ob_start();                      // Start output buffering
-  include "./$template_file";      // Include the template file
+  include DRUPAL_ROOT . '/' . "$template_file";      // Include the template file
   $contents = ob_get_contents();   // Get the contents of the buffer
   ob_end_clean();                  // End buffering and discard
   return $contents;                // Return the contents
@@ -1279,7 +1279,7 @@ function theme_links($links, $attributes = array('class' => 'links')) {
  * @param $getsize
  *   If set to TRUE, the image's dimension are fetched and added as width/height attributes.
  *   Defaults to TRUE. Must be set to FALSE if $path is a full URL.
- * 
+ *
  * @return
  *   A string containing the image tag.
  */

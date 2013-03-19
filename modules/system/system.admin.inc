@@ -525,7 +525,7 @@ function system_theme_settings(&$form_state, $key = '') {
     // Process the theme and all its base themes.
     foreach ($theme_keys as $theme) {
       // Include the theme-settings.php file.
-      $filename = './'. str_replace("/$theme.info", '', $themes[$theme]->filename) .'/theme-settings.php';
+      $filename = DRUPAL_ROOT . '/'. str_replace("/$theme.info", '', $themes[$theme]->filename) .'/theme-settings.php';
       if (file_exists($filename)) {
         require_once $filename;
       }
@@ -875,7 +875,7 @@ function system_modules_confirm_form($modules, $storage) {
  * Submit callback; handles modules form submission.
  */
 function system_modules_submit($form, &$form_state) {
-  include_once './includes/install.inc';
+  include_once DRUPAL_ROOT . '/includes/install.inc';
   $new_modules = array();
 
   // If we are coming from the confirm form...
@@ -1027,7 +1027,7 @@ function system_module_build_dependencies($modules, $form_values) {
  */
 function system_modules_uninstall($form_state = NULL) {
   // Make sure the install API is available.
-  include_once './includes/install.inc';
+  include_once DRUPAL_ROOT . '/includes/install.inc';
 
   // Display the confirm form if any modules have been submitted.
   if (isset($form_state) && $confirm_form = system_modules_uninstall_confirm_form($form_state['storage'])) {
@@ -1128,7 +1128,7 @@ function system_modules_uninstall_validate($form, &$form_state) {
  */
 function system_modules_uninstall_submit($form, &$form_state) {
   // Make sure the install API is available.
-  include_once './includes/install.inc';
+  include_once DRUPAL_ROOT . '/includes/install.inc';
 
   if (!empty($form['#confirmed'])) {
     // Call the uninstall routine for each selected module.
@@ -1729,7 +1729,7 @@ function system_clean_url_settings() {
  */
 function system_status($check = FALSE) {
   // Load .install files
-  include_once './includes/install.inc';
+  include_once DRUPAL_ROOT . '/includes/install.inc';
   drupal_load_updates();
 
   // Check run-time requirements and status information.
@@ -1837,7 +1837,7 @@ function system_sql() {
  * Default page callback for batches.
  */
 function system_batch_page() {
-  require_once './includes/batch.inc';
+  require_once DRUPAL_ROOT . '/includes/batch.inc';
   $output = _batch_page();
   if ($output === FALSE) {
     drupal_access_denied();

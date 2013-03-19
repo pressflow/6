@@ -337,7 +337,7 @@ function conf_path($require_settings = TRUE, $reset = FALSE) {
   for ($i = count($uri) - 1; $i > 0; $i--) {
     for ($j = count($server); $j > 0; $j--) {
       $dir = implode('.', array_slice($server, -$j)) . implode('.', array_slice($uri, 0, $i));
-      if (file_exists("$confdir/$dir/settings.php") || (!$require_settings && file_exists("$confdir/$dir"))) {
+      if (file_exists(DRUPAL_ROOT . "/$confdir/$dir/settings.php") || (!$require_settings && file_exists(DRUPAL_ROOT . "/$confdir/$dir"))) {
         $conf = "$confdir/$dir";
         return $conf;
       }
@@ -407,8 +407,8 @@ function conf_init() {
     $_SERVER['HTTP_HOST'] = '';
   }
 
-  if (file_exists('./'. conf_path() .'/settings.php')) {
-    include_once './'. conf_path() .'/settings.php';
+  if (file_exists(DRUPAL_ROOT . '/'. conf_path() .'/settings.php')) {
+    include_once DRUPAL_ROOT . '/'. conf_path() .'/settings.php';
   }
 
   // Ignore the placeholder URL from default.settings.php.
@@ -520,7 +520,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
     $files[$type] = array();
   }
 
-  if (!empty($filename) && file_exists($filename)) {
+  if (!empty($filename) && file_exists(DRUPAL_ROOT . '/'. $filename)) {
     $files[$type][$name] = $filename;
   }
   elseif (isset($files[$type][$name])) {
@@ -530,7 +530,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
   // the database.  This is required because this function is called both
   // before we have a database connection (i.e. during installation) and
   // when a database connection fails.
-  elseif (db_is_active() && (($file = db_result(db_query("SELECT filename FROM {system} WHERE name = '%s' AND type = '%s'", $name, $type))) && file_exists($file))) {
+  elseif (db_is_active() && (($file = db_result(db_query("SELECT filename FROM {system} WHERE name = '%s' AND type = '%s'", $name, $type))) && file_exists(DRUPAL_ROOT . '/'. $file))) {
     $files[$type][$name] = $file;
   }
   else {
@@ -541,7 +541,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
     $file = (($type == 'theme_engine') ? "$name.engine" : "$name.$type");
 
     foreach (array("$config/$dir/$file", "$config/$dir/$name/$file", "$dir/$file", "$dir/$name/$file") as $file) {
-      if (file_exists($file)) {
+      if (file_exists(DRUPAL_ROOT . '/'. $file)) {
         $files[$type][$name] = $file;
         break;
       }
@@ -799,7 +799,7 @@ function drupal_load($type, $name) {
   $filename = drupal_get_filename($type, $name);
 
   if ($filename) {
-    include_once "./$filename";
+    include_once DRUPAL_ROOT . "/$filename";
     $files[$type][$name] = TRUE;
 
     return TRUE;
@@ -1477,7 +1477,7 @@ function _drupal_bootstrap($phase) {
     case DRUPAL_BOOTSTRAP_EARLY_PAGE_CACHE:
       // Allow specifying special cache handlers in settings.php, like
       // using memcached or files for storing cache information.
-      require_once variable_get('cache_inc', './includes/cache.inc');
+      require_once DRUPAL_ROOT . '/' . variable_get('cache_inc', 'includes/cache.inc');
       // If the page_cache_fastpath is set to TRUE in settings.php and
       // page_cache_fastpath (implemented in the special implementation of
       // cache.inc) printed the page and indicated this with a returned TRUE
@@ -1501,11 +1501,11 @@ function _drupal_bootstrap($phase) {
       }
 
       // Initialize the default database.
-      require_once './includes/database.inc';
+      require_once DRUPAL_ROOT . '/includes/database.inc';
       db_set_active();
       // Allow specifying alternate lock implementations in settings.php, like
       // those using APC or memcached.
-      require_once variable_get('lock_inc', './includes/lock.inc');
+      require_once DRUPAL_ROOT . '/' . variable_get('lock_inc', 'includes/lock.inc');
       lock_init();
 
       // Detect if an installation is present.
@@ -1523,7 +1523,7 @@ function _drupal_bootstrap($phase) {
       break;
 
     case DRUPAL_BOOTSTRAP_SESSION:
-      require_once variable_get('session_inc', './includes/session.inc');
+      require_once DRUPAL_ROOT . '/' . variable_get('session_inc', 'includes/session.inc');
       drupal_session_initialize();
       break;
 
@@ -1543,7 +1543,7 @@ function _drupal_bootstrap($phase) {
       // If the skipping of the bootstrap hooks is not enforced, call hook_init.
       if (!is_object($cache) || $cache_mode != CACHE_AGGRESSIVE) {
         // Load module handling.
-        require_once './includes/module.inc';
+        require_once DRUPAL_ROOT . '/includes/module.inc';
         bootstrap_invoke_all('boot');
       }
 
@@ -1580,13 +1580,13 @@ function _drupal_bootstrap($phase) {
       break;
 
     case DRUPAL_BOOTSTRAP_PATH:
-      require_once './includes/path.inc';
+      require_once DRUPAL_ROOT . '/includes/path.inc';
       // Initialize $_GET['q'] prior to loading modules and invoking hook_init().
       drupal_init_path();
       break;
 
     case DRUPAL_BOOTSTRAP_FULL:
-      require_once './includes/common.inc';
+      require_once DRUPAL_ROOT . '/includes/common.inc';
       _drupal_bootstrap_full();
       break;
   }
@@ -1601,7 +1601,7 @@ function _drupal_bootstrap($phase) {
  * @see _drupal_maintenance_theme()
  */
 function drupal_maintenance_theme() {
-  require_once './includes/theme.maintenance.inc';
+  require_once DRUPAL_ROOT . '/includes/theme.maintenance.inc';
   _drupal_maintenance_theme();
 }
 
@@ -1629,7 +1629,7 @@ function drupal_init_language() {
     $language = language_default();
   }
   else {
-    include_once './includes/language.inc';
+    include_once DRUPAL_ROOT . '/includes/language.inc';
     $language = language_initialize();
   }
 }

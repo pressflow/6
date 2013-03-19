@@ -320,7 +320,7 @@ function _poll_choice_form($delta, $value = '', $votes = 0) {
  * Menu callback for AHAH additions.
  */
 function poll_choice_js() {
-  include_once 'modules/node/node.pages.inc';
+  include_once DRUPAL_ROOT . '/modules/node/node.pages.inc';
   $form_state = array('storage' => NULL, 'submitted' => FALSE);
   $form_build_id = $_POST['form_build_id'];
   // Get the form from the cache.
