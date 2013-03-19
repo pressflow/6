@@ -1572,13 +1572,11 @@ function url($path = NULL, $options = array()) {
  *   An HTML string ready for insertion in a tag.
  */
 function drupal_attributes($attributes = array()) {
-  if (is_array($attributes)) {
-    $t = '';
-    foreach ($attributes as $key => $value) {
-      $t .= " $key=".'"'. check_plain($value) .'"';
-    }
-    return $t;
+  $t = '';
+  foreach ((array) $attributes as $attribute => $data) {
+    $t .= " $attribute=".'"'. check_plain($data) .'"';
   }
+  return $t;
 }
 
 /**
