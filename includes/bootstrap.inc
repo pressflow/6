@@ -1889,8 +1889,7 @@ function drupal_valid_test_ua($user_agent) {
   // We use the database credentials from settings.php to make the HMAC key, since
   // the database is not yet initialized and we can't access any Drupal variables.
   // The file properties add more entropy not easily accessible to others.
-//  $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
-  $filepath = './includes/bootstrap.inc';
+  $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
 //  $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
   $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   // The HMAC must match.
@@ -1909,9 +1908,7 @@ function drupal_generate_test_ua($prefix) {
     // We use the database credentials to make the HMAC key, since we
     // check the HMAC before the database is initialized. filectime()
     // and fileinode() are not easily determined from remote.
-//    $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
-    $filepath = './includes/bootstrap.inc';
-//    $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
+    $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
     $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   }
    // Generate a moderately secure HMAC based on the database credentials.
