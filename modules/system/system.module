@@ -1044,9 +1044,16 @@ function system_find_base_theme($themes, $key, $used_keys = array()) {
  */
 function system_region_list($theme_key) {
   static $list = array();
+  global $theme, $theme_info;
 
   if (!array_key_exists($theme_key, $list)) {
-    $info = unserialize(db_result(db_query("SELECT info FROM {system} WHERE type = 'theme' AND name = '%s'", $theme_key)));
+    if ($theme == $theme_key) {
+      $info = $theme_info->info;
+    }
+    else {
+      $info = unserialize(db_result(db_query("SELECT info FROM {system} WHERE type = 'theme' AND name = '%s'", $theme_key)));
+    }
+
     $list[$theme_key] = array_map('t', $info['regions']);
   }
 

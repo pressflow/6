@@ -767,7 +767,11 @@ function drupal_page_is_cacheable($force = NULL) {
  *   The name of the bootstrap hook we wish to invoke.
  */
 function bootstrap_invoke_all($hook) {
-  foreach (module_list(TRUE, TRUE) as $module) {
+  static $bootstrap_modules;
+  if (!isset($bootstrap_modules)) {
+    $bootstrap_modules = module_list(TRUE, TRUE);
+  }
+  foreach ($bootstrap_modules as $module) {
     drupal_load('module', $module);
     module_invoke($module, $hook);
   }
