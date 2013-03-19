@@ -137,13 +137,13 @@ function _db_query($query, $debug = 0, $slave = FALSE) {
   do {
     $sent_to_slave = FALSE;
     if (isset($active_slave_db) && $slave) {
-      $result = mysqli_query($query, $active_slave_db);
+      $result = mysqli_query($active_slave_db, $query);
       $errno = mysqli_errno($active_slave_db);
       $sent_to_slave = TRUE;
     }
     else {
-      $result = mysql_query($query, $active_db);
-      $errno = mysql_errno($active_db);
+      $result = mysqli_query($active_db, $query);
+      $errno = mysqli_errno($active_db);
     }
 
     if (variable_get('dev_query', 0)) {
