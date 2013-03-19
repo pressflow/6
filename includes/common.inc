@@ -1148,7 +1148,7 @@ function format_xml_elements($array) {
   $output = '';
   foreach ($array as $key => $value) {
     if (is_numeric($key)) {
-      if ($value['key']) {
+      if (!empty($value['key'])) {
         $output .= ' <'. $value['key'];
         if (isset($value['attributes']) && is_array($value['attributes'])) {
           $output .= drupal_attributes($value['attributes']);
