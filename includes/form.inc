@@ -302,7 +302,7 @@ function drupal_execute($form_id, &$form_state) {
 
   // Make sure $form_state is passed around by reference.
   $args[1] = &$form_state;
-  
+
   $form = call_user_func_array('drupal_retrieve_form', $args);
   $form['#post'] = $form_state['values'];
 
@@ -773,8 +773,8 @@ function form_execute_handlers($type, &$form, &$form_state) {
 
   foreach ($handlers as $function) {
     if (function_exists($function))  {
-      // Check to see if a previous _submit handler has set a batch, but 
-      // make sure we do not react to a batch that is already being processed 
+      // Check to see if a previous _submit handler has set a batch, but
+      // make sure we do not react to a batch that is already being processed
       // (for instance if a batch operation performs a drupal_execute()).
       if ($type == 'submit' && ($batch =& batch_get()) && !isset($batch['current_set'])) {
         // Some previous _submit handler has set a batch. We store the call
@@ -900,7 +900,7 @@ function form_builder($form_id, $form, &$form_state) {
   // Recurse through all child elements.
   $count = 0;
   foreach (element_children($form) as $key) {
-    $form[$key]['#post'] = $form['#post'];
+    $form[$key]['#post'] = isset($form['#post']) ? $form['#post'] : NULL;
     $form[$key]['#programmed'] = $form['#programmed'];
     // Don't squash an existing tree value.
     if (!isset($form[$key]['#tree'])) {
@@ -1342,6 +1342,9 @@ function form_set_value($form_item, $value, &$form_state) {
 function _form_set_value(&$form_values, $form_item, $parents, $value) {
   $parent = array_shift($parents);
   if (empty($parents)) {
+    if (!is_array($form_values)) {
+      $form_values = array();
+    }
     $form_values[$parent] = $value;
   }
   else {
@@ -2127,7 +2130,6 @@ function theme_textarea($element) {
  *
  * @ingroup themeable
  */
-
 function theme_markup($element) {
   return (isset($element['#value']) ? $element['#value'] : '') . (isset($element['#children']) ? $element['#children'] : '');
 }
