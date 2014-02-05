@@ -1,3 +1,4 @@
+(function($) {
 
 /**
  * Attaches the batch behavior to progress bars.
@@ -35,3 +36,5 @@ Drupal.behaviors.batch = function (context) {
     progress.startMonitoring(uri+'&op=do', 10);
   });
 };
+
+})(jQuery);

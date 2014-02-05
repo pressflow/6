@@ -24,6 +24,11 @@
 
 var Drupal = Drupal || { 'settings': {}, 'behaviors': {}, 'themes': {}, 'locale': {} };
 
+// Allow other JavaScript libraries to use $.
+jQuery.noConflict();
+
+(function($) {
+
 /**
  * Set the variable that indicates if JavaScript behaviors should be applied
  */
@@ -273,7 +278,7 @@ Drupal.getSelection = function (element) {
  */
 Drupal.ahahError = function(xmlhttp, uri) {
   if (xmlhttp.status == 200) {
-    if (jQuery.trim(xmlhttp.responseText)) {
+    if ($.trim(xmlhttp.responseText)) {
       var message = Drupal.t("An error occurred. \n@uri\n@text", {'@uri': uri, '@text': xmlhttp.responseText });
     }
     else {
@@ -310,3 +315,5 @@ Drupal.theme.prototype = {
     return '<em>' + Drupal.checkPlain(str) + '</em>';
   }
 };
+
+})(jQuery);

@@ -1,3 +1,4 @@
+(function($) {
 
 /**
  * Add functionality to the profile drag and drop table.
@@ -51,3 +52,5 @@ Drupal.behaviors.profileDrag = function(context) {
     }
   };
 };
+
+})(jQuery);

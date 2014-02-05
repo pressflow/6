@@ -1,3 +1,4 @@
+(function($) {
 
 /**
  * Attaches the autocomplete behavior to all required fields
@@ -295,3 +296,5 @@ Drupal.ACDB.prototype.cancel = function() {
   if (this.timer) clearTimeout(this.timer);
   this.searchString = '';
 };
+
+})(jQuery);

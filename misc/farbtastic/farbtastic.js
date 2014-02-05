@@ -1,16 +1,17 @@
 // Farbtastic 1.2
+(function($) {
 
-jQuery.fn.farbtastic = function (callback) {
+$.fn.farbtastic = function (callback) {
   $.farbtastic(this, callback);
   return this;
 };
 
-jQuery.farbtastic = function (container, callback) {
+$.farbtastic = function (container, callback) {
   var container = $(container).get(0);
-  return container.farbtastic || (container.farbtastic = new jQuery._farbtastic(container, callback));
+  return container.farbtastic || (container.farbtastic = new $._farbtastic(container, callback));
 };
 
-jQuery._farbtastic = function (container, callback) {
+$._farbtastic = function (container, callback) {
   // Store farbtastic object
   var fb = this;
 
@@ -312,3 +313,5 @@ jQuery._farbtastic = function (container, callback) {
     fb.linkTo(callback);
   }
 };
+
+})(jQuery);

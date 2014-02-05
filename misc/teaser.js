@@ -1,3 +1,4 @@
+(function($) {
 
 /**
  * Auto-attach for teaser behavior.
@@ -93,3 +94,5 @@ Drupal.behaviors.teaser = function(context) {
 
   });
 };
+
+})(jQuery);

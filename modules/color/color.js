@@ -1,3 +1,4 @@
+(function($) {
 
 Drupal.behaviors.color = function (context) {
   // This behavior attaches by ID, so is only valid once on a page.
@@ -248,3 +249,5 @@ Drupal.behaviors.color = function (context) {
   // Render preview
   preview();
 };
+
+})(jQuery);

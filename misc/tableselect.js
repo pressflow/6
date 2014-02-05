@@ -1,3 +1,4 @@
+(function($) {
 
 Drupal.behaviors.tableSelect = function (context) {
   $('form table:has(th.select-all):not(.tableSelect-processed)', context).each(Drupal.tableSelect);
@@ -79,8 +80,10 @@ Drupal.tableSelectRange = function(from, to, state) {
       }
     }
     // A faster alternative to doing $(i).filter(to).length.
-    else if (jQuery.filter(to, [i]).r.length) {
+    else if ($.filter(to, [i]).r.length) {
       break;
     }
   }
 };
+
+})(jQuery);
