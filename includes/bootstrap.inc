@@ -948,7 +948,7 @@ function drupal_page_header() {
   $headers_sent = TRUE;
 
   $default_headers = array(
-    'Last-Modified' => gmdate(DATE_RFC1123, $_SERVER['REQUEST_TIME']),
+    'Last-Modified' => gmdate('D, d M Y H:i:s \G\M\T', $_SERVER['REQUEST_TIME']),
     'Cache-Control' => 'no-cache, must-revalidate, post-check=0, pre-check=0',
     'ETag' => '"' . $_SERVER['REQUEST_TIME'] . '"',
   );
@@ -967,7 +967,7 @@ function drupal_page_cache_header_external() {
 
   $max_age = variable_get('page_cache_max_age', 0);
   drupal_set_header('Cache-Control', 'public, max-age=' . $max_age);
-  drupal_set_header('Last-Modified', gmdate(DATE_RFC1123, $_SERVER['REQUEST_TIME']));
+  drupal_set_header('Last-Modified', gmdate('D, d M Y H:i:s \G\M\T', $_SERVER['REQUEST_TIME']));
 
   // HTTP/1.0 proxies do not support the Vary header, so prevent any caching
   // by sending an Expires date in the past. HTTP/1.1 clients ignores the
@@ -1051,7 +1051,7 @@ function drupal_page_cache_header(stdClass $cache) {
     drupal_set_header($name, $value);
   }
 
-  $default_headers['Last-Modified'] = gmdate(DATE_RFC1123, $cache->created);
+  $default_headers['Last-Modified'] = gmdate('D, d M Y H:i:s \G\M\T', $cache->created);
 
   // HTTP/1.0 proxies do not support the Vary header, so prevent any caching
   // by sending an Expires date in the past. HTTP/1.1 clients ignores the
