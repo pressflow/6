@@ -101,7 +101,7 @@ function drupal_get_form($form_id) {
       array_unshift($args_temp, $form_id);
 
       $form = call_user_func_array('drupal_retrieve_form', $args_temp);
-      $form_build_id = 'form-'. md5(uniqid(mt_rand(), TRUE));
+      $form_build_id = 'form-'. drupal_random_key();
       $form['#build_id'] = $form_build_id;
       drupal_prepare_form($form_id, $form, $form_state);
       // Store a copy of the unprocessed form for caching and indicate that it
@@ -196,7 +196,7 @@ function drupal_rebuild_form($form_id, &$form_state, $args, $form_build_id = NUL
 
   if (!isset($form_build_id)) {
     // We need a new build_id for the new version of the form.
-    $form_build_id = 'form-'. md5(uniqid(mt_rand(), TRUE));
+    $form_build_id = 'form-'. drupal_random_key();
   }
   $form['#build_id'] = $form_build_id;
   drupal_prepare_form($form_id, $form, $form_state);
@@ -226,9 +226,24 @@ function form_set_cache($form_build_id, $form, $form_state) {
   if ($user->uid) {
     $form['#cache_token'] = drupal_get_token();
   }
+  elseif (variable_get('cache', CACHE_DISABLED) != CACHE_DISABLED && drupal_page_is_cacheable()) {
+    $form['#immutable'] = TRUE;
+  }
+  $form_build_id_old = $form_build_id;
+  $form_build_id = form_build_id_map($form_build_id_old);
   cache_set('form_'. $form_build_id, $form, 'cache_form', time() + $expire);
   if (!empty($form_state['storage'])) {
     cache_set('storage_'. $form_build_id, $form_state['storage'], 'cache_form', time() + $expire);
+  }
+
+  // If form_set_cache is called in the context of an ahah handler inform the
+  // client about the changed form build_id via the X-Drupal-Build-Id HTTP
+  // header.
+  if (!empty($_SERVER['HTTP_X_DRUPAL_ACCEPT_BUILD_ID']) &&
+    !empty($_POST['form_build_id']) &&
+    $_POST['form_build_id'] == $form_build_id_old &&
+    $form_build_id_old != $form_build_id) {
+    drupal_set_header('X-Drupal-Build-Id: ' . $form_build_id);
   }
 }
 
@@ -243,9 +258,33 @@ function form_get_cache($form_build_id, &$form_state) {
       if ($cached = cache_get('storage_'. $form_build_id, 'cache_form')) {
         $form_state['storage'] = $cached->data;
       }
+
+      // Generate a new #build_id if the cached form was rendered on a cacheable
+      // page.
+      if (!empty($form['#immutable'])) {
+        $form['#build_id'] = 'form-' . drupal_random_key();
+        $form['form_build_id']['#value'] = $form['#build_id'];
+        $form['form_build_id']['#id'] = $form['#build_id'];
+        unset($form['#immutable']);
+
+        form_build_id_map($form_build_id, $form['#build_id']);
+      }
       return $form;
     }
   }
+}
+
+/**
+ * Maintain a map of immutable form_build_ids to cloned form.
+ */
+function form_build_id_map($form_build_id, $new_build_id = NULL) {
+  static $build_id_map = array();
+
+  if (isset($new_build_id) && isset($form_build_id)) {
+    $build_id_map[$form_build_id] = $new_build_id;
+  }
+
+  return isset($build_id_map[$form_build_id]) ? $build_id_map[$form_build_id] : $form_build_id;
 }
 
 /**
@@ -590,6 +629,12 @@ function drupal_validate_form($form_id, $form, &$form_state) {
     if (!drupal_valid_token($form_state['values']['form_token'], $form['#token'])) {
       // Setting this error will cause the form to fail validation.
       form_set_error('form_token', t('Validation error, please try again. If this error persists, please contact the site administrator.'));
+
+      // Stop here and don't run any further validation handlers, because they
+      // could invoke non-safe operations which opens the door for CSRF
+      // vulnerabilities.
+      $validated_forms[$form_id] = TRUE;
+      return;
     }
   }
 
@@ -1792,6 +1837,8 @@ function expand_radios($element) {
  *   drupal_add_js.
  */
 function form_expand_ahah($element) {
+  global $user;
+
   static $js_added = array();
   // Add a reasonable default event handler if none specified.
   if (isset($element['#ahah']['path']) && !isset($element['#ahah']['event'])) {
@@ -1837,6 +1884,11 @@ function form_expand_ahah($element) {
       'progress' => empty($element['#ahah']['progress']) ? array('type' => 'throbber') : $element['#ahah']['progress'],
       'button'   => isset($element['#executes_submit_callback']) ? array($element['#name'] => $element['#value']) : FALSE,
     );
+
+    // If page caching is active, indicate that this form is immutable.
+    if (variable_get('cache', CACHE_DISABLED) != CACHE_DISABLED && !$user->uid && drupal_page_is_cacheable()) {
+      $ahah_binding['immutable'] = TRUE;
+    }
 
     // Convert a simple #ahah[progress] type string into an array.
     if (is_string($ahah_binding['progress'])) {
