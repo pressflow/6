@@ -142,7 +142,7 @@ function openid_update_6000() {
   return $ret;
 }
 
- /**
+/**
  * Bind associations to their providers.
  */
 function openid_update_6001() {
@@ -191,7 +191,7 @@ function openid_update_6001() {
         'not null' => TRUE,
         'default' => 0,
         'description' => 'The lifetime, in seconds, of this association.',
-     ),
+      ),
     ),
     'primary key' => array('idp_endpoint_uri'),
     'unique keys' => array(
@@ -203,7 +203,6 @@ function openid_update_6001() {
 
   return $ret;
 }
-
 
 /**
  * @} End of "addtogroup updates-6.x-extra".
