@@ -1,6 +1,11 @@
 <?php
 
-require_once './includes/install.inc';
+/**
+ * Root directory of Drupal installation.
+ */
+define('DRUPAL_ROOT', getcwd());
+
+require_once DRUPAL_ROOT . '/includes/install.inc';
 
 define('MAINTENANCE_MODE', 'install');
 
@@ -16,7 +21,7 @@ define('MAINTENANCE_MODE', 'install');
  *   The installation phase we should proceed to.
  */
 function install_main() {
-  require_once './includes/bootstrap.inc';
+  require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
   drupal_bootstrap(DRUPAL_BOOTSTRAP_CONFIGURATION);
 
   // The user agent header is used to pass a database prefix in the request when
@@ -30,8 +35,8 @@ function install_main() {
   // This must go after drupal_bootstrap(), which unsets globals!
   global $profile, $install_locale, $conf;
 
-  require_once './modules/system/system.install';
-  require_once './includes/file.inc';
+  require_once DRUPAL_ROOT . '/modules/system/system.install';
+  require_once DRUPAL_ROOT . '/includes/file.inc';
 
   // Ensure correct page headers are sent (e.g. caching)
   drupal_page_header();
@@ -40,15 +45,27 @@ function install_main() {
   drupal_init_language();
 
   // Load module basics (needed for hook invokes).
-  include_once './includes/module.inc';
+  include_once DRUPAL_ROOT . '/includes/module.inc';
   $module_list['system']['filename'] = 'modules/system/system.module';
   $module_list['filter']['filename'] = 'modules/filter/filter.module';
   module_list(TRUE, FALSE, FALSE, $module_list);
   drupal_load('module', 'system');
   drupal_load('module', 'filter');
 
+  // Load the cache infrastructure using a "fake" cache implementation that
+  // does not attempt to write to the database. We need this during the initial
+  // part of the installer because the database is not available yet. We
+  // continue to use it even when the database does become available, in order
+  // to preserve consistency between interactive and command-line installations
+  // (the latter complete in one page request and therefore are forced to
+  // continue using the cache implementation they started with) and also
+  // because any data put in the cache during the installer is inherently
+  // suspect, due to the fact that Drupal is not fully set up yet.
+  require_once DRUPAL_ROOT . '/includes/cache-install.inc';
+  $conf['cache_inc'] = DRUPAL_ROOT . '/includes/cache-install.inc';
+
   // Install profile chosen, set the global immediately.
-  // This needs to be done before the theme cache gets 
+  // This needs to be done before the theme cache gets
   // initialized in drupal_maintenance_theme().
   if (!empty($_GET['profile'])) {
     $profile = preg_replace('/[^a-zA-Z_0-9]/', '', $_GET['profile']);
@@ -61,14 +78,8 @@ function install_main() {
   $verify = install_verify_settings();
 
   if ($verify) {
-    // Since we have a database connection, we use the normal cache system.
-    // This is important, as the installer calls into the Drupal system for
-    // the clean URL checks, so we should maintain the cache properly.
-    require_once './includes/cache.inc';
-    $conf['cache_inc'] = './includes/cache.inc';
-
     // Establish a connection to the database.
-    require_once './includes/database.inc';
+    require_once DRUPAL_ROOT . '/includes/database.inc';
     db_set_active();
 
     // Check if Drupal is installed.
@@ -78,13 +89,6 @@ function install_main() {
     }
   }
   else {
-    // Since no persistent storage is available yet, and functions that check
-    // for cached data will fail, we temporarily replace the normal cache
-    // system with a stubbed-out version that short-circuits the actual
-    // caching process and avoids any errors.
-    require_once './includes/cache-install.inc';
-    $conf['cache_inc'] = './includes/cache-install.inc';
-
     $task = NULL;
   }
 
@@ -99,7 +103,7 @@ function install_main() {
   }
 
   // Load the profile.
-  require_once "./profiles/$profile/$profile.profile";
+  require_once DRUPAL_ROOT . "/profiles/$profile/$profile.profile";
 
   // Locale selection
   if (!empty($_GET['locale'])) {
@@ -141,8 +145,8 @@ function install_main() {
     // The default lock implementation uses a database table,
     // so we cannot use it for install, but we still need
     // the API functions available.
-    require_once './includes/lock-install.inc';
-    $conf['lock_inc'] = './includes/lock-install.inc';
+    require_once DRUPAL_ROOT . '/includes/lock-install.inc';
+    $conf['lock_inc'] = DRUPAL_ROOT . '/includes/lock-install.inc';
     lock_init();
 
     // Install system.module.
@@ -187,7 +191,7 @@ function install_verify_settings() {
   // Verify existing settings (if any).
   if (!empty($db_url)) {
     // We need this because we want to run form_get_errors.
-    include_once './includes/form.inc';
+    include_once DRUPAL_ROOT . '/includes/form.inc';
 
     $url = parse_url(is_array($db_url) ? $db_url['default'] : $db_url);
     $db_user = urldecode($url['user']);
@@ -195,7 +199,7 @@ function install_verify_settings() {
     $db_host = urldecode($url['host']);
     $db_port = isset($url['port']) ? urldecode($url['port']) : '';
     $db_path = ltrim(urldecode($url['path']), '/');
-    $settings_file = './'. conf_path(FALSE, TRUE) .'/settings.php';
+    $settings_file = DRUPAL_ROOT . '/'. conf_path(FALSE, TRUE) .'/settings.php';
 
     $form_state = array();
     _install_settings_form_validate($db_prefix, $db_type, $db_user, $db_pass, $db_host, $db_port, $db_path, $settings_file, $form_state);
@@ -218,11 +222,11 @@ function install_change_settings($profile = 'default', $install_locale = '') {
   $db_host = isset($url['host']) ? urldecode($url['host']) : '';
   $db_port = isset($url['port']) ? urldecode($url['port']) : '';
   $db_path = ltrim(urldecode($url['path']), '/');
-  $conf_path = './'. conf_path(FALSE, TRUE);
+  $conf_path = DRUPAL_ROOT . '/'. conf_path(FALSE, TRUE);
   $settings_file = $conf_path .'/settings.php';
 
   // We always need this because we want to run form_get_errors.
-  include_once './includes/form.inc';
+  include_once DRUPAL_ROOT . '/includes/form.inc';
   install_task_list('database');
 
   $output = drupal_get_form('install_settings_form', $profile, $install_locale, $settings_file, $db_url, $db_type, $db_prefix, $db_user, $db_pass, $db_host, $db_port, $db_path);
@@ -439,7 +443,7 @@ function install_settings_form_submit($form, &$form_state) {
  * Find all .profile files.
  */
 function install_find_profiles() {
-  return file_scan_directory('./profiles', '\.profile$', array('.', '..', 'CVS'), 0, TRUE, 'name', 0);
+  return file_scan_directory(DRUPAL_ROOT . '/profiles', '\.profile$', array('.', '..', 'CVS'), 0, TRUE, 'name', 0);
 }
 
 /**
@@ -449,13 +453,13 @@ function install_find_profiles() {
  *   The selected profile.
  */
 function install_select_profile() {
-  include_once './includes/form.inc';
+  include_once DRUPAL_ROOT . '/includes/form.inc';
 
   $profiles = install_find_profiles();
   // Don't need to choose profile if only one available.
   if (sizeof($profiles) == 1) {
     $profile = array_pop($profiles);
-    require_once $profile->filename;
+    require_once DRUPAL_ROOT . '/' . $profile->filename;
     return $profile->name;
   }
   elseif (sizeof($profiles) > 1) {
@@ -486,7 +490,7 @@ function install_select_profile_form(&$form_state, $profile_files) {
   $names = array();
 
   foreach ($profile_files as $profile) {
-    include_once($profile->filename);
+    include_once DRUPAL_ROOT . '/' . $profile->filename;
 
     // Load profile details and store them for later retrieval.
     $function = $profile->name .'_profile_details';
@@ -501,7 +505,7 @@ function install_select_profile_form(&$form_state, $profile_files) {
     $names[$profile->name] = $name;
   }
 
-  // Display radio buttons alphabetically by human-readable name. 
+  // Display radio buttons alphabetically by human-readable name.
   natcasesort($names);
   foreach ($names as $profile => $name) {
     $form['profile'][$name] = array(
@@ -524,7 +528,7 @@ function install_select_profile_form(&$form_state, $profile_files) {
  * Find all .po files for the current profile.
  */
 function install_find_locales($profilename) {
-  $locales = file_scan_directory('./profiles/'. $profilename .'/translations', '\.po$', array('.', '..', 'CVS'), 0, FALSE);
+  $locales = file_scan_directory(DRUPAL_ROOT . '/profiles/'. $profilename .'/translations', '\.po$', array('.', '..', 'CVS'), 0, FALSE);
   array_unshift($locales, (object) array('name' => 'en'));
   return $locales;
 }
@@ -536,8 +540,8 @@ function install_find_locales($profilename) {
  *   The selected language.
  */
 function install_select_locale($profilename) {
-  include_once './includes/file.inc';
-  include_once './includes/form.inc';
+  include_once DRUPAL_ROOT . '/includes/file.inc';
+  include_once DRUPAL_ROOT . '/includes/form.inc';
 
   // Find all available locales.
   $locales = install_find_locales($profilename);
@@ -603,7 +607,7 @@ function install_select_locale($profilename) {
  * Form API array definition for language selection.
  */
 function install_select_locale_form(&$form_state, $locales) {
-  include_once './includes/locale.inc';
+  include_once DRUPAL_ROOT . '/includes/locale.inc';
   $languages = _locale_get_predefined_list();
   foreach ($locales as $locale) {
     // Try to use verbose locale name
@@ -697,14 +701,14 @@ function install_tasks($profile, $task) {
   // to the same address, until the batch finished callback is invoked
   // and the task advances to 'locale-initial-import'.
   if ($task == 'profile-install-batch') {
-    include_once 'includes/batch.inc';
+    include_once DRUPAL_ROOT . '/includes/batch.inc';
     $output = _batch_page();
   }
 
   // Import interface translations for the enabled modules.
   if ($task == 'locale-initial-import') {
     if (!empty($install_locale) && ($install_locale != 'en')) {
-      include_once 'includes/locale.inc';
+      include_once DRUPAL_ROOT . '/includes/locale.inc';
       // Enable installation language as default site language.
       locale_add_language($install_locale, NULL, NULL, NULL, NULL, NULL, 1, TRUE);
       // Collect files to import for this language.
@@ -723,8 +727,8 @@ function install_tasks($profile, $task) {
     $task = 'configure';
   }
   if ($task == 'locale-initial-batch') {
-    include_once 'includes/batch.inc';
-    include_once 'includes/locale.inc';
+    include_once DRUPAL_ROOT . '/includes/batch.inc';
+    include_once DRUPAL_ROOT . '/includes/locale.inc';
     $output = _batch_page();
   }
 
@@ -743,7 +747,7 @@ function install_tasks($profile, $task) {
       drupal_set_title(st('Configure site'));
 
       // Warn about settings.php permissions risk
-      $settings_dir = './'. conf_path();
+      $settings_dir = DRUPAL_ROOT . '/'. conf_path();
       $settings_file = $settings_dir .'/settings.php';
       if (!drupal_verify_install_file($settings_file, FILE_EXIST|FILE_READABLE|FILE_NOT_WRITABLE) || !drupal_verify_install_file($settings_dir, FILE_NOT_WRITABLE, 'dir')) {
         drupal_set_message(st('All necessary changes to %dir and %file have been made, so you should remove write permissions to them now in order to avoid security risks. If you are unsure how to do so, please consult the <a href="@handbook_url">on-line handbook</a>.', array('%dir' => $settings_dir, '%file' => $settings_file, '@handbook_url' => 'http://drupal.org/getting-started')), 'error');
@@ -797,7 +801,7 @@ if (Drupal.jsEnabled) {
   // control and proceed with importing the remaining translations.
   if ($task == 'profile-finished') {
     if (!empty($install_locale) && ($install_locale != 'en')) {
-      include_once 'includes/locale.inc';
+      include_once DRUPAL_ROOT . '/includes/locale.inc';
       // Collect files to import for this language. Skip components
       // already covered in the initial batch set.
       $batch = locale_batch_by_language($install_locale, '_install_locale_remaining_batch_finished', variable_get('install_locale_batch_components', array()));
@@ -815,8 +819,8 @@ if (Drupal.jsEnabled) {
     $task = 'finished';
   }
   if ($task == 'locale-remaining-batch') {
-    include_once 'includes/batch.inc';
-    include_once 'includes/locale.inc';
+    include_once DRUPAL_ROOT . '/includes/batch.inc';
+    include_once DRUPAL_ROOT . '/includes/locale.inc';
     $output = _batch_page();
   }
 
@@ -831,16 +835,13 @@ if (Drupal.jsEnabled) {
 
   // The end of the install process. Remember profile used.
   if ($task == 'done') {
-    // Rebuild menu to get content type links registered by the profile,
-    // and possibly any other menu items created through the tasks.
-    menu_rebuild();
+    // Flush all caches to ensure that any full bootstraps during the installer
+    // do not leave stale cached data, and that any content types or other items
+    // registered by the install profile are registered correctly.
+    drupal_flush_all_caches();
 
     // Register actions declared by any modules.
     actions_synchronize();
-
-    // Randomize query-strings on css/js files, to hide the fact that
-    // this is a new install, not upgraded yet.
-    _drupal_flush_css_js();
 
     variable_set('install_profile', $profile);
   }
@@ -912,7 +913,7 @@ function install_check_requirements($profile, $verify) {
   // If Drupal is not set up already, we need to create a settings file.
   if (!$verify) {
     $writable = FALSE;
-    $conf_path = './'. conf_path(FALSE, TRUE);
+    $conf_path = DRUPAL_ROOT . '/'. conf_path(FALSE, TRUE);
     $settings_file = $conf_path .'/settings.php';
     $file = $conf_path;
     $exists = FALSE;
@@ -967,7 +968,7 @@ More details about installing Pressflow are available in INSTALL.txt.', array('@
         drupal_set_message($message, 'warning');
       }
     }
-  } 
+  }
 }
 
 /**

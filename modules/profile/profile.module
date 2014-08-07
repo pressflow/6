@@ -470,7 +470,7 @@ function profile_category_access($account, $category) {
     return TRUE;
   }
   else {
-    return user_edit_access($account) && db_result(db_query("SELECT COUNT(*) FROM {profile_fields} WHERE category = '%s' AND visibility <> %d", $category, PROFILE_HIDDEN));
+    return user_edit_access($account) && db_result(db_query_range("SELECT 1 FROM {profile_fields} WHERE category = '%s' AND visibility <> %d", $category, PROFILE_HIDDEN, 0, 1));
   }
 }
 

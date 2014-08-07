@@ -336,7 +336,7 @@ function _mime_header_decode($matches) {
 function decode_entities($text, $exclude = array()) {
   static $html_entities;
   if (!isset($html_entities)) {
-    include_once './includes/unicode.entities.inc';
+    include_once DRUPAL_ROOT . '/includes/unicode.entities.inc';
   }
 
   // Flip the exclude list so that we can do quick lookups later.

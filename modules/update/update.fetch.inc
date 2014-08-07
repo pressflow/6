@@ -148,7 +148,7 @@ function _update_get_fetch_url_base($project) {
  * @see update_requirements()
  */
 function _update_cron_notify() {
-  include_once './includes/install.inc';
+  include_once DRUPAL_ROOT . '/includes/install.inc';
   $status = update_requirements('runtime');
   $params = array();
   $notify_all = (variable_get('update_notification_threshold', 'all') == 'all');

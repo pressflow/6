@@ -337,7 +337,7 @@ function conf_path($require_settings = TRUE, $reset = FALSE) {
   for ($i = count($uri) - 1; $i > 0; $i--) {
     for ($j = count($server); $j > 0; $j--) {
       $dir = implode('.', array_slice($server, -$j)) . implode('.', array_slice($uri, 0, $i));
-      if (file_exists("$confdir/$dir/settings.php") || (!$require_settings && file_exists("$confdir/$dir"))) {
+      if (file_exists(DRUPAL_ROOT . "/$confdir/$dir/settings.php") || (!$require_settings && file_exists(DRUPAL_ROOT . "/$confdir/$dir"))) {
         $conf = "$confdir/$dir";
         return $conf;
       }
@@ -414,8 +414,8 @@ function conf_init() {
     $_SERVER['HTTP_HOST'] = '';
   }
 
-  if (file_exists('./'. conf_path() .'/settings.php')) {
-    include_once './'. conf_path() .'/settings.php';
+  if (file_exists(DRUPAL_ROOT . '/'. conf_path() .'/settings.php')) {
+    include_once DRUPAL_ROOT . '/'. conf_path() .'/settings.php';
   }
 
   // Ignore the placeholder URL from default.settings.php.
@@ -527,7 +527,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
     $files[$type] = array();
   }
 
-  if (!empty($filename) && file_exists($filename)) {
+  if (!empty($filename) && file_exists(DRUPAL_ROOT . '/'. $filename)) {
     $files[$type][$name] = $filename;
   }
   elseif (isset($files[$type][$name])) {
@@ -537,7 +537,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
   // the database.  This is required because this function is called both
   // before we have a database connection (i.e. during installation) and
   // when a database connection fails.
-  elseif (db_is_active() && (($file = db_result(db_query("SELECT filename FROM {system} WHERE name = '%s' AND type = '%s'", $name, $type))) && file_exists($file))) {
+  elseif (db_is_active() && (($file = db_result(db_query("SELECT filename FROM {system} WHERE name = '%s' AND type = '%s'", $name, $type))) && file_exists(DRUPAL_ROOT . '/'. $file))) {
     $files[$type][$name] = $file;
   }
   else {
@@ -548,7 +548,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
     $file = (($type == 'theme_engine') ? "$name.engine" : "$name.$type");
 
     foreach (array("$config/$dir/$file", "$config/$dir/$name/$file", "$dir/$file", "$dir/$name/$file") as $file) {
-      if (file_exists($file)) {
+      if (file_exists(DRUPAL_ROOT . '/'. $file)) {
         $files[$type][$name] = $file;
         break;
       }
@@ -568,13 +568,21 @@ function drupal_get_filename($type, $name, $filename = NULL) {
  * file.
  */
 function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 0) {
-  // NOTE: caching the variables improves performance by 20% when serving cached pages.
+  // NOTE: caching the variables improves performance by 20% when serving
+  // cached pages.
   if (!$regenerate && $cached = cache_get('variables', 'cache')) {
     $variables = $cached->data;
   }
   else {
     if (defined('MAINTENANCE_MODE') || lock_acquire('variable_cache_regenerate')) {
       $result = db_query('SELECT * FROM {variable}');
+      // Exit here if the database went away. Do not want to pollute the cache
+      // with bad data. This request isn't going to end well anyway; end it
+      // eairly.
+      if ($result === FALSE) {
+        // This function calls exit.
+        _db_error_page();
+      }
       while ($variable = db_fetch_object($result)) {
         $variables[$variable->name] = unserialize($variable->value);
       }
@@ -587,15 +595,27 @@ function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 
       // Wait for another request that is already doing this work.
       lock_wait('variable_cache_regenerate');
 
-      // Run the function again. Try a limited number of times to avoid 
-      // infinite recursion if the database connection is invalid for  
+      // Run the function again. Try a limited number of times to avoid
+      // infinite recursion if the database connection is invalid for
       // some reason, e.g., mysqld restart, loss of network, etc.
       $recursion_depth++;
       if ($recursion_depth < 50) {
         return variable_init($conf, $regenerate, $recursion_depth);
       }
 
-      $variables = array();
+      // If the recursion_depth hit the limit, assume we aren't going to get it
+      // from the cache or the lock will be released any time soon. Give up and
+      // get variables from the database.
+      $result = db_query('SELECT * FROM {variable}');
+      // Exit here if the database went away. Do not want to pollute the cache
+      // with bad data. This request isn't going to end well.
+      if ($result === FALSE) {
+        // This function calls exit.
+        _db_error_page();
+      }
+      while ($variable = db_fetch_object($result)) {
+        $variables[$variable->name] = unserialize($variable->value);
+      }
     }
   }
 
@@ -660,7 +680,7 @@ function variable_set($name, $value) {
   if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
     cache_clear_all('variables', 'cache');
   }
-  
+
   variable_cache_rebuild();
 }
 
@@ -689,7 +709,7 @@ function variable_del($name) {
   if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
     cache_clear_all('variables', 'cache');
   }
-  
+
   variable_cache_rebuild();
 }
 
@@ -754,7 +774,11 @@ function drupal_page_is_cacheable($force = NULL) {
  *   The name of the bootstrap hook we wish to invoke.
  */
 function bootstrap_invoke_all($hook) {
-  foreach (module_list(TRUE, TRUE) as $module) {
+  static $bootstrap_modules;
+  if (!isset($bootstrap_modules)) {
+    $bootstrap_modules = module_list(TRUE, TRUE);
+  }
+  foreach ($bootstrap_modules as $module) {
     drupal_load('module', $module);
     module_invoke($module, $hook);
   }
@@ -782,7 +806,7 @@ function drupal_load($type, $name) {
   $filename = drupal_get_filename($type, $name);
 
   if ($filename) {
-    include_once "./$filename";
+    include_once DRUPAL_ROOT . "/$filename";
     $files[$type][$name] = TRUE;
 
     return TRUE;
@@ -812,7 +836,7 @@ function drupal_set_header($name = NULL, $value = NULL, $append = FALSE) {
   if (!isset($name)) {
     return $headers;
   }
-  
+
   // Support the Drupal 6 header API
   if (!isset($value)) {
     if (strpos($name, ':') !== FALSE) {
@@ -1430,7 +1454,7 @@ function drupal_bootstrap($phase = NULL) {
       _drupal_bootstrap($current_phase);
     }
   }
-  
+
   return $phase_index;
 }
 
@@ -1460,7 +1484,7 @@ function _drupal_bootstrap($phase) {
     case DRUPAL_BOOTSTRAP_EARLY_PAGE_CACHE:
       // Allow specifying special cache handlers in settings.php, like
       // using memcached or files for storing cache information.
-      require_once variable_get('cache_inc', './includes/cache.inc');
+      require_once DRUPAL_ROOT . '/' . variable_get('cache_inc', 'includes/cache.inc');
       // If the page_cache_fastpath is set to TRUE in settings.php and
       // page_cache_fastpath (implemented in the special implementation of
       // cache.inc) printed the page and indicated this with a returned TRUE
@@ -1484,13 +1508,13 @@ function _drupal_bootstrap($phase) {
       }
 
       // Initialize the default database.
-      require_once './includes/database.inc';
+      require_once DRUPAL_ROOT . '/includes/database.inc';
       db_set_active();
       // Allow specifying alternate lock implementations in settings.php, like
       // those using APC or memcached.
-      require_once variable_get('lock_inc', './includes/lock.inc');
+      require_once DRUPAL_ROOT . '/' . variable_get('lock_inc', 'includes/lock.inc');
       lock_init();
-      
+
       // Detect if an installation is present.
       detect_installation_or_run_installer();
 
@@ -1506,7 +1530,7 @@ function _drupal_bootstrap($phase) {
       break;
 
     case DRUPAL_BOOTSTRAP_SESSION:
-      require_once variable_get('session_inc', './includes/session.inc');
+      require_once DRUPAL_ROOT . '/' . variable_get('session_inc', 'includes/session.inc');
       drupal_session_initialize();
       break;
 
@@ -1526,7 +1550,7 @@ function _drupal_bootstrap($phase) {
       // If the skipping of the bootstrap hooks is not enforced, call hook_init.
       if (!is_object($cache) || $cache_mode != CACHE_AGGRESSIVE) {
         // Load module handling.
-        require_once './includes/module.inc';
+        require_once DRUPAL_ROOT . '/includes/module.inc';
         bootstrap_invoke_all('boot');
       }
 
@@ -1541,11 +1565,11 @@ function _drupal_bootstrap($phase) {
         // We are done.
         exit;
       }
-  
+
       if (!$cache && drupal_page_is_cacheable() && $cache_mode != CACHE_EXTERNAL) {
         header('X-Drupal-Cache: MISS');
       }
-      
+
       // If using an external cache and the page is cacheable, set headers.
       if ($cache_mode == CACHE_EXTERNAL && drupal_page_is_cacheable()) {
         drupal_page_cache_header_external();
@@ -1563,13 +1587,13 @@ function _drupal_bootstrap($phase) {
       break;
 
     case DRUPAL_BOOTSTRAP_PATH:
-      require_once './includes/path.inc';
+      require_once DRUPAL_ROOT . '/includes/path.inc';
       // Initialize $_GET['q'] prior to loading modules and invoking hook_init().
       drupal_init_path();
       break;
 
     case DRUPAL_BOOTSTRAP_FULL:
-      require_once './includes/common.inc';
+      require_once DRUPAL_ROOT . '/includes/common.inc';
       _drupal_bootstrap_full();
       break;
   }
@@ -1584,7 +1608,7 @@ function _drupal_bootstrap($phase) {
  * @see _drupal_maintenance_theme()
  */
 function drupal_maintenance_theme() {
-  require_once './includes/theme.maintenance.inc';
+  require_once DRUPAL_ROOT . '/includes/theme.maintenance.inc';
   _drupal_maintenance_theme();
 }
 
@@ -1612,7 +1636,7 @@ function drupal_init_language() {
     $language = language_default();
   }
   else {
-    include_once './includes/language.inc';
+    include_once DRUPAL_ROOT . '/includes/language.inc';
     $language = language_initialize();
   }
 }
@@ -1686,17 +1710,17 @@ function ip_address() {
 
   if (!isset($ip_address)) {
     $ip_address = $_SERVER['REMOTE_ADDR'];
-    
+
     // Only use parts of the X-Forwarded-For (XFF) header that have followed a trusted route.
     // Specifically, identify the leftmost IP address in the XFF header that is not one of ours.
     // An XFF header is: X-Forwarded-For: client1, proxy1, proxy2
     if (isset($_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]) && variable_get('reverse_proxy', 0)) {
       // Load trusted reverse proxy server IPs.
       $reverse_proxy_addresses = variable_get('reverse_proxy_addresses', array());
-      
+
       // Turn XFF header into an array.
       $forwarded = explode(',', $_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]);
-      
+
       // Trim the forwarded IPs; they may have been delimited by commas and spaces.
       $forwarded = array_map('trim', $forwarded);
 
@@ -1705,7 +1729,7 @@ function ip_address() {
 
       // Eliminate all trusted IPs.
       $untrusted = array_diff($forwarded, $reverse_proxy_addresses);
-      
+
       // The right-most IP is the most specific we can trust.
       $ip_address = array_pop($untrusted);
     }
@@ -1719,9 +1743,9 @@ function ip_address() {
  */
 function drupal_session_initialize() {
   global $user;
-   
+
   session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy_sid', 'sess_gc');
- 
+
   if (isset($_COOKIE[session_name()])) {
     // If a session cookie exists, initialize the session. Otherwise the
     // session is only started on demand in drupal_session_commit(), making
@@ -1783,7 +1807,7 @@ function drupal_session_commit() {
 
 /**
  * Return whether a session has been started.
- */  
+ */
 function drupal_session_started($set = NULL) {
   static $session_started = FALSE;
   if (isset($set)) {
@@ -1872,8 +1896,7 @@ function drupal_valid_test_ua($user_agent) {
   // We use the database credentials from settings.php to make the HMAC key, since
   // the database is not yet initialized and we can't access any Drupal variables.
   // The file properties add more entropy not easily accessible to others.
-//  $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
-  $filepath = './includes/bootstrap.inc';
+  $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
 //  $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
   $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   // The HMAC must match.
@@ -1892,9 +1915,7 @@ function drupal_generate_test_ua($prefix) {
     // We use the database credentials to make the HMAC key, since we
     // check the HMAC before the database is initialized. filectime()
     // and fileinode() are not easily determined from remote.
-//    $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
-    $filepath = './includes/bootstrap.inc';                
-//    $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
+    $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
     $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   }
    // Generate a moderately secure HMAC based on the database credentials.

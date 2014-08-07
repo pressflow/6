@@ -106,7 +106,7 @@ function book_update_6000() {
     }
 
     // Determine whether there are any existing nodes in the book hierarchy.
-    if (db_result(db_query("SELECT COUNT(*) FROM {book}"))) {
+    if (db_result(db_query_range("SELECT 1 FROM {book}", 0, 1))) {
       // Temporary table for the old book hierarchy; we'll discard revision info.
       $schema['book_temp'] = array(
         'fields' => array(

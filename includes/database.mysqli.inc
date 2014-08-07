@@ -14,7 +14,7 @@
  */
 
 // Include functions shared between mysql and mysqli.
-require_once './includes/database.mysql-common.inc';
+require_once DRUPAL_ROOT . '/includes/database.mysql-common.inc';
 
 /**
  * Report database status.
@@ -75,7 +75,7 @@ function db_connect($url) {
   @mysqli_real_connect($connection, $url['host'], $url['user'], $url['pass'], substr($url['path'], 1), $url['port'], NULL, MYSQLI_CLIENT_FOUND_ROWS);
 
   if (mysqli_connect_errno() > 0) {
-    _db_error_page(mysqli_connect_error());
+    return array(FALSE, mysqli_connect_error());
   }
 
   // Force MySQL to use the UTF-8 character set. Also set the collation, if a
@@ -88,7 +88,7 @@ function db_connect($url) {
     mysqli_query($connection, 'SET NAMES utf8');
   }
 
-  return $connection;
+  return array(TRUE, $connection);
 }
 
 /**
@@ -133,34 +133,72 @@ function _db_query($query, $debug = 0, $slave = FALSE) {
     $query = '/* '. $name .' : '. $bt[2]['function'] .' */ '. $query;
   }
 
-  $sent_to_slave = FALSE;
-  if (isset($active_slave_db) && $slave) {
-    $result = mysqli_query($active_slave_db, $query);
-    $sent_to_slave = TRUE;
-  }
-  else {
-    $result = mysqli_query($active_db, $query);
-  }
+  $retry = 0;
+  do {
+    $sent_to_slave = FALSE;
+    if (isset($active_slave_db) && $slave) {
+      $result = mysqli_query($active_slave_db, $query);
+      $errno = mysqli_errno($active_slave_db);
+      $sent_to_slave = TRUE;
+    }
+    else {
+      $result = mysqli_query($active_db, $query);
+      $errno = mysqli_errno($active_db);
+    }
 
-  if (variable_get('dev_query', 0)) {
-    $query = $bt[2]['function'] ."\n". $query;
-    list($usec, $sec) = explode(' ', microtime());
-    $stop = (float)$usec + (float)$sec;
-    $diff = $stop - $timer;
-    $queries[] = array($query, $diff, $sent_to_slave);
-  }
+    if (variable_get('dev_query', 0)) {
+      $query = $bt[2]['function'] ."\n". $query;
+      list($usec, $sec) = explode(' ', microtime());
+      $stop = (float)$usec + (float)$sec;
+      $diff = $stop - $timer;
+      $queries[] = array($query, $diff, $sent_to_slave);
+    }
 
-  if (!$sent_to_slave) {
-    $active_last_db = $active_db;
-  } else {
-    $active_last_db = $active_slave_db;
-  }
+    // Handle transient errors.
+    // If we can handle this error, then increment the counter, so we run again. Otherwise
+    // use the default case to exit the while loop and return an error as per normal.
+    switch($errno) {
+      case 1153: // Got a packet bigger than "max_allowed_packet" bytes
+        // If the MySQL Server rejected the query because it's too big,
+        // writing the query to database watchdog will fail as well
+        // Truncate the query ...
+        $retry = 2;
+        $query = substr($query, 0, 100);
+        break;
+
+      case 1205:    // Lock wait timeout exceeded; try restarting transaction
+      case 1213:    // Deadlock found when trying to get lock; try restarting transaction
+        $retry++;   // Increment counter.
+        break;
+
+      case 1614:    // Transaction branch was rolled back: deadlock was detected
+      case 2013:    // Lost connection to MySQL server during query
+        $retry++;   // Increment counter.
+        if ($sent_to_slave) {
+          $slave = FALSE; // Retry on master.
+        }
+        break;
+
+      // If not an error we can handle (or not an error!) exit the loop.
+      // We cal deal with fall-out later, as errno is set.
+      default:
+        $retry = 2;
+        break;
+    }
+
+    if (!$sent_to_slave) {
+      $active_last_db = $active_db;
+    } else {
+      $active_last_db = $active_slave_db;
+    }
+  } while ($retry < 2);
+
 
   if ($debug) {
     print '<p>query: '. $query .'<br />error:'. mysqli_error($active_db) .'</p>';
   }
 
-  if (!mysqli_errno($active_last_db)) {
+  if (!$errno) {
     return $result;
   }
   else {
@@ -336,7 +374,7 @@ function db_query_range_slave($query) {
  *
  * Use this as a substitute for db_query() when the results need to be stored
  * in a temporary table.
- * 
+ *
  * User-supplied arguments to the query should be passed in as separate parameters
  * so that they can be properly escaped to avoid SQL injection attacks.
  *

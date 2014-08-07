@@ -1148,7 +1148,7 @@ function format_xml_elements($array) {
   $output = '';
   foreach ($array as $key => $value) {
     if (is_numeric($key)) {
-      if ($value['key']) {
+      if (!empty($value['key'])) {
         $output .= ' <'. $value['key'];
         if (isset($value['attributes']) && is_array($value['attributes'])) {
           $output .= drupal_attributes($value['attributes']);
@@ -1572,13 +1572,11 @@ function url($path = NULL, $options = array()) {
  *   An HTML string ready for insertion in a tag.
  */
 function drupal_attributes($attributes = array()) {
-  if (is_array($attributes)) {
-    $t = '';
-    foreach ($attributes as $key => $value) {
-      $t .= " $key=".'"'. check_plain($value) .'"';
-    }
-    return $t;
+  $t = '';
+  foreach ((array) $attributes as $attribute => $data) {
+    $t .= " $attribute=".'"'. check_plain($data) .'"';
   }
+  return $t;
 }
 
 /**
@@ -1668,6 +1666,9 @@ function drupal_page_footer() {
   }
 
   module_invoke_all('exit');
+
+  // Update the hook implementation cache.
+  module_implements('', FALSE, FALSE, TRUE);
 }
 
 /**
@@ -2660,7 +2661,7 @@ function drupal_valid_token($token, $value = '', $skip_anonymous = FALSE) {
  *     failed. See xmlrpc_error().
  */
 function xmlrpc($url) {
-  require_once './includes/xmlrpc.inc';
+  require_once DRUPAL_ROOT . '/includes/xmlrpc.inc';
   $args = func_get_args();
   return call_user_func_array('_xmlrpc', $args);
 }
@@ -2672,16 +2673,16 @@ function _drupal_bootstrap_full() {
     return;
   }
   $called = 1;
-  require_once './includes/theme.inc';
-  require_once './includes/pager.inc';
-  require_once './includes/menu.inc';
-  require_once './includes/tablesort.inc';
-  require_once './includes/file.inc';
-  require_once './includes/unicode.inc';
-  require_once './includes/image.inc';
-  require_once './includes/form.inc';
-  require_once './includes/mail.inc';
-  require_once './includes/actions.inc';
+  require_once DRUPAL_ROOT . '/includes/theme.inc';
+  require_once DRUPAL_ROOT . '/includes/pager.inc';
+  require_once DRUPAL_ROOT . '/includes/menu.inc';
+  require_once DRUPAL_ROOT . '/includes/tablesort.inc';
+  require_once DRUPAL_ROOT . '/includes/file.inc';
+  require_once DRUPAL_ROOT . '/includes/unicode.inc';
+  require_once DRUPAL_ROOT . '/includes/image.inc';
+  require_once DRUPAL_ROOT . '/includes/form.inc';
+  require_once DRUPAL_ROOT . '/includes/mail.inc';
+  require_once DRUPAL_ROOT . '/includes/actions.inc';
   // Set the Drupal custom error handler.
   set_error_handler('_drupal_error_handler');
   set_exception_handler('_drupal_exception_handler');
@@ -3092,10 +3093,18 @@ function element_child($key) {
 }
 
 /**
- * Get keys of a structured array tree element that are not properties (i.e., do not begin with '#').
+ * Get keys of a structured array tree element that are not properties
+ * (i.e., do not begin with '#').
  */
 function element_children($element) {
-  return array_filter(array_keys((array) $element), 'element_child');
+  $results = array();
+  foreach ((array) $element as $key => $value) {
+    // Inlined call to element_child() for performance reasons.
+    if (!isset($key[0]) || $key[0] != '#') {
+      $results[] = $key;
+    }
+  }
+  return $results;
 }
 
 /**

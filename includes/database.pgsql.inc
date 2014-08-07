@@ -77,15 +77,15 @@ function db_connect($url) {
 
   $connection = @pg_connect($conn_string);
   if (!$connection) {
-    require_once './includes/unicode.inc';
-    _db_error_page(decode_entities($php_errormsg));
+    require_once DRUPAL_ROOT . '/includes/unicode.inc';
+    return array(FALSE, decode_entities($php_errormsg));
   }
 
   // Restore error tracking setting
   ini_set('track_errors', $track_errors_previous);
 
   pg_query($connection, "set client_encoding=\"UTF8\"");
-  return $connection;
+  return array(TRUE, $connection);
 }
 
 /**
@@ -122,6 +122,41 @@ function db_query($query) {
   _db_query_callback($args, TRUE);
   $query = preg_replace_callback(DB_QUERY_REGEXP, '_db_query_callback', $query);
   return _db_query($query);
+}
+
+/**
+ * Builds a query, returns string.
+ *
+ * User-supplied arguments to the query should be passed in as separate
+ * parameters so that they can be properly escaped to avoid SQL injection
+ * attacks.
+ *
+ * @param $query
+ *   A string containing an SQL query.
+ * @param ...
+ *   A variable number of arguments which are substituted into the query
+ *   using printf() syntax. Instead of a variable number of query arguments,
+ *   you may also pass a single array containing the query arguments.
+ *
+ *   Valid %-modifiers are: %s, %d, %f, %b (binary data, do not enclose
+ *   in '') and %%.
+ *
+ *   NOTE: using this syntax will cast NULL and FALSE values to decimal 0,
+ *   and TRUE values to decimal 1.
+ *
+ * @return
+ *   String of the query fully escaped and ready to run.
+ */
+function db_query_get_string($query) {
+  $args = func_get_args();
+  array_shift($args);
+  $query = db_prefix_tables($query);
+  if (isset($args[0]) and is_array($args[0])) { // 'All arguments in one array' syntax
+    $args = $args[0];
+  }
+  _db_query_callback($args, TRUE);
+  $query = preg_replace_callback(DB_QUERY_REGEXP, '_db_query_callback', $query);
+  return $query;
 }
 
 /**

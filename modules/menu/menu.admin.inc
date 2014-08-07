@@ -475,7 +475,7 @@ function menu_delete_menu_confirm_submit($form, &$form_state) {
   $menu = $form['#menu'];
   $form_state['redirect'] = 'admin/build/menu';
   // System-defined menus may not be deleted - only menus defined by this module.
-  if (in_array($menu['menu_name'], menu_list_system_menus())  || !db_result(db_query("SELECT COUNT(*) FROM {menu_custom} WHERE menu_name = '%s'", $menu['menu_name']))) {
+  if (in_array($menu['menu_name'], menu_list_system_menus())  || !db_result(db_query_range("SELECT 1 FROM {menu_custom} WHERE menu_name = '%s'", $menu['menu_name'], 0, 1))) {
     return;
   }
   // Reset all the menu links defined by the system via hook_menu.

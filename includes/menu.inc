@@ -206,7 +206,16 @@ function menu_get_ancestors($parts) {
   $ancestors = array();
   $length =  $number_parts - 1;
   $end = (1 << $number_parts) - 1;
-  $masks = variable_get('menu_masks', array());
+  $masks = variable_get('menu_masks', NULL);
+  // If the optimized menu_masks array is not available, try every character
+  // position to see if that matches up with a wildcard, slash, or the original
+  // value in order to get the correct $ancestors and $placeholders returned.
+  // Do not use this as the default value of the menu_masks variable to avoid
+  // building such a big array. Currently the maximum value for $end is 511
+  // (2^9) - 1. 9 comes from the MENU_MAX_PARTS constant.
+  if (!$masks) {
+    $masks = range($end, 1);
+  }
   // Only examine patterns that actually exist as router items (the masks).
   foreach ($masks as $i) {
     if ($i > $end) {
@@ -345,7 +354,7 @@ function menu_execute_active_handler($path = NULL) {
   if ($router_item = menu_get_item($path)) {
     if ($router_item['access']) {
       if ($router_item['file']) {
-        require_once($router_item['file']);
+        require_once DRUPAL_ROOT . '/' . $router_item['file'];
       }
       return call_user_func_array($router_item['page_callback'], $router_item['page_arguments']);
     }
@@ -581,7 +590,7 @@ function _menu_translate(&$router_item, $map, $to_arg = FALSE) {
   $router_item['href'] = implode('/', $link_map);
   $router_item['options'] = array();
   _menu_check_access($router_item, $map);
-  
+
   // For performance, don't localize an item the user can't access.
   if ($router_item['access']) {
     _menu_item_localize($router_item, $map);
@@ -656,7 +665,11 @@ function _menu_link_translate(&$item) {
     }
     // menu_tree_check_access() may set this ahead of time for links to nodes.
     if (!isset($item['access'])) {
-      if (!_menu_load_objects($item, $map)) {
+      // Loading a views object is expensive so we have a special case for it.
+      if (isset($item['access_callback']) && $item['access_callback'] == 'views_access' && $item['access_arguments'] == 'a:1:{i:0;b:1;}' && $item['title_callback'] == 't' && empty($item['title_arguments'])) {
+        $item['access'] = TRUE;
+      }
+      elseif (!_menu_load_objects($item, $map)) {
         // An error occurred loading an object.
         $item['access'] = FALSE;
         return FALSE;
@@ -1025,6 +1038,11 @@ function _menu_tree_check_access(&$tree) {
   $new_tree = array();
   foreach ($tree as $key => $v) {
     $item = &$tree[$key]['link'];
+    // Do not load hidden menu items if not in active breadcrumb trail and
+    // user can't administer the menu.
+    if (!empty($item['hidden']) && empty($item['in_active_trail']) && !user_access('administer menu')) {
+      continue;
+    }
     _menu_link_translate($item);
     if ($item['access']) {
       if ($tree[$key]['below']) {
@@ -1695,7 +1713,7 @@ function menu_cache_clear_all() {
 function menu_rebuild() {
   if (!lock_acquire('menu_rebuild')) {
     // Wait for another request that is already doing this work.
-    // We choose to block here since otherwise the router item may not 
+    // We choose to block here since otherwise the router item may not
     // be avaiable in menu_execute_active_handler() resulting in a 404.
     lock_wait('menu_rebuild');
     return FALSE;
@@ -1709,7 +1727,7 @@ function menu_rebuild() {
   // Clear the menu, page and block caches.
   menu_cache_clear_all();
   _menu_clear_page_cache();
-  
+
   if (defined('MAINTENANCE_MODE')) {
     variable_set('menu_rebuild_needed', TRUE);
   }
@@ -1717,9 +1735,9 @@ function menu_rebuild() {
     variable_del('menu_rebuild_needed');
   }
   lock_release('menu_rebuild');
-  
+
   db_query('COMMIT');
-  
+
   return TRUE;
 }
 
@@ -1904,7 +1922,7 @@ function _menu_delete_item($item, $force = FALSE) {
  *   - router_path: The path of the relevant router item.
  *
  * @return
- *   The mlid of the saved menu link, or FALSE if the menu link could not be 
+ *   The mlid of the saved menu link, or FALSE if the menu link could not be
  *   saved.
  */
 function menu_link_save(&$item) {
@@ -2519,7 +2537,7 @@ function _menu_site_is_offline() {
         return $_GET['q'] != 'user' && $_GET['q'] != 'user/login';
       }
       // Logged in users are unprivileged here, so they are logged out.
-      require_once drupal_get_path('module', 'user') .'/user.pages.inc';
+      require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'user') .'/user.pages.inc';
       user_logout();
     }
   }
