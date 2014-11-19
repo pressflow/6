@@ -22,7 +22,7 @@
  */
 function node_load_cache_node_load_cache($param = array(), $revision = NULL, $reset = NULL) {
   global $user;
-  static $nodes = array();
+  $nodes = &drupal_static('node_load', array());
 
   $cacheable = ($revision == NULL && is_numeric($param)) ? "node/$param" : 0;
   if ($reset) {
