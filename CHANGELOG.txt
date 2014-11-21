@@ -14,6 +14,10 @@ Drupal 6.30, 2014-01-15
 ----------------------
 - Fixed security issues (multiple vulnerabilities), see SA-CORE-2014-001.
 
+Drupal 6.34, 2014-11-19
+----------------------
+- Fixed security issues (session hijacking). See SA-CORE-2014-006.
+
 Drupal 6.33, 2014-08-06
 ----------------------
 - Fixed security issues (denial of service). See SA-CORE-2014-004.
