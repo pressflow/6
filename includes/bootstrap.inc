@@ -1907,7 +1907,7 @@ function drupal_valid_test_ua($user_agent) {
 //  $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
   $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   // The HMAC must match.
-  return $hmac == drupal_base64_encode(hash_hmac('sha1', $check_string, $key, TRUE));
+  return $hmac == drupal_hmac_base64($check_string, $key));
 }
 
 /**
@@ -1930,7 +1930,7 @@ function drupal_generate_test_ua($prefix) {
    // Generate a moderately secure HMAC based on the database credentials.
    $salt = uniqid('', TRUE);
    $check_string = $prefix . ';' . time() . ';' . $salt;
-   return  $check_string . ';' . drupal_base64_encode(hash_hmac('sha1', $check_string, $key, TRUE));
+   return $check_string . ';' . drupal_hmac_base64($check_string, $key));
 }
 
 /**
