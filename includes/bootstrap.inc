@@ -2073,20 +2073,13 @@ function drupal_random_bytes($count) {
  * @param string $key
  *   A secret string key.
  *
- * See RFC2104 (http://www.ietf.org/rfc/rfc2104.txt). Note, the result of this
- * must be identical to using hash_hmac('sha1', $data, $key);  We don't use
- * that function since PHP can be missing it if it was compiled with the
- * --disable-hash switch.
+ * See RFC2104 (http://www.ietf.org/rfc/rfc2104.txt).
  *
  * @return string
  *   A hexadecimal encoded sha-1 hmac.
  */
 function drupal_hash_hmac_sha1($data, $key) {
-  // Keys longer than the 64 byte block size must be hashed first.
-  if (strlen($key) > 64) {
-    $key = pack("H*", sha1($key));
-  }
-  return sha1((str_pad($key, 64, chr(0x00)) ^ (str_repeat(chr(0x5c), 64))) . pack("H*", sha1((str_pad($key, 64, chr(0x00)) ^ (str_repeat(chr(0x36), 64))) . $data)));
+  return hash_hmac('sha1', $data, $key);
 }
 
 /**
