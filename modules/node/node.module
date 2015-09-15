@@ -746,7 +746,7 @@ function node_load($param = array(), $revision = NULL, $reset = NULL) {
  *   A fully-populated node object.
  */
 function _node_load_direct($param = array(), $revision = NULL, $reset = NULL) {
-  static $nodes = array();
+  $nodes = &drupal_static('node_load', array());
 
   if ($reset) {
     $nodes = array();
@@ -820,6 +820,13 @@ function _node_load_direct($param = array(), $revision = NULL, $reset = NULL) {
   }
 
   return $node;
+}
+
+/**
+ * Resets the static cache of node_load().
+ */
+function node_load_reset() {
+  drupal_static_reset('node_load');
 }
 
 /**
