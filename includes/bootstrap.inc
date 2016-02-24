@@ -818,7 +818,7 @@ function drupal_set_header($name = NULL, $value = NULL, $append = FALSE) {
   }
 
   // Protect against header injection attacks if PHP is too old to do that.
-  if (version_compare(PHP_VERSION, '5.1.2', '<') {
+  if (version_compare(PHP_VERSION, '5.1.2', '<')) {
     foreach (array($name, $value) as $part) {
       if (strpos($part, "\n") !== FALSE || strpos($part, "\r") !== FALSE) {
         // Use the same warning message that newer versions of PHP use.
