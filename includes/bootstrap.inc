@@ -587,8 +587,8 @@ function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 
       // Wait for another request that is already doing this work.
       lock_wait('variable_cache_regenerate');
 
-      // Run the function again. Try a limited number of times to avoid 
-      // infinite recursion if the database connection is invalid for  
+      // Run the function again. Try a limited number of times to avoid
+      // infinite recursion if the database connection is invalid for
       // some reason, e.g., mysqld restart, loss of network, etc.
       $recursion_depth++;
       if ($recursion_depth < 50) {
@@ -660,7 +660,7 @@ function variable_set($name, $value) {
   if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
     cache_clear_all('variables', 'cache');
   }
-  
+
   variable_cache_rebuild();
 }
 
@@ -689,7 +689,7 @@ function variable_del($name) {
   if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
     cache_clear_all('variables', 'cache');
   }
-  
+
   variable_cache_rebuild();
 }
 
@@ -797,6 +797,10 @@ function drupal_load($type, $name) {
  * Note: When sending a Content-Type header, always include a 'charset' type,
  * too. This is necessary to avoid security bugs (e.g. UTF-7 XSS).
  *
+ * Note: No special sanitizing needs to be done to headers. However if a header
+ * value contains a line break, a PHP warning will be thrown and the header
+ * will not be set.
+ *
  * @param $name
  *   The HTTP header name, or a status code followed by a reason phrase, e.g.
  *   "404 Not Found".
@@ -812,7 +816,21 @@ function drupal_set_header($name = NULL, $value = NULL, $append = FALSE) {
   if (!isset($name)) {
     return $headers;
   }
-  
+
+  // Protect against header injection attacks if PHP is too old to do that.
+  // See https://www.drupal.org/SA-CORE-2016-001,
+  // https://www.drupal.org/drupal-6.38-release-notes, and
+  // https://github.com/pressflow/6/pull/101.
+  if (version_compare(PHP_VERSION, '5.1.2', '<')) {
+    foreach (array($name, $value) as $part) {
+      if (strpos($part, "\n") !== FALSE || strpos($part, "\r") !== FALSE) {
+        // Use the same warning message that newer versions of PHP use.
+        trigger_error('Header may not contain more than a single header, new line detected', E_USER_WARNING);
+        return;
+      }
+    }
+  }
+
   // Support the Drupal 6 header API
   if (!isset($value)) {
     if (strpos($name, ':') !== FALSE) {
@@ -1234,6 +1252,8 @@ function request_uri() {
  * @param $type
  *   The category to which this message belongs. Can be any string, but the
  *   general practice is to use the name of the module calling watchdog().
+ *   The $type parameter is limited to 16 characters; anything longer is
+ *   truncated.
  * @param $message
  *   The message to store in the log. See t() for documentation
  *   on how $message and $variables interact. Keep $message
@@ -1243,8 +1263,16 @@ function request_uri() {
  *   NULL if message is already translated or not possible to
  *   translate.
  * @param $severity
- *   The severity of the message, as per RFC 3164. Possible values are
- *   WATCHDOG_ERROR, WATCHDOG_WARNING, etc.
+ *   The severity of the message; one of the following values as defined in
+ *   @link http://www.faqs.org/rfcs/rfc3164.html RFC 3164: @endlink
+ *   - WATCHDOG_EMERGENCY: Emergency, system is unusable.
+ *   - WATCHDOG_ALERT: Alert, action must be taken immediately.
+ *   - WATCHDOG_CRITICAL: Critical conditions.
+ *   - WATCHDOG_ERROR: Error conditions.
+ *   - WATCHDOG_WARNING: Warning conditions.
+ *   - WATCHDOG_NOTICE: (default) Normal but significant conditions.
+ *   - WATCHDOG_INFO: Informational messages.
+ *   - WATCHDOG_DEBUG: Debug-level messages.
  * @param $link
  *   A link to associate with the message.
  *
@@ -1430,7 +1458,7 @@ function drupal_bootstrap($phase = NULL) {
       _drupal_bootstrap($current_phase);
     }
   }
-  
+
   return $phase_index;
 }
 
@@ -1490,7 +1518,7 @@ function _drupal_bootstrap($phase) {
       // those using APC or memcached.
       require_once variable_get('lock_inc', './includes/lock.inc');
       lock_init();
-      
+
       // Detect if an installation is present.
       detect_installation_or_run_installer();
 
@@ -1524,8 +1552,6 @@ function _drupal_bootstrap($phase) {
       // because menu_path_is_external() requires the variable system to be
       // available.
       if (isset($_GET['destination']) || isset($_REQUEST['destination']) || isset($_REQUEST['edit']['destination'])) {
-        require_once './includes/menu.inc';
-        drupal_load('module', 'filter');
         // If the destination is an external URL, remove it.
         if (isset($_GET['destination']) && menu_path_is_external($_GET['destination'])) {
           unset($_GET['destination']);
@@ -1569,11 +1595,11 @@ function _drupal_bootstrap($phase) {
         // We are done.
         exit;
       }
-  
+
       if (!$cache && drupal_page_is_cacheable() && $cache_mode != CACHE_EXTERNAL) {
         header('X-Drupal-Cache: MISS');
       }
-      
+
       // If using an external cache and the page is cacheable, set headers.
       if ($cache_mode == CACHE_EXTERNAL && drupal_page_is_cacheable()) {
         drupal_page_cache_header_external();
@@ -1714,17 +1740,17 @@ function ip_address() {
 
   if (!isset($ip_address)) {
     $ip_address = $_SERVER['REMOTE_ADDR'];
-    
+
     // Only use parts of the X-Forwarded-For (XFF) header that have followed a trusted route.
     // Specifically, identify the leftmost IP address in the XFF header that is not one of ours.
     // An XFF header is: X-Forwarded-For: client1, proxy1, proxy2
     if (isset($_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]) && variable_get('reverse_proxy', 0)) {
       // Load trusted reverse proxy server IPs.
       $reverse_proxy_addresses = variable_get('reverse_proxy_addresses', array());
-      
+
       // Turn XFF header into an array.
       $forwarded = explode(',', $_SERVER['HTTP_' . variable_get('x_forwarded_for_header', 'X_FORWARDED_FOR')]);
-      
+
       // Trim the forwarded IPs; they may have been delimited by commas and spaces.
       $forwarded = array_map('trim', $forwarded);
 
@@ -1733,7 +1759,7 @@ function ip_address() {
 
       // Eliminate all trusted IPs.
       $untrusted = array_diff($forwarded, $reverse_proxy_addresses);
-      
+
       // The right-most IP is the most specific we can trust.
       $ip_address = array_pop($untrusted);
     }
@@ -1747,9 +1773,9 @@ function ip_address() {
  */
 function drupal_session_initialize() {
   global $user;
-   
+
   session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy_sid', 'sess_gc');
- 
+
   // Use !empty() in the following check to ensure that blank session IDs
   // are not valid.
   if (!empty($_COOKIE[session_name()])) {
@@ -1813,7 +1839,7 @@ function drupal_session_commit() {
 
 /**
  * Return whether a session has been started.
- */  
+ */
 function drupal_session_started($set = NULL) {
   static $session_started = FALSE;
   if (isset($set)) {
@@ -1923,7 +1949,7 @@ function drupal_generate_test_ua($prefix) {
     // check the HMAC before the database is initialized. filectime()
     // and fileinode() are not easily determined from remote.
 //    $filepath = DRUPAL_ROOT . '/includes/bootstrap.inc';
-    $filepath = './includes/bootstrap.inc';                
+    $filepath = './includes/bootstrap.inc';
 //    $key = sha1(serialize($databases) . filectime($filepath) . fileinode($filepath), TRUE);
     $key = sha1(serialize($db_url) . filectime($filepath) . fileinode($filepath), TRUE);
   }
@@ -2109,4 +2135,75 @@ function drupal_hmac_base64($data, $key) {
   $hmac = base64_encode(pack("H*", drupal_hash_hmac_sha1((string) $data, (string) $key)));
   // Modify the hmac so it's safe to use in URLs.
   return strtr($hmac, array('+' => '-', '/' => '_', '=' => ''));
+}
+
+/**
+ * Returns TRUE if a path is external (e.g. http://example.com).
+ *
+ * May be used early in bootstrap.
+ */
+function menu_path_is_external($path) {
+  // Avoid calling filter_xss_bad_protocol() if there is any slash (/),
+  // hash (#) or question_mark (?) before the colon (:) occurrence - if any - as
+  // this would clearly mean it is not a URL. If the path starts with 2 slashes
+  // then it is always considered an external URL without an explicit protocol
+  // part. Leading control characters may be ignored or mishandled by browsers,
+  // so assume such a path may lead to an external location. The range matches
+  // all UTF-8 control characters, class Cc.
+  $colonpos = strpos($path, ':');
+  // Some browsers treat \ as / so normalize to forward slashes.
+  $path = str_replace('\\', '/', $path);
+  return (strpos($path, '//') === 0) || (preg_match('/^[\x00-\x1F\x7F-\x9F]/u', $path) !== 0)
+  || ($colonpos !== FALSE
+    && !preg_match('![/?#]!', substr($path, 0, $colonpos))
+    && filter_xss_bad_protocol($path, FALSE) == check_plain($path));
+}
+
+/**
+ * Processes an HTML attribute value and ensures it does not contain an URL
+ * with a disallowed protocol (e.g. javascript:)
+ *
+ * May be used early in bootstrap.
+ *
+ * @param $string
+ *   The string with the attribute value.
+ * @param $decode
+ *   Whether to decode entities in the $string. Set to FALSE if the $string
+ *   is in plain text, TRUE otherwise. Defaults to TRUE.
+ * @return
+ *   Cleaned up and HTML-escaped version of $string.
+ */
+function filter_xss_bad_protocol($string, $decode = TRUE) {
+  static $allowed_protocols;
+  if (!isset($allowed_protocols)) {
+    $allowed_protocols = array_flip(variable_get('filter_allowed_protocols', array('http', 'https', 'ftp', 'news', 'nntp', 'tel', 'telnet', 'mailto', 'irc', 'ssh', 'sftp', 'webcal', 'rtsp')));
+  }
+
+  // Get the plain text representation of the attribute value (i.e. its meaning).
+  if ($decode) {
+    $string = decode_entities($string);
+  }
+
+  // Iteratively remove any invalid protocol found.
+
+  do {
+    $before = $string;
+    $colonpos = strpos($string, ':');
+    if ($colonpos > 0) {
+      // We found a colon, possibly a protocol. Verify.
+      $protocol = substr($string, 0, $colonpos);
+      // If a colon is preceded by a slash, question mark or hash, it cannot
+      // possibly be part of the URL scheme. This must be a relative URL,
+      // which inherits the (safe) protocol of the base document.
+      if (preg_match('![/?#]!', $protocol)) {
+        break;
+      }
+      // Per RFC2616, section 3.2.3 (URI Comparison) scheme comparison must be case-insensitive
+      // Check if this is a disallowed protocol.
+      if (!isset($allowed_protocols[strtolower($protocol)])) {
+        $string = substr($string, $colonpos + 1);
+      }
+    }
+  } while ($before != $string);
+  return check_plain($string);
 }
