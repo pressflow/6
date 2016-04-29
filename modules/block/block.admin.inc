@@ -98,6 +98,9 @@ function block_admin_display_form(&$form_state, $blocks, $theme = NULL) {
  */
 function block_admin_display_form_submit($form, &$form_state) {
   foreach ($form_state['values'] as $block) {
+    // Skip over non block elements in this form like 'form_id' and 'submit'.
+    if (!is_array($block)) { continue; }
+    
     $block['status'] = $block['region'] != BLOCK_REGION_NONE;
     $block['region'] = $block['status'] ? $block['region'] : '';
     db_query("UPDATE {blocks} SET status = %d, weight = %d, region = '%s', throttle = %d WHERE module = '%s' AND delta = '%s' AND theme = '%s'", $block['status'], $block['weight'], $block['region'], isset($block['throttle']) ? $block['throttle'] : 0, $block['module'], $block['delta'], $block['theme']);
