@@ -1587,7 +1587,7 @@ function user_edit_form(&$form_state, $uid, $edit, $register = FALSE) {
 
     unset($roles[DRUPAL_AUTHENTICATED_RID]);
     if ($roles) {
-      $default = empty($edit['roles']) ? array() : array_keys($edit['roles']);
+      $default = empty($edit['roles']) ? array() : array_keys(array_filter($edit['roles']));
       $form['account']['roles'] = array(
         '#type' => 'checkboxes',
         '#title' => t('Roles'),
