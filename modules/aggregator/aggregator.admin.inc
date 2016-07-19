@@ -343,6 +343,9 @@ function aggregator_form_category_submit($form, &$form_state) {
         return;
       }
     }
+    else {
+      watchdog('aggregator', 'HTTP request to @url failed with error: @error', array('@url' => $form_state['values']['remote'], '@error' => $response->error));
+    }
   }
   else {
     watchdog('aggregator', 'Category %category added.', array('%category' => $form_state['values']['title']), WATCHDOG_NOTICE, l(t('view'), 'admin/content/aggregator'));

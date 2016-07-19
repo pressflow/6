@@ -1,4 +1,3 @@
-
 Drupal 6.38, 2016-02-24 - Final release
 ---------------------------------------
 - Fixed security issues (multiple vulnerabilities). See SA-CORE-2016-001.

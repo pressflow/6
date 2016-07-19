@@ -694,6 +694,8 @@ function node_invoke_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 }
 
 /**
+ * Replacement for node_load() to redirect to an alternative function when available.
+ *
  * Load a node object from the database.
  *
  * @param $param
@@ -707,7 +709,44 @@ function node_invoke_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
  *   A fully-populated node object.
  */
 function node_load($param = array(), $revision = NULL, $reset = NULL) {
-  static $nodes = array();
+  static $hook_module;
+  $hook = 'node_load_cache';
+
+  if (!isset($hook_module)) {
+    $modules = module_implements($hook);
+    if (!empty($modules)) {
+      $hook_module = reset($modules);
+    }
+    else {
+      $hook_module = FALSE;
+    }
+  }
+
+  if ($hook_module !== FALSE) {
+    $function = $hook_module . '_' . $hook;
+    $return = $function($param, $revision, $reset);
+  }
+   else {
+    $return = _node_load_direct($param, $revision, $reset);
+  }
+  return $return;
+}
+
+/**
+ * Load a node object from the database.
+ *
+ * @param $param
+ *   Either the nid of the node or an array of conditions to match against in the database query
+ * @param $revision
+ *   Which numbered revision to load. Defaults to the current version.
+ * @param $reset
+ *   Whether to reset the internal node_load cache.
+ *
+ * @return
+ *   A fully-populated node object.
+ */
+function _node_load_direct($param = array(), $revision = NULL, $reset = NULL) {
+  $nodes = &drupal_static('node_load', array());
 
   if ($reset) {
     $nodes = array();
@@ -781,6 +820,13 @@ function node_load($param = array(), $revision = NULL, $reset = NULL) {
   }
 
   return $node;
+}
+
+/**
+ * Resets the static cache of node_load().
+ */
+function node_load_reset() {
+  drupal_static_reset('node_load');
 }
 
 /**
@@ -2021,6 +2067,7 @@ function node_search_validate($form, &$form_state) {
  */
 function node_access($op, $node, $account = NULL) {
   global $user;
+  static $rights;
 
   if (!$node || !in_array($op, array('view', 'update', 'delete', 'create'), TRUE)) {
     // If there was no node to check against, or the $op was not one of the
@@ -2031,20 +2078,44 @@ function node_access($op, $node, $account = NULL) {
   if ($op != 'create') {
     $node = (object)$node;
   }
+
   // If no user object is supplied, the access check is for the current user.
   if (empty($account)) {
     $account = $user;
   }
+  $cid = '';
+  if (is_object($node)) {
+    if (isset($node->nid)) {
+      $cid .= $node->nid;
+    }
+    else {
+      $cid .= $node->type;
+    }
+  }
+  else {
+    $cid .= $node;
+  }
+  $cid .= $op;
+  $cid .= $account->uid;
+
+
+  // Return cached value if it exists.
+  if (isset($node->nid) && isset($rights[$cid])) {
+    return $rights[$cid];
+  }
   // If the node is in a restricted format, disallow editing.
   if ($op == 'update' && !filter_access($node->format)) {
+    $rights[$cid] = FALSE;
     return FALSE;
   }
 
   if (user_access('administer nodes', $account)) {
+    $rights[$cid] = TRUE;
     return TRUE;
   }
 
   if (!user_access('access content', $account)) {
+    $rights[$cid] = FALSE;
     return FALSE;
   }
 
@@ -2056,6 +2127,9 @@ function node_access($op, $node, $account = NULL) {
   }
   $access = module_invoke($module, 'access', $op, $node, $account);
   if (!is_null($access)) {
+    if (isset($node->nid)) {
+      $rights[$cid] = $access;
+    }
     return $access;
   }
 
@@ -2076,11 +2150,13 @@ function node_access($op, $node, $account = NULL) {
 
     $sql = "SELECT 1 FROM {node_access} WHERE (nid = 0 OR nid = %d) $grants_sql AND grant_$op >= 1";
     $result = db_query_range($sql, $node->nid, 0, 1);
-    return (bool) db_result($result);
+    $rights[$cid] = (bool) db_result($result);
+    return $rights[$cid];
   }
 
   // Let authors view their own nodes.
   if ($op == 'view' && $account->uid == $node->uid && $account->uid != 0) {
+    $rights[$cid] = TRUE;
     return TRUE;
   }
 

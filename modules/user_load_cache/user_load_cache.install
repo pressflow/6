@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Install and update functions for user_load_cache module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function user_load_cache_schema() {
+  $schema['cache_user'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_user']['description'] = 'Cache bin for user objects.';
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function user_load_cache_install() {
+  drupal_install_schema('user_load_cache');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function user_load_cache_uninstall() {
+  drupal_uninstall_schema('user_load_cache');
+}

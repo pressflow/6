@@ -133,8 +133,13 @@ function drupal_get_html_head() {
 /**
  * Reset the static variable which holds the aliases mapped for this request.
  */
-function drupal_clear_path_cache() {
+function drupal_clear_path_cache($path = NULL) {
   drupal_lookup_path('wipe');
+  $modules = module_implements('lookup_path');
+  if (!empty($modules)) {
+    $module = reset($modules);
+    module_invoke($module, 'path_alias_whitelist_rebuild', $path);
+  }
 }
 
 /*
@@ -349,6 +354,9 @@ function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response
   // Even though session_write_close() is registered as a shutdown function,
   // we need all session data written to the database before redirecting.
   drupal_session_commit();
+  // Destroy the variable cache object.
+  $variables = &drupal_static('variables');
+  unset($variables);
 
   header('Location: '. $url, TRUE, $http_response_code);
 
@@ -505,12 +513,6 @@ function drupal_http_request($url, $headers = array(), $method = 'GET', $data = 
     // clash with the HTTP status codes.
     $result->code = -$errno;
     $result->error = trim($errstr);
-
-    // Mark that this request failed. This will trigger a check of the web
-    // server's ability to make outgoing HTTP requests the next time that
-    // requirements checking is performed.
-    // @see system_requirements()
-    variable_set('drupal_http_request_fails', TRUE);
 
     return $result;
   }
@@ -1683,6 +1685,9 @@ function drupal_page_footer() {
   }
 
   module_invoke_all('exit');
+
+  // Update the hook implementation cache.
+  module_implements('', FALSE, FALSE, TRUE);
 }
 
 /**
@@ -2315,6 +2320,9 @@ function drupal_get_js($scope = 'header', $javascript = NULL) {
     return '';
   }
 
+  // Invoke hook_js_alter().
+  drupal_alter('js', $javascript);
+
   $output = '';
   $preprocessed = '';
   $no_preprocess = array('core' => '', 'module' => '', 'theme' => '');
@@ -2547,6 +2555,8 @@ function drupal_build_js_cache($files, $filename) {
 function drupal_clear_js_cache() {
   file_scan_directory(file_create_path('js'), '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
   variable_set('javascript_parsed', array());
+  $dir = file_create_path(variable_get('locale_js_directory', 'languages'));
+  _file_unmanaged_delete_recursive($dir);
 }
 
 /**
@@ -2785,30 +2795,14 @@ function drupal_cron_run() {
   if (function_exists('set_time_limit')) {
     @set_time_limit(240);
   }
-
-  // Fetch the cron semaphore
-  $semaphore = variable_get('cron_semaphore', FALSE);
-
-  if ($semaphore) {
-    if (time() - $semaphore > 3600) {
-      // Either cron has been running for more than an hour or the semaphore
-      // was not reset due to a database error.
-      watchdog('cron', 'Cron has been running for more than an hour and is most likely stuck.', array(), WATCHDOG_ERROR);
-
-      // Release cron semaphore
-      variable_del('cron_semaphore');
-    }
-    else {
-      // Cron is still running normally.
-      watchdog('cron', 'Attempting to re-run cron while it is already running.', array(), WATCHDOG_WARNING);
-    }
+  // Try to acquire cron lock.
+  if (!lock_acquire('cron', 240.0)) {
+    // Cron is still running normally.
+    watchdog('cron', 'Attempting to re-run cron while it is already running.', array(), WATCHDOG_WARNING);
   }
   else {
     // Register shutdown callback
     register_shutdown_function('drupal_cron_cleanup');
-
-    // Lock cron semaphore
-    variable_set('cron_semaphore', time());
 
     // Iterate through the modules calling their cron handlers (if any):
     module_invoke_all('cron');
@@ -2817,8 +2811,8 @@ function drupal_cron_run() {
     variable_set('cron_last', time());
     watchdog('cron', 'Cron run completed.', array(), WATCHDOG_NOTICE);
 
-    // Release cron semaphore
-    variable_del('cron_semaphore');
+    // Release cron lock.
+    lock_release('cron');
 
     // Return TRUE so other functions can check if it did run successfully
     return TRUE;
@@ -3326,6 +3320,29 @@ function drupal_common_theme() {
  *   If true, the schema will be rebuilt instead of retrieved from the cache.
  */
 function drupal_get_schema($table = NULL, $rebuild = FALSE) {
+  static $hook_module;
+
+  if (!isset($hook_module)) {
+    $modules = module_implements('schema_get');
+    if (!empty($modules)) {
+      $hook_module = reset($modules);
+    }
+    else {
+      $hook_module = FALSE;
+    }
+  }
+
+  if ($hook_module) {
+    $return = module_invoke($hook_module, 'schema_get', $table, $rebuild);
+  }
+  else {
+    $return = _drupal_get_schema_direct($table, $rebuild);
+  }
+
+  return $return;
+}
+
+function _drupal_get_schema_direct($table = NULL, $rebuild = FALSE) {
   static $schema = array();
 
   if (empty($schema) || $rebuild) {

@@ -227,17 +227,44 @@ function _theme_set_registry($registry) {
  *   The name of the theme engine.
  */
 function _theme_load_registry($theme, $base_theme = NULL, $theme_engine = NULL) {
+  static $hook_module;
+
+  if (!isset($hook_module)) {
+    $modules = module_implements('theme_registry_load');
+    if (!empty($modules)) {
+      $hook_module = reset($modules);
+    }
+    else {
+      $hook_module = FALSE;
+    }
+  }
+
+  if ($hook_module) {
+    $return = module_invoke($hook_module, 'theme_registry_load', $theme, $base_theme, $theme_engine);
+  } 
+  else {
+    $return = _theme_load_registry_direct($theme, $base_theme, $theme_engine);
+  }
+  _theme_set_registry($return);
+}
+
+function _theme_load_registry_direct($theme, $base_theme = NULL, $theme_engine = NULL) {
   // Check the theme registry cache; if it exists, use it.
   $cache = cache_get("theme_registry:$theme->name", 'cache');
   if (isset($cache->data)) {
     $registry = $cache->data;
+    _theme_set_registry($registry);
   }
   else {
     // If not, build one and cache it.
     $registry = _theme_build_registry($theme, $base_theme, $theme_engine);
-    _theme_save_registry($theme, $registry);
+    // Do not allow the registry to be saved to cache unless all modules have
+    // been loaded.
+    if (module_load_all(TRUE)) {
+      _theme_save_registry($theme, $registry);
+      _theme_set_registry($registry);
+    }
   }
-  _theme_set_registry($registry);
 }
 
 /**

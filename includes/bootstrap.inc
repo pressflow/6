@@ -227,6 +227,266 @@ if (defined('E_DEPRECATED')) {
 }
 
 /**
+ * Provides a caching wrapper to be used in place of large array structures.
+ *
+ * This class should be extended by systems that need to cache large amounts
+ * of data and have it represented as an array to calling functions. These
+ * arrays can become very large, so ArrayAccess is used to allow different
+ * strategies to be used for caching internally (lazy loading, building caches
+ * over time etc.). This can dramatically reduce the amount of data that needs
+ * to be loaded from cache backends on each request, and memory usage from
+ * static caches of that same data.
+ *
+ * Note that array_* functions do not work with ArrayAccess. Systems using
+ * DrupalCacheArray should use this only internally. If providing API functions
+ * that return the full array, this can be cached separately or returned
+ * directly. However since DrupalCacheArray holds partial content by design, it
+ * should be a normal PHP array or otherwise contain the full structure.
+ *
+ * Note also that due to limitations in PHP prior to 5.3.4, it is impossible to
+ * write directly to the contents of nested arrays contained in this object.
+ * Only writes to the top-level array elements are possible. So if you
+ * previously had set $object['foo'] = array(1, 2, 'bar' => 'baz'), but later
+ * want to change the value of 'bar' from 'baz' to 'foobar', you cannot do so
+ * a targeted write like $object['foo']['bar'] = 'foobar'. Instead, you must
+ * overwrite the entire top-level 'foo' array with the entire set of new
+ * values: $object['foo'] = array(1, 2, 'bar' => 'foobar'). Due to this same
+ * limitation, attempts to create references to any contained data, nested or
+ * otherwise, will fail silently. So $var = &$object['foo'] will not throw an
+ * error, and $var will be populated with the contents of $object['foo'], but
+ * that data will be passed by value, not reference. For more information on
+ * the PHP limitation, see the note in the official PHP documentation at·
+ * http://php.net/manual/en/arrayaccess.offsetget.php on
+ * ArrayAccess::offsetGet().
+ *
+ * By default, the class accounts for caches where calling functions might
+ * request keys in the array that won't exist even after a cache rebuild. This
+ * prevents situations where a cache rebuild would be triggered over and over
+ * due to a 'missing' item. These cases are stored internally as a value of
+ * NULL. This means that the offsetGet() and offsetExists() methods
+ * must be overridden if caching an array where the top level values can
+ * legitimately be NULL, and where $object->offsetExists() needs to correctly
+ * return (equivalent to array_key_exists() vs. isset()). This should not
+ * be necessary in the majority of cases.
+ *
+ * Classes extending this class must override at least the
+ * resolveCacheMiss() method to have a working implementation.
+ *
+ * offsetSet() is not overridden by this class by default. In practice this
+ * means that assigning an offset via arrayAccess will only apply while the
+ * object is in scope and will not be written back to the persistent cache.
+ * This follows a similar pattern to static vs. persistent caching in
+ * procedural code. Extending classes may wish to alter this behaviour, for
+ * example by overriding offsetSet() and adding an automatic call to persist().
+ *
+ * @see SchemaCache
+ */
+abstract class DrupalCacheArray implements ArrayAccess {
+
+  /**
+   * A cid to pass to cache_set() and cache_get().
+   */
+  protected $cid;
+
+  /**
+   * A bin to pass to cache_set() and cache_get().
+   */
+  protected $bin;
+
+  /**
+   * An array of keys to add to the cache at the end of the request.
+   */
+  protected $keysToPersist = array();
+
+  /**
+   * Storage for the data itself.
+   */
+  protected $storage = array();
+
+  /**
+   * Workaround for issues with Drupal 6 database layer object destruction.
+   *
+   * The database connection is destroyed by PHP garbage collection before
+   * this object's destructor gets called. However __destruct() calls set()
+   * which calls the cache and lock APIs. To avoid this, add a reference to
+   * $GLOBALS['active_db'], this guarantees that DrupalCacheArray has it's
+   * destructor called before the connection object is destroyed.
+   */
+  protected $_connection;
+
+  /**
+   * Constructor.
+   *
+   * @param $cid
+   *   The cid for the array being cached.
+   * @param $bin
+   *   The bin to cache the array.
+   */
+  public function __construct($cid, $bin) {
+    $this->_connection = &$GLOBALS['active_db'];
+    $this->cid = $cid;
+    $this->bin = $bin;
+
+    if ($cached = cache_get($this->cid, $this->bin)) {
+     $this->storage = $cached->data;
+    }
+  }
+
+  public function offsetExists($offset) {
+    return $this->offsetGet($offset) !== NULL;
+  }
+
+  public function offsetGet($offset) {
+    if (isset($this->storage[$offset]) || array_key_exists($offset, $this->storage)) {
+      return $this->storage[$offset];
+    }
+    else {
+      return $this->resolveCacheMiss($offset);
+    }
+  }
+
+  public function offsetSet($offset, $value) {
+    $this->storage[$offset] = $value;
+  }
+
+  public function offsetUnset($offset) {
+    unset($this->storage[$offset]);
+  }
+
+  /**
+   * Flags an offset value to be written to the persistent cache.
+   *
+   * If a value is assigned to a cache object with offsetSet(), by default it
+   * will not be written to the persistent cache unless it is flagged with this
+   * method. This allows items to be cached for the duration of a request,
+   * without necessarily writing back to the persistent cache at the end.
+   *
+   * @param $offset
+   *   The array offset that was request.
+   * @param $persist
+   *   Optional boolean to specify whether the offset should be persisted or
+   *   not, defaults to TRUE. When called with $persist = FALSE the offset will
+   *   be unflagged so that it will not written at the end of the request.
+   */
+  protected function persist($offset, $persist = TRUE) {
+    $this->keysToPersist[$offset] = $persist;
+  }
+
+  /**
+   * Resolves a cache miss.
+   *
+   * When an offset is not found in the object, this is treated as a cache
+   * miss. This method allows classes implementing the interface to look up
+   * the actual value and allow it to be cached.
+   *
+   * @param $offset
+   *   The offset that was requested.
+   *
+   * @return
+   *   The value of the offset, or NULL if no value was found.
+   */
+  abstract protected function resolveCacheMiss($offset);
+
+  /**
+   * Immediately write a value to the persistent cache.
+   *
+   * @param $data
+   *   The data to write to the persistent cache.
+   * @param $lock
+   *   Whether to acquire a lock before writing to cache.
+   */
+  protected function set($data, $lock = TRUE) {
+    // Lock cache writes to help avoid stampedes.
+    // To implement locking for cache misses, override __construct().
+    $lock_name = $this->cid . ':' . $this->bin;
+    if (!$lock || lock_acquire($lock_name)) {
+      if ($cached = cache_get($this->cid, $this->bin)) {
+        $data = $cached->data + $data;
+      }
+      cache_set($this->cid, $data, $this->bin);
+      if ($lock) {
+        lock_release($lock_name);
+      }
+    }
+  }
+
+  public function __destruct() {
+    $data = array();
+    foreach ($this->keysToPersist as $offset => $persist) {
+      if ($persist) {
+        $data[$offset] = $this->storage[$offset];
+      }
+    }
+    if (!empty($data)) {
+      $this->set($data);
+    }
+  }
+}
+
+function &drupal_static($name, $default_value = NULL, $reset = FALSE) {
+  static $data = array(), $default = array();
+  // First check if dealing with a previously defined static variable.
+  if (isset($data[$name]) || array_key_exists($name, $data)) {
+    // Non-NULL $name and both $data[$name] and $default[$name] statics exist.
+    if ($reset) {
+      // Reset pre-existing static variable to its default value.
+      $data[$name] = $default[$name];
+    }
+    return $data[$name];
+  }
+  // Neither $data[$name] nor $default[$name] static variables exist.
+  if (isset($name)) {
+    if ($reset) {
+      // Reset was called before a default is set and yet a variable must be
+      // returned.
+      return $data;
+    }
+    // First call with new non-NULL $name. Initialize a new static variable.
+    $default[$name] = $data[$name] = $default_value;
+    return $data[$name];
+  }
+  // Reset all: ($name == NULL). This needs to be done one at a time so that
+  // references returned by earlier invocations of drupal_static() also get
+  // reset.
+  foreach ($default as $name => $value) {
+    $data[$name] = $value;
+  }
+  // As the function returns a reference, the return should always be a
+  // variable.
+  return $data;
+}
+
+/**
+ * Reset one or all centrally stored static variable(s).
+ *
+ * @param $name
+ *   Name of the static variable to reset. Omit to reset all variables.
+ */
+function drupal_static_reset($name = NULL) {
+  drupal_static($name, NULL, TRUE);
+}
+
+
+/**
+ * Backport of Drupal 7's file_unmanaged_delete_recursive().
+ */
+function _file_unmanaged_delete_recursive($path, $delete_root = FALSE) {
+  if (is_dir($path)) {
+    $dir = dir($path);
+    while (($entry = $dir->read()) !== FALSE) {
+      if ($entry == '.' || $entry == '..') {
+        continue;
+      }
+      $entry_path = $path . '/' . $entry;
+      _file_unmanaged_delete_recursive($entry_path, TRUE);
+    }
+    $dir->close();
+    return $delete_root ? rmdir($path) : TRUE;
+  }
+  return file_delete($path);
+}
+
+/**
  * Start the timer with the specified name. If you start and stop
  * the same timer multiple times, the measured intervals will be
  * accumulated.
@@ -561,28 +821,75 @@ function drupal_get_filename($type, $name, $filename = NULL) {
 }
 
 /**
- * Load the persistent variable table.
- *
- * The variable table is composed of values that have been saved in the table
- * with variable_set() as well as those explicitly specified in the configuration
- * file.
+ * Extends DrupalCacheArray to allow for cumulative caching of variables.
  */
-function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 0) {
-  // NOTE: caching the variables improves performance by 20% when serving cached pages.
-  if (!$regenerate && $cached = cache_get('variables', 'cache')) {
-    $variables = $cached->data;
+class VariableCache extends DrupalCacheArray {
+
+  /**
+   * Force the cache to be updated if a lock is not acquired.
+   */ 
+  protected $forceCacheUpdate;
+
+  protected function resolveCacheMiss($offset) {
+    // In Drupal 6, db_query() calls variable_get('dev_query') which can lead
+    // to infinite recursion when dev_query is not set in settings.php. Avoid
+    // this by adding recursion protection.
+    static $recurse = FALSE;
+    $result = NULL;
+    if (!$recurse) {
+      $recurse = TRUE;
+      $result = db_result(db_query("SELECT value FROM {variable} WHERE name = '%s'", $offset));
+      $recurse = FALSE;
+    }
+    $value = $result ? unserialize($result) : NULL;
+    $this->storage[$offset] = $value;
+    $this->persist($offset);
+    return $value;
   }
-  else {
-    if (defined('MAINTENANCE_MODE') || lock_acquire('variable_cache_regenerate')) {
-      $result = db_query('SELECT * FROM {variable}');
-      while ($variable = db_fetch_object($result)) {
-        $variables[$variable->name] = unserialize($variable->value);
+
+  /**
+   * Replace the storage variable with a separate array.
+   *
+   * @return
+   *   The value of the storage variable before it was replaced.
+   */
+  public function replaceStorage($array) {
+    $return = $this->storage;
+    $this->storage = $array;
+    $this->keysToPersist = array();
+    return $return;
+  }
+
+  public function offsetUnset($offset) {
+    $this->storage[$offset] = NULL;
+    $this->persist($offset);
+    $this->forceCacheUpdate = TRUE;
+  }
+  public function offsetSet($offset, $value) {
+    $this->storage[$offset] = $value;
+    $this->persist($offset);
+    $this->forceCacheUpdate = TRUE;
+  }
+
+  protected function set($data, $lock = TRUE) {
+    $lock_name = $this->cid . ':' . $this->bin;
+    if (!$lock || ($lock_acquired = lock_acquire($lock_name))) {
+      if ($cached = cache_get($this->cid, $this->bin)) {
+        foreach ($data as $key => $value) {
+          $cached->data[$key] = $data[$key];
+        }
+        $data = $cached->data;
       }
-      cache_set('variables', $variables);
-      if (!defined('MAINTENANCE_MODE')) {
-        lock_release('variable_cache_regenerate');
+      cache_set($this->cid, $data, $this->bin);
+      if ($lock) {
+        lock_release($lock_name);
       }
     }
+    elseif (empty($lock_acquired) && $this->forceCacheUpdate) {
+      // If the lock was not acquired, wait for the lock to be released or
+      // 30 seconds then clear the cache.
+      lock_wait($lock_name);
+      cache_clear_all($this->cid, $this->bin);
     else {
       // Wait for another request that is already doing this work.
       lock_wait('variable_cache_regenerate');
@@ -598,12 +905,28 @@ function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 
       $variables = array();
     }
   }
+}
+
+/**
+ * Load the persistent variable table.
+ *
+ * The variable table is composed of values that have been saved in the table
+ * with variable_set() as well as those explicitly specified in the configuration
+ * file.
+ */
+function variable_init($conf = array()) {
+  $cache = &drupal_static('variables');
+  $cache = new VariableCache('variables', 'cache');
+  // Copy the cached variables, free memory in the cache array by setting it
+  // to empty.
+  $variables = $cache->replaceStorage(array());
 
   foreach ($conf as $name => $value) {
     $variables[$name] = $value;
   }
 
   return $variables;
+
 }
 
 /**
@@ -624,8 +947,19 @@ function variable_init($conf = array(), $regenerate = FALSE, $recursion_depth = 
  */
 function variable_get($name, $default) {
   global $conf;
+  if (isset($conf[$name])) {
+    return $conf[$name];
+  }
+  elseif (array_key_exists($name, $conf)) {
+    return $default;
+  }
+  $cache = &drupal_static('variables');
+  if (isset($cache) && isset($cache[$name])) {
+    $conf[$name] = $cache[$name];
+    return $conf[$name];
+  }
+  return $default;
 
-  return isset($conf[$name]) ? $conf[$name] : $default;
 }
 
 /**
@@ -646,19 +980,58 @@ function variable_get($name, $default) {
 function variable_set($name, $value) {
   global $conf, $db_prefix;
 
+
+  // Custom patch for read-only mode. Some systems such as JavaScript/CSS
+  // aggregate caching trigger variable_set() from normal anonymous page
+  // requests which can't be redirected to the 'master' site.
+  //
+  // Therefore,
+  // do the following:
+  //  - log when variable_set() is called in read only mode.
+  //  - allow site administrators to specify a 'variables' database connection
+  //    and direct variable writes to that database if it's set to ensure
+  //    consistency.
+  //  - if the 'variables' database connection is not set, disable variable
+  //    writes altogether to avoid triggering PHP errors.
+  if (!empty($conf['read_only'])) {
+    // Log when variable_set() is called in this mode, this should be extremely
+    // rare, and if not can be indicative of other problems.
+    watchdog('read-only', t('variable_set() tried to write variable @variable in read-only mode.'), array('@variable' => $name), WATCHDOG_WARNING);
+
+    // Allow site adminstrators to specify a 'variables' databse connection. If
+    // this is set, direct writes to that database instead.
+    if (is_array($GLOBALS['db_url']) && isset($GLOBALS['db_url']['variables'])) {
+      $current_db = db_set_active('variables');
+    }
+    else {
+      // Otherwise return early since the variable_set() will fail anyway. 
+      return;
+    }
+  }
+
   $serialized_value = serialize($value);
   db_query("UPDATE {variable} SET value = '%s' WHERE name = '%s'", $serialized_value, $name);
   if (!db_affected_rows()) {
     @db_query("INSERT INTO {variable} (name, value) VALUES ('%s', '%s')", $name, $serialized_value);
   }
-
   $conf[$name] = $value;
 
-  // The write-through rebuild optimization isn't compatible with SimpleTest.
-  // Because array-based prefixes don't work with SimpleTest, we can assume
-  // that a non-string prefix indicates lack of SimpleTest operations.
-  if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
+  $cache = &drupal_static('variables');
+  if (is_object($cache)) {
+    // Write through to the variable cache.
+    $replace = array();
+    if ($cached = cache_get('variables')) {
+      $cached->data[$name] = $value;
+      cache_set('variables', $cached->data);
+      $replace = $cached->data;
+    }
+    $cache->replaceStorage($replace);
+  }
+  else {
     cache_clear_all('variables', 'cache');
+  }
+  if (!empty($current_db)) {
+    db_set_active($current_db);
   }
 
   variable_cache_rebuild();
@@ -682,11 +1055,11 @@ function variable_del($name) {
   db_query("DELETE FROM {variable} WHERE name = '%s'", $name);
 
   unset($conf[$name]);
-
-  // The write-through rebuild optimization isn't compatible with SimpleTest.
-  // Because array-based prefixes don't work with SimpleTest, we can assume
-  // that a non-string prefix indicates lack of SimpleTest operations.
-  if (is_string($db_prefix) && strpos($db_prefix, 'simpletest') === 0) {
+  $cache = &drupal_static('variables');
+  if (is_object($cache)) {
+    unset($cache[$name]);
+  }
+  else {
     cache_clear_all('variables', 'cache');
   }
 
@@ -1541,7 +1914,7 @@ function _drupal_bootstrap($phase) {
     case DRUPAL_BOOTSTRAP_LATE_PAGE_CACHE:
       // Initialize configuration variables, using values from settings.php if available.
       $conf = variable_init(isset($conf) ? $conf : array());
-
+      
       // Sanitize the destination parameter (which is often used for redirects)
       // to prevent open redirect attacks leading to other domains. Sanitize
       // both $_GET['destination'] and $_REQUEST['destination'] to protect code

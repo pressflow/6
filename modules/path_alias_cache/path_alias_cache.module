@@ -25,21 +25,15 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
     'no_aliases' => array(),
     'first_call' => TRUE,
   ));
-
-  // Retrieve the path alias whitelist.
   if (!isset($cache['whitelist'])) {
-    if ($cached = cache_get('path_alias_whitelist', 'cache_path')) {
-      $cache['whitelist'] = $cached->data;
-    } else {
-      $cache['whitelist'] = path_alias_cache_path_alias_whitelist_rebuild();
-    }
+    $cache['whitelist'] = new PathAliasWhitelist('path_alias_whitelist', 'cache');
   }
 
   $path_language = $path_language ? $path_language : $language->language;
+  $alias_sort_dir = variable_get('path_alias_cache_pid_sort_dir', 'DESC');
 
   if ($action == 'wipe') {
     $cache = array();
-    $cache['whitelist'] = path_alias_cache_path_alias_whitelist_rebuild();
   }
   elseif ($cache['whitelist'] && $path != '') {
     if ($action == 'alias') {
@@ -64,7 +58,8 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
           // Prepare required query values into a single array.
           $args = $cache['system_paths'];
           $args[] = $path_language;
-          $result = db_query("SELECT src, dst FROM {url_alias} WHERE src IN($placeholders) AND (language = '%s' OR language = '') ORDER BY language ASC", $args);
+          $args[] = $alias_sort_dir;
+          $result = db_query("SELECT src, dst FROM {url_alias} WHERE src IN($placeholders) AND (language = '%s' OR language = '') ORDER BY language ASC, pid %s", $args);
 
           while ($record = db_fetch_object($result)) {
             if (!isset($cache['map'][$path_language][$record->src])) {
@@ -82,13 +77,17 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
       // Check the path whitelist, if the top_level part before the first "/"
       // is not in the list, then there is no need to do anything further,
       // it is not in the database.
-      elseif (!isset($cache['whitelist'][strtok($path, '/')])) {
+      elseif (!isset($cache['whitelist'][$path])) {
         return FALSE;
       }
       // For system paths which were not cached, query aliases individually.
       else if (!isset($cache['no_aliases'][$path_language][$path])) {
         // Get the most fitting result falling back with alias without language
-        $alias = db_result(db_query("SELECT dst FROM {url_alias} WHERE src = '%s' AND (language = '%s' OR language = '') ORDER BY language DESC", $path, $path_language));
+        $sql = "SELECT dst FROM {url_alias}
+          WHERE src = '%s'
+          AND (language = '%s' OR language = '')
+          ORDER BY language DESC, pid %s";
+        $alias = db_result(db_query($sql, $path, $path_language, $alias_sort_dir));
         $cache['map'][$path_language][$path] = $alias;
         return $alias;
       }
@@ -100,7 +99,12 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
       $src = '';
       if (!isset($cache['map'][$path_language]) || !($src = array_search($path, $cache['map'][$path_language]))) {
         // Get the most fitting result falling back with alias without language
-        if ($src = db_result(db_query("SELECT src FROM {url_alias} WHERE dst = '%s' AND (language = '%s' OR language = '') ORDER BY language DESC", $path, $path_language))) {
+        $sql = "SELECT src FROM {url_alias}
+          WHERE dst = '%s'
+          AND (language = '%s' OR language = '')
+          ORDER BY language DESC, pid %s";
+
+        if ($src = db_result(db_query($sql, $path, $path_language, $alias_sort_dir))) {
           $cache['map'][$path_language][$src] = $path;
         }
         else {
@@ -115,6 +119,99 @@ function path_alias_cache_lookup_path($action, $path = '', $path_language = '') 
   }
 
   return FALSE;
+}
+
+/**
+ * Extends DrupalCacheArray to build the path alias whitelist over time.
+ */
+class PathAliasWhitelist extends DrupalCacheArray {
+
+  /**
+   * The substring length for whitelisted paths.
+   *
+   * The path alias whitelist is an array of path substrings, and whether
+   * that substring matches any aliases. The size of this array must be
+   * restricted, but the longer the substring, the more opportunity there is
+   * to avoid looking up paths that don't match. Therefore the length of
+   * the substring is maintained dynamically and reduced when there are more
+   * than 100 paths in the array. Since the cache has to be rebuilt each time
+   * the variable is shortened, it defaults to 5 at first.
+   */
+  protected $length;
+
+  function __construct($cid, $bin) {
+    $this->length = variable_get('path_alias_whitelist_length', 5);
+    $this->cid = $cid;
+    $this->bin = $bin;
+    parent::__construct($this->cid, $this->bin);
+  }
+
+  /**
+   * Substring a path to a standard length.
+   */
+  protected function substr($offset) {
+    return drupal_substr($offset, 0, $this->length);
+  }
+
+  /**
+   * Check the size of the whitelist cache and modify it if necessary.
+   *
+   * @return
+   *   True if the size of the storage exceeded the limit.
+   */
+  function checkStorage() {
+    // If the whitelist is larger than 100 items, reduce the allowed key length
+    // by one to reduce the number of possible unique keys. If the allowed
+    // length is already one, leave it as it is since it is not possible to
+    // subdivide any more.
+    if ($this->length > 1 && count($this->storage) >= 100) {
+      // Reduce the length by 1,
+      $this->length = max(1, $this->length - 1);
+      $this->keysToPersist = array();
+      $this->storage = array();
+      // Acquire a lock to prevent other processes writing to the cache with
+      // whitelist items using the old variable value. Since checkStorage() is
+      // called by resolveCacheMiss(), a new cache item will be entered when
+      // the class goes out of scope in DrupalCacheArray::set() before the lock
+      // is released. 
+      lock_acquire($this->bin . ':' . $this->cid);
+      variable_set('path_alias_whitelist_length', $this->length);
+      cache_clear_all($this->cid, $this->bin);
+      return TRUE;
+    }
+  }
+
+
+  function offsetExists($offset) {
+    return parent::offsetExists($this->substr($offset));
+  }
+
+  function offsetGet($offset) {
+    return parent::offsetGet($this->substr($offset));
+  }
+
+  function offsetSet($offset, $value) {
+    parent::offsetSet($this->substr($offset), $value);
+  }
+
+  function offsetUnset($offset) {
+    parent::offsetUnset($this->substr($offset));
+  }
+
+  function resolveCacheMiss($path_root) {
+    // Check the size of the storage. If it's too big, reduce the substring
+    // length by one.
+    if ($this->checkStorage()) {
+      $path_root = $this->substr($path_root);
+    }
+    $exists = (bool) db_result(db_query_range("SELECT 1 FROM {url_alias} WHERE src LIKE '%s'", $path_root . '%', 0, 1));
+    // If a path prefix does not exist, store it as NULL rather than FALSE
+    // since DrupalCacheArray uses isset() in offsetExists().
+    $value = $exists ? TRUE : NULL;
+    $this->storage[$path_root] = $value;
+    $this->persist($path_root);
+    return $value;
+  }
 }
 
 /**
@@ -198,16 +295,14 @@ function &path_alias_cache_static($name, $default_value = NULL, $reset = FALSE) 
  * @return
  *   An array containing a white list of path aliases.
  */
-function path_alias_cache_path_alias_whitelist_rebuild() {
-  // For each alias in the database, get the top level component of the system
-  // path it corresponds to. This is the portion of the path before the first "/"
-  // if present, otherwise the whole path itself.
-  $whitelist = array();
-  $result = db_query("SELECT SUBSTRING_INDEX(src, '/', 1) AS path FROM {url_alias} GROUP BY path");
-  while ($row = db_fetch_object($result)) {
-    $whitelist[$row->path] = TRUE;
+function path_alias_cache_path_alias_whitelist_rebuild($path  = NULL) {
+  // Don't rebuild the path alias whitelist for already whitelisted paths.
+  if (!empty($path)) {
+    $whitelist = new PathAliasWhitelist('path_alias_whitelist', 'cache');
+    if (isset($whitelist[$path])) {
+      return $whitelist;
+    }
   }
-  cache_set('path_alias_whitelist', $whitelist, 'cache_path');
-  return $whitelist;
+  cache_clear_all('path_alias_whitelist', 'cache');
+  return new PathAliasWhitelist('path_alias_whitelist', 'cache');
 }
-

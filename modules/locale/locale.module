@@ -326,13 +326,17 @@ function locale_node_type($op, $info) {
  * @param $reset
  *   Set to TRUE to reset the in-memory cache.
  */
-function locale($string = NULL, $langcode = NULL, $reset = FALSE) {
+function locale($string = NULL, $langcode = NULL, $reset = FALSE, $return_static = FALSE) {
   global $language;
   static $locale_t;
+  static $write_cache = FALSE;
 
   if ($reset) {
     // Reset in-memory cache.
     $locale_t = NULL;
+  }
+  if ($return_static) {
+    return $locale_t;
   }
 
   if (!isset($string)) {
@@ -342,59 +346,96 @@ function locale($string = NULL, $langcode = NULL, $reset = FALSE) {
 
   $langcode = isset($langcode) ? $langcode : $language->language;
 
-  // Store database cached translations in a static var.
-  if (!isset($locale_t[$langcode])) {
-    $locale_t[$langcode] = array();
+  // Strings are cached by langcode and user roles, using instances of the
+  // LocaleLookup class to handle string lookup and caching.
+  if (!isset($locale_t[$langcode]) && isset($language)) {
+    $locale_t[$langcode] = new LocaleLookup($langcode);
+  } 
+
+  return ($locale_t[$langcode][$string] === TRUE ? $string : $locale_t[$langcode][$string]);
+}
+
+/**
+ * Extends CacheArray to allow for dynamic building of the locale cache.
+ */
+class LocaleLookup extends DrupalCacheArray {
+
+  /**
+   * A language code.
+   * @var string
+   */
+  protected $langcode;
+
+  /**
+   * Constructs a LocaleCache object.
+   */
+  public function __construct($langcode) {
+    $this->langcode = $langcode;
+
+    // Add the current user's role IDs to the cache key, this ensures that, for
+    // example, strings for admin menu items and settings forms are not cached
+    // for anonymous users.
+    $rids = implode(':', array_keys($GLOBALS['user']->roles));
+    parent::__construct("locale:$langcode:$rids", 'cache');
+  }
+
+  /**
+   * Overrides DrupalCacheArray::resolveCacheMiss().
+   */
+  protected function resolveCacheMiss($offset) {
+    $translation = db_fetch_object(db_query("SELECT s.lid, t.translation, s.version FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = '%s' WHERE s.source = '%s' AND s.textgroup = 'default'", $this->langcode, $offset));
+    if ($translation) {
+      if ($translation->version != VERSION) {
+        // Only update the database when the site is not in read-only mode.
+        if (!variable_get('read_only', FALSE)) {
+          // This is the first use of this string under current Drupal version.
+          // Update the {locales_source} table to indicate the string is current.
+          db_query("UPDATE {locales_source} SET version = '%s' WHERE lid = %d", VERSION, $translation->lid);
+        }
+      }
+      $value = !empty($translation->translation) ? $translation->translation : TRUE;
+    }
+    else {
+      // We don't have the source string, update the {locales_source} table to
+      // indicate the string is not translated.
+      db_query("INSERT INTO {locales_source} (location, source, textgroup, version) VALUES ('%s', '%s', 'default', '%s')", request_uri(), $offset, VERSION);
+        $value = TRUE;
+    }
+    $this->storage[$offset] = $value;
     // Disabling the usage of string caching allows a module to watch for
     // the exact list of strings used on a page. From a performance
     // perspective that is a really bad idea, so we have no user
     // interface for this. Be careful when turning this option off!
-    if (variable_get('locale_cache_strings', 1) == 1) {
-      if ($cache = cache_get('locale:'. $langcode, 'cache')) {
-        $locale_t[$langcode] = $cache->data;
+    if (variable_get('locale_cache_strings', 1)) {
+      $this->persist($offset);
+    }
+    return $value;
+  }
+}
+
+/**
+ * Update the locale cache, called via register_shutdown_function().
+ */
+function _locale_write_cache() {
+  $locale_t = locale(NULL, NULL, FALSE, TRUE);
+  foreach ($locale_t as $langcode => $strings) {
+    $lock_name = "locale_cache_$langcode";
+    if (!empty($strings['#write_cache']) && lock_acquire($lock_name)) {
+      $cid = 'locale:' . $langcode;
+      $data = array();
+      // Get a fresh version of the locale cache, this ensures that if multiple
+      // requests are setting the cache simultaneously, we will not remove
+      // recently cached entries.
+      if ($cached = cache_get($cid)) {
+        $data = $cached->data;
       }
-      elseif (lock_acquire('locale_cache_' . $langcode)) {
-        // Refresh database stored cache of translations for given language.
-        // We only store short strings used in current version, to improve
-        // performance and consume less memory.
-        $result = db_query("SELECT s.source, t.translation, t.language FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = '%s' WHERE s.textgroup = 'default' AND s.version = '%s' AND LENGTH(s.source) < 75", $langcode, VERSION);
-        while ($data = db_fetch_object($result)) {
-          $locale_t[$langcode][$data->source] = (empty($data->translation) ? TRUE : $data->translation);
-        }
-        cache_set('locale:'. $langcode, $locale_t[$langcode]);
-        lock_release('locale_cache_' . $langcode);
+      foreach ($strings['#write_cache'] as $string => $value) {
+        $data[$string] = $locale_t[$langcode][$string];
       }
+      cache_set($cid, $data);
+      lock_release($lock_name);
     }
   }
-
-  // If we have the translation cached, skip checking the database
-  if (!isset($locale_t[$langcode][$string])) {
-
-    // We do not have this translation cached, so get it from the DB.
-    $translation = db_fetch_object(db_query("SELECT s.lid, t.translation, s.version FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = '%s' WHERE s.source = '%s' AND s.textgroup = 'default'", $langcode, $string));
-    if ($translation) {
-      // We have the source string at least.
-      // Cache translation string or TRUE if no translation exists.
-      $locale_t[$langcode][$string] = (empty($translation->translation) ? TRUE : $translation->translation);
-
-      if ($translation->version != VERSION) {
-        // This is the first use of this string under current Drupal version. Save version
-        // and clear cache, to include the string into caching next time. Saved version is
-        // also a string-history information for later pruning of the tables.
-        db_query("UPDATE {locales_source} SET version = '%s' WHERE lid = %d", VERSION, $translation->lid);
-        cache_clear_all('locale:', 'cache', TRUE);
-      }
-    }
-    else {
-      // We don't have the source string, cache this as untranslated.
-      db_query("INSERT INTO {locales_source} (location, source, textgroup, version) VALUES ('%s', '%s', 'default', '%s')", request_uri(), $string, VERSION);
-      $locale_t[$langcode][$string] = TRUE;
-      // Clear locale cache so this string can be added in a later request.
-      cache_clear_all('locale:', 'cache', TRUE);
-    }
-  }
-
-  return ($locale_t[$langcode][$string] === TRUE ? $string : $locale_t[$langcode][$string]);
 }
 
 /**
@@ -523,31 +564,21 @@ function locale_update_js_files() {
     }
   }
 
-  // If there are any new source files we parsed, invalidate existing
-  // JavaScript translation files for all languages, adding the refresh
-  // flags into the existing array.
+  // If there are any new source files we parsed, store them so that they will
+  // not be parsed on the next request.
   if ($new_files) {
-    $parsed += locale_inc_callback('_locale_invalidate_js');
+    variable_set('javascript_parsed', $parsed);
   }
 
-  // If necessary, rebuild the translation file for the current language.
-  if (!empty($parsed['refresh:'. $language->language])) {
-    // Don't clear the refresh flag on failure, so that another try will
-    // be performed later.
-    if (locale_inc_callback('_locale_rebuild_js')) {
-      unset($parsed['refresh:'. $language->language]);
-    }
-    // Store any changes after refresh was attempted.
-    variable_set('javascript_parsed', $parsed);
-  }
-  // If no refresh was attempted, but we have new source files, we need
-  // to store them too. This occurs if current page is in English.
-  else if ($new_files) {
-    variable_set('javascript_parsed', $parsed);
+  if (!isset($language->javascript)) {
+    locale_inc_callback('_locale_rebuild_js', $language->langcode);
   }
 
   // Add the translation JavaScript file to the page.
   if ($files && !empty($language->javascript)) {
+    if (!file_exists($dir .'/'. $language->language .'_'. $language->javascript .'.js')) {
+      locale_inc_callback('_locale_rebuild_js', $language->langcode);
+    }
     drupal_add_js($dir .'/'. $language->language .'_'. $language->javascript .'.js', 'core');
   }
 }
