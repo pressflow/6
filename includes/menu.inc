@@ -1002,7 +1002,7 @@ function menu_tree_collect_node_links(&$tree, &$node_links) {
  */
 function menu_tree_check_access(&$tree, $node_links = array()) {
 
-  if ($node_links) {
+  if ($node_links && (user_access('access content') || user_access('bypass node access'))) {
     // Use db_rewrite_sql to evaluate view access without loading each full node.
     $nids = array_keys($node_links);
     $placeholders = '%d'. str_repeat(', %d', count($nids) - 1);
@@ -2480,14 +2480,6 @@ function _menu_router_build($callbacks) {
   variable_set('menu_masks', $masks);
 
   return $menu;
-}
-
-/**
- * Returns TRUE if a path is external (e.g. http://example.com).
- */
-function menu_path_is_external($path) {
-  $colonpos = strpos($path, ':');
-  return $colonpos !== FALSE && !preg_match('![/?#]!', substr($path, 0, $colonpos)) && filter_xss_bad_protocol($path, FALSE) == check_plain($path);
 }
 
 /**
