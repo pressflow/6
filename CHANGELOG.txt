@@ -1,3 +1,18 @@
+Drupal 6.38-p1, 2016-08-10 - SA-CORE-2016-003
+---------------------------------------------
+
+The provided patch will mitigate possible exploits of the HTTP_PROXY
+header in Drupal 6. There are no currently known vectors of this
+exploit in Drupal 6, however, we still advise blocking the HTTP_PROXY
+header either with this patch for simple Apache installations (the
+patch includes rules in .htaccess) or via your own configuration if
+you use another webserver and/or you have disabled htaccess. You can
+read more about this issue here: https://www.drupal.org/SA-CORE-2016-003
+and here: https://httpoxy.org/
+
+Almost all site administrators will want to take the infrastructure
+actions suggested in httppoxy.org and a complete solution to this
+vulnerability.
 
 Drupal 6.38, 2016-02-24 - Final release
 ---------------------------------------

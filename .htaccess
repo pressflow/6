@@ -76,6 +76,12 @@ DirectoryIndex index.php
   </FilesMatch>
 </IfModule>
 
+# Disable Proxy header, since it's an attack vector. See https://www.drupal.org/SA-CORE-2016-003
+<IfModule mod_headers.c>
+  RequestHeader unset Proxy
+</IfModule>
+
+
 # Various rewrite rules.
 <IfModule mod_rewrite.c>
   RewriteEngine on
