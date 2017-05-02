@@ -715,6 +715,7 @@ function user_admin_role_submit($form, &$form_state) {
     db_query("INSERT INTO {role} (name) VALUES ('%s')", $form_state['values']['name']);
     drupal_set_message(t('The role has been added.'));
   }
+  user_roles(FALSE, FALSE, TRUE);
   $form_state['redirect'] = 'admin/user/roles';
   return;
 }

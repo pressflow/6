@@ -1,0 +1,17 @@
+*.swp
+*~
+*.marks
+*#*
+CVS
+.project
+.DS_Store
+.git
+.git-tmp
+*/.gitignore
+files
+tmp/*
+!.gitignore
+.buildpath
+.settings
+*.orig
+*.rej

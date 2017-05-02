@@ -329,6 +329,60 @@ function node_schema() {
     'primary key' => array('type'),
     );
 
+  $schema['cache_node'] = array(
+    'description' => 'Node object cache table.',
+    'fields' => array(
+      'cid' => array(
+        'description' => 'Primary Key: Unique cache ID.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'data' => array(
+        'description' => 'A loaded node object.',
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+      ),
+      'expire' => array(
+        'description' => 'A Unix timestamp indicating when the cache entry should expire, or 0 for never.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'A Unix timestamp indicating when the cache entry was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'headers' => array(
+        'description' => 'Any custom HTTP headers to be added to cached data.',
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+      'serialized' => array(
+        'description' => 'A flag to indicate whether content is serialized (1) or not (0).',
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array('expire' => array('expire')),
+    'primary key' => array('cid'),
+  );
+
   return $schema;
 }
 
+/**
+ * Install the cache schema.
+ */
+function node_install_cache_schema() {
+  $schema = drupal_get_schema_unprocessed('node', 'cache_node');
+  $ret = array();
+  db_create_table($ret, 'cache_node', $schema);
+  return $ret;
+}
