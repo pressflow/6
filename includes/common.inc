@@ -1481,7 +1481,7 @@ function url($path = NULL, $options = array()) {
   );
 
   if (!isset($options['external'])) {
-    $options['external'] = menu_path_is_external($path);
+    $options['external'] = $_GET['q'] === $path ? FALSE : menu_path_is_external($path);
   }
 
   // May need language dependent rewriting if language.inc is present.
