@@ -2258,6 +2258,8 @@ function _drupal_bootstrap_sanitize_input(&$input, $whitelist = array()) {
         $sanitized_keys = array_merge($sanitized_keys, _drupal_bootstrap_sanitize_input($input[$key], $whitelist));
       }
     }
+    // PHP 5.x will leave the array pointer at the end without this.
+    reset($input);
   }
 
   return $sanitized_keys;
