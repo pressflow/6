@@ -1,12 +1,17 @@
-Drupal 6.41 LTS, 2018-03-29
+Drupal 6.43 LTS, 2018-03-29
 -----------------------
-- Fixes bug from SA-CORE-2018-002 changes.
+- Fixes bug from SA-CORE-2018-002 changes, update version.
 
-Drupal 6.40 LTS, 2018-03-28
+Drupal 6.41, Drupal 6.42
+-----------------------
+Skipped to bring version number in line with
+https://github.com/d6lts/drupal
+
+Drupal 6.40 Pressflow, 2018-03-28
 -----------------------
 - Fixed security issues (multiple vulnerabilities). See SA-CORE-2018-002.
 
-Drupal 6.39 LTS, 2018-02-21
+Drupal 6.39 Pressflow, 2018-02-21
 -----------------------
 - Fixed security issues (multiple vulnerabilities). See SA-CORE-2018-001.
 
