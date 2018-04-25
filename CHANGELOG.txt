@@ -1,3 +1,7 @@
+Drupal 6.44 LTS, 2018-04-25
+---------------------------------------
+- Fixed security issues (remote code execution), backport. See SA-CORE-2018-004.
+
 Drupal 6.43 LTS, 2018-03-29
 -----------------------
 - Fixes bug from SA-CORE-2018-002 changes, update version.
