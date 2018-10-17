@@ -176,7 +176,7 @@ function statistics_user($op, &$edit, &$user) {
  * Implementation of hook_cron().
  */
 function statistics_cron() {
-  $statistics_timestamp = variable_get('statistics_day_timestamp', '');
+  $statistics_timestamp = variable_get('statistics_day_timestamp', 0);
 
   if ((time() - $statistics_timestamp) >= 86400) {
     // Reset day counts.

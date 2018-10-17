@@ -318,6 +318,25 @@ function _mime_header_decode($matches) {
 }
 
 /**
+ * Simple class to use instead of closure in decode_entities().
+ *
+ * @see decode_entities()
+ */
+class DrupalDecodeEntitiesCallback {
+  public $html_entities;
+  public $exclude;
+
+  public function __construct($html_entities, $exclude) {
+    $this->html_entities = $html_entities;
+    $this->exclude = $exclude;
+  }
+
+  public function callback($matches) {
+    return _decode_entities($matches[1], $matches[2], $matches[0], $this->html_entities, $this->exclude);
+  }
+}
+
+/**
  * Decodes all HTML entities (including numerical ones) to regular UTF-8 bytes.
  *
  * Double-escaped entities will only be decoded once ("&amp;lt;" becomes "&lt;",
@@ -342,11 +361,12 @@ function decode_entities($text, $exclude = array()) {
   // Flip the exclude list so that we can do quick lookups later.
   $exclude = array_flip($exclude);
 
+  // Use object instead of closure to retain PHP 5.2 compatibility.
+  $callback = new DrupalDecodeEntitiesCallback($html_entities, $exclude);
+
   // Use a regexp to select all entities in one pass, to avoid decoding 
-  // double-escaped entities twice. The PREG_REPLACE_EVAL modifier 'e' is
-  // being used to allow for a callback (see 
-  // http://php.net/manual/en/reference.pcre.pattern.modifiers).
-  return preg_replace('/&(#x?)?([A-Za-z0-9]+);/e', '_decode_entities("$1", "$2", "$0", $html_entities, $exclude)', $text);
+  // double-escaped entities twice.
+  return preg_replace_callback('/&(#x?)?([A-Za-z0-9]+);/', array($callback, 'callback'), $text);
 }
 
 /**

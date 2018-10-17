@@ -29,6 +29,7 @@ function taxonomy_term_page($str_tids = '', $depth = 0, $op = 'page') {
 
       switch ($op) {
         case 'page':
+          $current = new stdClass();
           // Build breadcrumb based on first hierarchy of first term:
           $current->tid = $tids[0];
           $breadcrumb = array();

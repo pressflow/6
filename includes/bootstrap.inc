@@ -741,7 +741,7 @@ function drupal_page_is_cacheable($force = NULL) {
   $result = $forced_cache
     && !drupal_session_started()
     && ($_SERVER['REQUEST_METHOD'] == 'GET' || $_SERVER['REQUEST_METHOD'] == 'HEAD')
-    && !count(drupal_get_messages(NULL, FALSE))
+    && !drupal_get_messages(NULL, FALSE)
     && !drupal_is_cli();
 
   return $result;
@@ -1872,7 +1872,12 @@ function drupal_session_regenerate() {
 
   if (drupal_session_started()) {
     $old_session_id = session_id();
+    // On PHP7, sess_read($key) is being called with the new session key but not
+    // on PHP5. This failsafe stores the initial user object, which on PHP5 should
+    // be just the same, and restore it later on.
+    $account = $user;
     session_regenerate_id();
+    $user = $account;
   }
   else {
     // Start the session when it doesn't exist yet.
@@ -2354,4 +2359,31 @@ function _drupal_parse_url($url) {
     unset($options['query']['q']);
   }
   return $options;
+}
+
+// Shim for ereg() family of functions for PHP 7+ where they don't exist.
+if (!function_exists('ereg')) {
+  function ereg($pattern, $subject, &$matches = array()) {
+    return preg_match('/' . $pattern . '/', $subject, $matches);
+  }
+
+  function eregi($pattern, $subject, &$matches = array()) {
+    return preg_match('/' . $pattern . '/i', $subject, $matches);
+  }
+
+  function ereg_replace($pattern, $replacement, $string) {
+    return preg_replace('/' . $pattern . '/', $replacement, $string);
+  }
+
+  function eregi_replace($pattern, $replacement, $string) {
+    return preg_replace('/' . $pattern . '/i', $replacement, $string);
+  }
+
+  function split($pattern, $subject, $limit = -1) {
+    return preg_split('/' . $pattern . '/', $subject, $limit);
+  }
+
+  function spliti($pattern, $subject, $limit = -1) {
+    return preg_split('/' . $pattern . '/i', $subject, $limit);
+  }
 }
