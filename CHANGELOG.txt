@@ -1,3 +1,11 @@
+Drupal 6.46 LTS, 2018-10-17
+---------------------------------------
+- Fixed security issues (open redirect), backport. See SA-CORE-2018-006.
+
+Drupal 6.45 LTS, 2018-10-04
+---------------------------------------
+- Initial support for PHP 7.2.
+
 Drupal 6.44 LTS, 2018-04-25
 ---------------------------------------
 - Fixed security issues (remote code execution), backport. See SA-CORE-2018-004.
