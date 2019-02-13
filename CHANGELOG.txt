@@ -1,3 +1,7 @@
+Drupal 6.47 LTS, 2019-01-02
+---------------------------------------
+- Improved support for PHP 7.2.
+
 Drupal 6.46 LTS, 2018-10-17
 ---------------------------------------
 - Fixed security issues (open redirect), backport. See SA-CORE-2018-006.

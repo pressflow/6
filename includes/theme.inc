@@ -1371,7 +1371,7 @@ function theme_submenu($links) {
 function theme_table($header, $rows, $attributes = array(), $caption = NULL) {
 
   // Add sticky headers, if applicable.
-  if (count($header)) {
+  if (!empty($header)) {
     drupal_add_js('misc/tableheader.js');
     // Add 'sticky-enabled' class to the table to identify it for JS.
     // This is needed to target tables constructed by this function.
@@ -1385,24 +1385,24 @@ function theme_table($header, $rows, $attributes = array(), $caption = NULL) {
   }
 
   // Format the table header:
-  if (count($header)) {
+  if (!empty($header)) {
     $ts = tablesort_init($header);
     // HTML requires that the thead tag has tr tags in it followed by tbody
     // tags. Using ternary operator to check and see if we have any rows.
-    $output .= (count($rows) ? ' <thead><tr>' : ' <tr>');
+    $output .= (!empty($rows) ? ' <thead><tr>' : ' <tr>');
     foreach ($header as $cell) {
       $cell = tablesort_header($cell, $header, $ts);
       $output .= _theme_table_cell($cell, TRUE);
     }
     // Using ternary operator to close the tags based on whether or not there are rows
-    $output .= (count($rows) ? " </tr></thead>\n" : "</tr>\n");
+    $output .= (!empty($rows) ? " </tr></thead>\n" : "</tr>\n");
   }
   else {
     $ts = array();
   }
 
   // Format the table rows:
-  if (count($rows)) {
+  if (!empty($rows)) {
     $output .= "<tbody>\n";
     $flip = array('even' => 'odd', 'odd' => 'even');
     $class = 'even';
