@@ -1,3 +1,7 @@
+Drupal 6.48, 2019-01-16 - from LTS
+---------------------------------------
+- Backport of fixes from SA-CORE-2019-002
+
 Drupal 6.47, 2019-01-02 - Long term support
 ---------------------------------------
 - Improved support for PHP 7.2.
