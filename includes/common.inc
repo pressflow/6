@@ -324,7 +324,7 @@ function drupal_goto($path = '', $query = NULL, $fragment = NULL, $http_response
   if ($destination) {
     // Do not redirect to an absolute URL originating from user input.
     if (!menu_path_is_external($destination)) {
-      extract(parse_url($destination));
+      extract(parse_url(urldecode($destination)));
     }
   }
 
