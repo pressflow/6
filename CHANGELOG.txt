@@ -1,4 +1,8 @@
-Drupal 6.48, 2019-01-16 - from LTS
+Drupal 6.49 LTS, 2019-01-16
+---------------------------------------
+- Fix Drush issues from SA-CORE-2019-002
+
+Drupal 6.48 LTS, 2019-01-16
 ---------------------------------------
 - Backport of fixes from SA-CORE-2019-002
 
