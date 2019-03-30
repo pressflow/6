@@ -1345,7 +1345,7 @@ function system_performance_settings() {
     '#title' => t('Block cache'),
     '#default_value' => variable_get('block_cache', CACHE_DISABLED),
     '#options' => array(CACHE_DISABLED => t('Disabled'), CACHE_NORMAL => t('Enabled (recommended)')),
-    '#disabled' => count(module_implements('node_grants')),
+    '#disabled' => !variable_get('block_cache_node_access_bypass', FALSE) || count(module_implements('node_grants')),
     '#description' => t('Note that block caching is inactive when modules defining content access restrictions are enabled.'),
   );
 
