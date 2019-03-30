@@ -1122,7 +1122,19 @@ class DrupalWebTestCase extends DrupalTestCase {
     // Add the specified modules to the list of modules in the default profile.
     // Install the modules specified by the default profile.
 //    drupal_install_modules($profile_details['dependencies'], TRUE);
-    drupal_install_modules(drupal_verify_profile('default', 'en'));
+    // Use default profile if possible, otherwise use whatever profile the site was installed with
+    if (file_exists('./profiles/default/default.profile')) {
+      $profile_in_use = 'default';
+      $modules = array_unique(array_merge(drupal_verify_profile('default', 'en'), $args));
+    }
+    else {
+      drupal_set_message(t('This installation does not have a copy of the default install profile available. SimpleTest will attempt to use your running install profile, but functionality and performan
+ce may be degraded.'), 'warning');
+      $profile_in_use = variable_get('install_profile', 'default');
+      $modules = array_unique(array_merge(drupal_verify_profile($profile_in_use, 'en'), $args));
+    }
+
+    drupal_install_modules(drupal_verify_profile($profile_in_use, 'en'));
 
 //    node_type_clear();
 
@@ -1144,7 +1156,7 @@ class DrupalWebTestCase extends DrupalTestCase {
 //    $install_state = array();
 //    drupal_install_modules(array('default'), TRUE);
     $task = 'profile';
-    default_profile_tasks($task, '');
+    module_invoke($profile_in_use, 'profile_tasks', $task, '');
 
     // Rebuild caches.
 //    node_types_rebuild();
