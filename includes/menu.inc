@@ -1694,28 +1694,28 @@ function menu_cache_clear_all() {
  */
 function menu_rebuild() {
   if (!lock_acquire('menu_rebuild')) {
-    // Wait for another request that is already doing this work.
-    // We choose to block here since otherwise the router item may not 
-    // be avaiable in menu_execute_active_handler() resulting in a 404.
-    lock_wait('menu_rebuild');
+    // In high traffic situations, calling lock_wait() here, as core does, can
+    // cause processes to stack up that could result in an outage. Since the
+    // work below is in a transaction the lock_wait() is unnecessary.
     return FALSE;
   }
 
   // Encapsulate the rebuild in a transaction.
   db_query('BEGIN');
 
-  $menu = menu_router_build(TRUE);
-  _menu_navigation_links_rebuild($menu);
-  // Clear the menu, page and block caches.
-  menu_cache_clear_all();
-  _menu_clear_page_cache();
-  
   if (defined('MAINTENANCE_MODE')) {
     variable_set('menu_rebuild_needed', TRUE);
   }
   else {
     variable_del('menu_rebuild_needed');
   }
+
+  $menu = menu_router_build(TRUE);
+  _menu_navigation_links_rebuild($menu);
+  // Clear the menu, page and block caches.
+  menu_cache_clear_all();
+  _menu_clear_page_cache();
+
   lock_release('menu_rebuild');
   
   db_query('COMMIT');
