@@ -81,25 +81,35 @@ function update_sql($sql) {
 function db_prefix_tables($sql) {
   global $db_prefix;
 
-  if (is_array($db_prefix)) {
-    if (array_key_exists('default', $db_prefix)) {
-      $tmp = $db_prefix;
-      unset($tmp['default']);
-      foreach ($tmp as $key => $val) {
-        $sql = strtr($sql, array('{'. $key .'}' => $val . $key));
-      }
-      return strtr($sql, array('{' => $db_prefix['default'], '}' => ''));
-    }
-    else {
-      foreach ($db_prefix as $key => $val) {
-        $sql = strtr($sql, array('{'. $key .'}' => $val . $key));
-      }
-      return strtr($sql, array('{' => '', '}' => ''));
-    }
-  }
-  else {
+  // Simple case, db_prefix is not an array, therefore we can do a single
+  // replacement operation.
+  if (!is_array($db_prefix)) {
     return strtr($sql, array('{' => $db_prefix, '}' => ''));
   }
+
+  return preg_replace_callback('/{.+?}/', '_db_prefix_tables_callback', $sql);
+}
+
+/**
+ * Callback function for the preg_replace_callback in db_prefix_tables.
+ */
+function _db_prefix_tables_callback($matches) {
+  global $db_prefix;
+  $table = trim($matches[0], '{}');
+
+  if (isset($db_prefix[$table])) {
+    // This table has been specifically mentioned in the $db_prefixes.
+    $prefix = $db_prefix[$table];
+  }
+  elseif (isset($db_prefix['default'])) {
+    // Default prefix is defined, use that.
+    $prefix = $db_prefix['default'];
+  }
+  else {
+    $prefix = '';
+  }
+
+  return $prefix . $table;
 }
 
 /**
