@@ -2252,6 +2252,15 @@ function drupal_add_js($data = NULL, $type = 'module', $scope = 'header', $defer
         ),
         'inline' => array(),
       );
+      // We never cache authenticated user pages, so if they are logged in we
+      // allow setting of the has_js cookie so batch API functions use the JS
+      // version.
+      // user_is_anonymous() is not used here because it is unavailable during
+      // installation.
+      // @see user_is_anonymous()
+      if (!empty($GLOBALS['user']->uid) || !empty($GLOBALS['menu_admin'])) {
+        $javascript['footer']['inline'][] = array('code' => "document.cookie = 'has_js=1; path=/';", 'defer' => TRUE);
+      }
     }
 
     if (isset($scope) && !isset($javascript[$scope])) {
