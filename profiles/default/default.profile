@@ -20,7 +20,7 @@ function default_profile_modules() {
  */
 function default_profile_details() {
   return array(
-    'name' => 'Pressflow',
+    'name' => 'Default',
     'description' => 'Select this profile to enable some basic Drupal functionality and the default theme.'
   );
 }
