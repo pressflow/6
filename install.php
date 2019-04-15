@@ -22,7 +22,7 @@ function install_main() {
   // The user agent header is used to pass a database prefix in the request when
   // running tests. However, for security reasons, it is imperative that no
   // installation be permitted using such a prefix.
-  if (isset($_SERVER['HTTP_USER_AGENT']) && strpos($_SERVER['HTTP_USER_AGENT'], "simpletest") !== FALSE) {
+  if (isset($_SERVER['HTTP_USER_AGENT']) && strpos($_SERVER['HTTP_USER_AGENT'], "simpletest") !== false) {
     header($_SERVER['SERVER_PROTOCOL'] . ' 403 Forbidden');
     exit;
   }
@@ -43,7 +43,7 @@ function install_main() {
   include_once './includes/module.inc';
   $module_list['system']['filename'] = 'modules/system/system.module';
   $module_list['filter']['filename'] = 'modules/filter/filter.module';
-  module_list(TRUE, FALSE, FALSE, $module_list);
+  module_list(true, false, false, $module_list);
   drupal_load('module', 'system');
   drupal_load('module', 'filter');
 
@@ -85,7 +85,7 @@ function install_main() {
     require_once './includes/cache-install.inc';
     $conf['cache_inc'] = './includes/cache-install.inc';
 
-    $task = NULL;
+    $task = null;
   }
 
   // No profile was passed in GET, ask the user.
@@ -105,7 +105,7 @@ function install_main() {
   if (!empty($_GET['locale'])) {
     $install_locale = preg_replace('/[^a-zA-Z_0-9\-]/', '', $_GET['locale']);
   }
-  elseif (($install_locale = install_select_locale($profile)) !== FALSE) {
+  elseif (($install_locale = install_select_locale($profile)) !== false) {
     install_goto("install.php?profile=$profile&locale=$install_locale");
   }
 
@@ -191,19 +191,19 @@ function install_verify_settings() {
 
     $url = parse_url(is_array($db_url) ? $db_url['default'] : $db_url);
     $db_user = urldecode($url['user']);
-    $db_pass = isset($url['pass']) ? urldecode($url['pass']) : NULL;
+    $db_pass = isset($url['pass']) ? urldecode($url['pass']) : null;
     $db_host = urldecode($url['host']);
     $db_port = isset($url['port']) ? urldecode($url['port']) : '';
     $db_path = ltrim(urldecode($url['path']), '/');
-    $settings_file = './'. conf_path(FALSE, TRUE) .'/settings.php';
+    $settings_file = './'. conf_path(false, true) .'/settings.php';
 
     $form_state = array();
     _install_settings_form_validate($db_prefix, $db_type, $db_user, $db_pass, $db_host, $db_port, $db_path, $settings_file, $form_state);
     if (!form_get_errors()) {
-      return TRUE;
+      return true;
     }
   }
-  return FALSE;
+  return false;
 }
 
 /**
@@ -218,7 +218,7 @@ function install_change_settings($profile = 'default', $install_locale = '') {
   $db_host = isset($url['host']) ? urldecode($url['host']) : '';
   $db_port = isset($url['port']) ? urldecode($url['port']) : '';
   $db_path = ltrim(urldecode($url['path']), '/');
-  $conf_path = './'. conf_path(FALSE, TRUE);
+  $conf_path = './'. conf_path(false, true);
   $settings_file = $conf_path .'/settings.php';
 
   // We always need this because we want to run form_get_errors.
@@ -262,7 +262,7 @@ function install_settings_form(&$form_state, $profile, $install_locale, $setting
       $form['basic_options']['db_type'] = array(
         '#type' => 'radios',
         '#title' => st('Database type'),
-        '#required' => TRUE,
+        '#required' => true,
         '#options' => $db_types,
         '#default_value' => ($db_type ? $db_type : current($db_types)),
         '#description' => st('The type of database your @drupal data will be stored in.', array('@drupal' => drupal_install_profile_name())),
@@ -286,7 +286,7 @@ function install_settings_form(&$form_state, $profile, $install_locale, $setting
       '#title' => st('Database name'),
       '#default_value' => $db_path,
       '#size' => 45,
-      '#required' => TRUE,
+      '#required' => true,
       '#description' => $db_path_description
     );
 
@@ -296,7 +296,7 @@ function install_settings_form(&$form_state, $profile, $install_locale, $setting
       '#title' => st('Database username'),
       '#default_value' => $db_user,
       '#size' => 45,
-      '#required' => TRUE,
+      '#required' => true,
     );
 
     // Database username
@@ -310,8 +310,8 @@ function install_settings_form(&$form_state, $profile, $install_locale, $setting
     $form['advanced_options'] = array(
       '#type' => 'fieldset',
       '#title' => st('Advanced options'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+      '#collapsible' => true,
+      '#collapsed' => true,
       '#description' => st("These options are only necessary for some sites. If you're not sure what you should enter here, leave the default settings or check with your hosting provider.")
     );
 
@@ -323,7 +323,7 @@ function install_settings_form(&$form_state, $profile, $install_locale, $setting
       '#size' => 45,
       // Hostnames can be 255 characters long.
       '#maxlength' => 255,
-      '#required' => TRUE,
+      '#required' => true,
       '#description' => st('If your database is located on a different server, change this.'),
     );
 
@@ -357,7 +357,7 @@ function install_settings_form(&$form_state, $profile, $install_locale, $setting
     $form['settings_file'] = array('#type' => 'value', '#value' => $settings_file);
     $form['_db_url'] = array('#type' => 'value');
     $form['#action'] = "install.php?profile=$profile". ($install_locale ? "&locale=$install_locale" : '');
-    $form['#redirect'] = FALSE;
+    $form['#redirect'] = false;
   }
   return $form;
 }
@@ -373,7 +373,7 @@ function install_settings_form_validate($form, &$form_state) {
 /**
  * Helper function for install_settings_validate.
  */
-function _install_settings_form_validate($db_prefix, $db_type, $db_user, $db_pass, $db_host, $db_port, $db_path, $settings_file, &$form_state, $form = NULL) {
+function _install_settings_form_validate($db_prefix, $db_type, $db_user, $db_pass, $db_host, $db_port, $db_path, $settings_file, &$form_state, $form = null) {
   global $db_url;
 
   // Verify the table prefix
@@ -423,11 +423,11 @@ function install_settings_form_submit($form, &$form_state) {
   // Update global settings array and save
   $settings['db_url'] = array(
     'value'    => $form_state['values']['_db_url'],
-    'required' => TRUE,
+    'required' => true,
   );
   $settings['db_prefix'] = array(
     'value'    => $form_state['values']['db_prefix'],
-    'required' => TRUE,
+    'required' => true,
   );
   drupal_rewrite_settings($settings);
 
@@ -439,7 +439,7 @@ function install_settings_form_submit($form, &$form_state) {
  * Find all .profile files.
  */
 function install_find_profiles() {
-  return file_scan_directory('./profiles', '\.profile$', array('.', '..', 'CVS'), 0, TRUE, 'name', 0);
+  return file_scan_directory('./profiles', '\.profile$', array('.', '..', 'CVS'), 0, true, 'name', 0);
 }
 
 /**
@@ -524,7 +524,7 @@ function install_select_profile_form(&$form_state, $profile_files) {
  * Find all .po files for the current profile.
  */
 function install_find_locales($profilename) {
-  $locales = file_scan_directory('./profiles/'. $profilename .'/translations', '\.po$', array('.', '..', 'CVS'), 0, FALSE);
+  $locales = file_scan_directory('./profiles/'. $profilename .'/translations', '\.po$', array('.', '..', 'CVS'), 0, false);
   array_unshift($locales, (object) array('name' => 'en'));
   return $locales;
 }
@@ -567,7 +567,7 @@ function install_select_locale($profilename) {
     }
     // One language, but not the default profile, assume
     // the user knows what he is doing.
-    return FALSE;
+    return false;
   }
   else {
     // Allow profile to pre-select the language, skipping the selection.
@@ -614,7 +614,7 @@ function install_select_locale_form(&$form_state, $locales) {
     $form['locale'][$locale->name] = array(
       '#type' => 'radio',
       '#return_value' => $locale->name,
-      '#default_value' => ($locale->name == 'en' ? TRUE : FALSE),
+      '#default_value' => ($locale->name == 'en' ? true : false),
       '#title' => $name . ($locale->name == 'en' ? ' '. st('(built-in)') : ''),
       '#parents' => array('locale')
     );
@@ -706,7 +706,7 @@ function install_tasks($profile, $task) {
     if (!empty($install_locale) && ($install_locale != 'en')) {
       include_once 'includes/locale.inc';
       // Enable installation language as default site language.
-      locale_add_language($install_locale, NULL, NULL, NULL, NULL, NULL, 1, TRUE);
+      locale_add_language($install_locale, null, null, null, null, null, 1, true);
       // Collect files to import for this language.
       $batch = locale_batch_by_language($install_locale, '_install_locale_initial_batch_finished');
       if (!empty($batch)) {
@@ -729,7 +729,7 @@ function install_tasks($profile, $task) {
   }
 
   if ($task == 'configure') {
-    if (variable_get('site_name', FALSE) || variable_get('site_mail', FALSE)) {
+    if (variable_get('site_name', false) || variable_get('site_mail', false)) {
       // Site already configured: This should never happen, means re-running
       // the installer, possibly by an attacker after the 'install_task' variable
       // got accidentally blown somewhere. Stop it now.
@@ -737,7 +737,7 @@ function install_tasks($profile, $task) {
     }
     $form = drupal_get_form('install_configure_form', $url);
 
-    if (!variable_get('site_name', FALSE) && !variable_get('site_mail', FALSE)) {
+    if (!variable_get('site_name', false) && !variable_get('site_mail', false)) {
       // Not submitted yet: Prepare to display the form.
       $output = $form;
       drupal_set_title(st('Configure site'));
@@ -911,17 +911,17 @@ function install_check_requirements($profile, $verify) {
 
   // If Drupal is not set up already, we need to create a settings file.
   if (!$verify) {
-    $writable = FALSE;
-    $conf_path = './'. conf_path(FALSE, TRUE);
+    $writable = false;
+    $conf_path = './'. conf_path(false, true);
     $settings_file = $conf_path .'/settings.php';
     $file = $conf_path;
-    $exists = FALSE;
+    $exists = false;
     // Verify that the directory exists.
     if (drupal_verify_install_file($conf_path, FILE_EXIST, 'dir')) {
       // Check to make sure a settings.php already exists.
       $file = $settings_file;
       if (drupal_verify_install_file($settings_file, FILE_EXIST)) {
-        $exists = TRUE;
+        $exists = true;
         // If it does, make sure it is writable.
         $writable = drupal_verify_install_file($settings_file, FILE_READABLE|FILE_WRITABLE);
       }
@@ -973,7 +973,7 @@ More details about installing Pressflow are available in INSTALL.txt.', array('@
 /**
  * Add the installation task list to the current page.
  */
-function install_task_list($active = NULL) {
+function install_task_list($active = null) {
   // Default list of tasks.
   $tasks = array(
     'profile-select'        => st('Choose profile'),
@@ -1024,7 +1024,7 @@ function install_task_list($active = NULL) {
   // Let the theming function know that 'finished' and 'done'
   // include everything, so every step is completed.
   if (in_array($active, array('finished', 'done'))) {
-    $active = NULL;
+    $active = null;
   }
   drupal_set_content('left', theme_task_list($tasks, $active));
 }
@@ -1041,12 +1041,12 @@ function install_configure_form(&$form_state, $url) {
   $form['site_information'] = array(
     '#type' => 'fieldset',
     '#title' => st('Site information'),
-    '#collapsible' => FALSE,
+    '#collapsible' => false,
   );
   $form['site_information']['site_name'] = array(
     '#type' => 'textfield',
     '#title' => st('Site name'),
-    '#required' => TRUE,
+    '#required' => true,
     '#weight' => -20,
   );
   $form['site_information']['site_mail'] = array(
@@ -1054,15 +1054,15 @@ function install_configure_form(&$form_state, $url) {
     '#title' => st('Site e-mail address'),
     '#default_value' => ini_get('sendmail_from'),
     '#description' => st("The <em>From</em> address in automated e-mails sent during registration and new password requests, and other notifications. (Use an address ending in your site's domain to help prevent this e-mail being flagged as spam.)"),
-    '#required' => TRUE,
+    '#required' => true,
     '#weight' => -15,
   );
   $form['admin_account'] = array(
     '#type' => 'fieldset',
     '#title' => st('Administrator account'),
-    '#collapsible' => FALSE,
+    '#collapsible' => false,
   );
-  $form['admin_account']['account']['#tree'] = TRUE;
+  $form['admin_account']['account']['#tree'] = true;
   $form['admin_account']['markup'] = array(
     '#value' => '<p class="description">'. st('The administrator account has complete access to the site; it will automatically be granted all permissions and can perform any administrative activity. This will be the only account that can perform certain activities, so keep its credentials safe.') .'</p>',
     '#weight' => -10,
@@ -1072,7 +1072,7 @@ function install_configure_form(&$form_state, $url) {
     '#title' => st('Username'),
     '#maxlength' => USERNAME_MAX_LENGTH,
     '#description' => st('Spaces are allowed; punctuation is not allowed except for periods, hyphens, and underscores.'),
-    '#required' => TRUE,
+    '#required' => true,
     '#weight' => -10,
   );
 
@@ -1080,12 +1080,12 @@ function install_configure_form(&$form_state, $url) {
     '#title' => st('E-mail address'),
     '#maxlength' => EMAIL_MAX_LENGTH,
     '#description' => st('All e-mails from the system will be sent to this address. The e-mail address is not made public and will only be used if you wish to receive a new password or wish to receive certain news or notifications by e-mail.'),
-    '#required' => TRUE,
+    '#required' => true,
     '#weight' => -5,
   );
   $form['admin_account']['account']['pass'] = array(
     '#type' => 'password_confirm',
-    '#required' => TRUE,
+    '#required' => true,
     '#size' => 25,
     '#weight' => 0,
   );
@@ -1093,7 +1093,7 @@ function install_configure_form(&$form_state, $url) {
   $form['server_settings'] = array(
     '#type' => 'fieldset',
     '#title' => st('Server settings'),
-    '#collapsible' => FALSE,
+    '#collapsible' => false,
   );
   $form['server_settings']['date_default_timezone'] = array(
     '#type' => 'select',
@@ -1110,7 +1110,7 @@ function install_configure_form(&$form_state, $url) {
     '#default_value' => 0,
     '#options' => array(0 => st('Disabled'), 1 => st('Enabled')),
     '#description' => st('This option makes Drupal emit "clean" URLs (i.e. without <code>?q=</code> in the URL).'),
-    '#disabled' => TRUE,
+    '#disabled' => true,
     '#prefix' => '<div id="clean-url" class="install">',
     '#suffix' => '</div>',
     '#weight' => 10,
@@ -1131,7 +1131,7 @@ function install_configure_form(&$form_state, $url) {
     '#weight' => 15,
   );
   $form['#action'] = $url;
-  $form['#redirect'] = FALSE;
+  $form['#redirect'] = false;
 
   // Allow the profile to alter this form. $form_state isn't available
   // here, but to conform to the hook_form_alter() signature, we pass
@@ -1174,7 +1174,7 @@ function install_configure_form_submit($form, &$form_state) {
   }
 
   // Turn this off temporarily so that we can pass a password through.
-  variable_set('user_email_verification', FALSE);
+  variable_set('user_email_verification', false);
   $form_state['old_values'] = $form_state['values'];
   $form_state['values'] = $form_state['values']['account'];
 
@@ -1186,7 +1186,7 @@ function install_configure_form_submit($form, &$form_state) {
   user_authenticate($form_state['values']);
   $form_state['values'] = $form_state['old_values'];
   unset($form_state['old_values']);
-  variable_set('user_email_verification', TRUE);
+  variable_set('user_email_verification', true);
 
   if (isset($form_state['values']['clean_url'])) {
     variable_set('clean_url', $form_state['values']['clean_url']);
