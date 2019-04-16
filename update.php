@@ -56,7 +56,7 @@ function db_add_column(&$ret, $table, $column, $type, $attributes = array()) {
       $default_val = 'NULL';
       $default = 'default NULL';
     }
-    elseif ($attributes['default'] === FALSE) {
+    elseif ($attributes['default'] === false) {
       $default = '';
     }
     else {
@@ -112,7 +112,7 @@ function db_change_column(&$ret, $table, $column, $column_new, $type, $attribute
       $default_val = 'NULL';
       $default = 'default NULL';
     }
-    elseif ($attributes['default'] === FALSE) {
+    elseif ($attributes['default'] === false) {
       $default = '';
     }
     else {
@@ -173,7 +173,7 @@ function update_do_one($module, $number, &$context) {
   $context['results'][$module][$number] = array_merge($context['results'][$module][$number], $ret);
 
   if (!empty($ret['#abort'])) {
-    $context['results'][$module]['#abort'] = TRUE;
+    $context['results'][$module]['#abort'] = true;
   }
   // Record the schema update if it was completed successfully.
   if ($context['finished'] == 1 && empty($context['results'][$module]['#abort'])) {
@@ -201,21 +201,21 @@ function update_selection_page() {
 function update_script_selection_form() {
   $form = array();
   $form['start'] = array(
-    '#tree' => TRUE,
+    '#tree' => true,
     '#type' => 'fieldset',
     '#title' => 'Select versions',
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
+    '#collapsible' => true,
+    '#collapsed' => true,
   );
 
   // Ensure system.module's updates appear first
   $form['start']['system'] = array();
 
-  $modules = drupal_get_installed_schema_version(NULL, FALSE, TRUE);
+  $modules = drupal_get_installed_schema_version(null, false, true);
   foreach ($modules as $module => $schema_version) {
     $updates = drupal_get_schema_versions($module);
     // Skip incompatible module updates completely, otherwise test schema versions.
-    if (!update_check_incompatibility($module) && $updates !== FALSE && $schema_version >= 0) {
+    if (!update_check_incompatibility($module) && $updates !== false && $schema_version >= 0) {
       // module_invoke returns NULL for nonexisting hooks, so if no updates
       // are removed, it will == 0.
       $last_removed = module_invoke($module, 'update_last_removed');
@@ -225,7 +225,7 @@ function update_script_selection_form() {
           '#prefix' => '<div class="warning">',
           '#suffix' => '</div>',
         );
-        $form['start']['#collapsed'] = FALSE;
+        $form['start']['#collapsed'] = false;
         continue;
       }
       $updates = drupal_map_assoc($updates);
@@ -248,7 +248,7 @@ function update_script_selection_form() {
 
   $form['has_js'] = array(
     '#type' => 'hidden',
-    '#default_value' => FALSE,
+    '#default_value' => false,
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -365,7 +365,7 @@ function update_info_page() {
   _drupal_flush_css_js();
   // Flush the cache of all data for the update status module.
   if (db_table_exists('cache_update')) {
-    cache_clear_all('*', 'cache_update', TRUE);
+    cache_clear_all('*', 'cache_update', true);
   }
 
   update_task_list('info');
@@ -409,10 +409,10 @@ function update_create_batch_table() {
 
   $schema['batch'] = array(
     'fields' => array(
-      'bid'       => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
-      'token'     => array('type' => 'varchar', 'length' => 64, 'not null' => TRUE),
-      'timestamp' => array('type' => 'int', 'not null' => TRUE),
-      'batch'     => array('type' => 'text', 'not null' => FALSE, 'size' => 'big')
+      'bid'       => array('type' => 'serial', 'unsigned' => true, 'not null' => true),
+      'token'     => array('type' => 'varchar', 'length' => 64, 'not null' => true),
+      'timestamp' => array('type' => 'int', 'not null' => true),
+      'batch'     => array('type' => 'text', 'not null' => false, 'size' => 'big')
     ),
     'primary key' => array('bid'),
     'indexes' => array('token' => array('token')),
@@ -464,9 +464,9 @@ function update_check_incompatibility($name, $type = 'module') {
       || !isset($file->info['core'])
       || $file->info['core'] != DRUPAL_CORE_COMPATIBILITY
       || version_compare(phpversion(), $file->info['php']) < 0) {
-    return TRUE;
+    return true;
   }
-  return FALSE;
+  return false;
 }
 
 /**
@@ -487,33 +487,33 @@ function update_check_incompatibility($name, $type = 'module') {
 function update_fix_d6_requirements() {
   $ret = array();
 
-  if (drupal_get_installed_schema_version('system') < 6000 && !variable_get('update_d6_requirements', FALSE)) {
-    $spec = array('type' => 'int', 'size' => 'small', 'default' => 0, 'not null' => TRUE);
+  if (drupal_get_installed_schema_version('system') < 6000 && !variable_get('update_d6_requirements', false)) {
+    $spec = array('type' => 'int', 'size' => 'small', 'default' => 0, 'not null' => true);
     db_add_field($ret, 'cache', 'serialized', $spec);
     db_add_field($ret, 'cache_filter', 'serialized', $spec);
     db_add_field($ret, 'cache_page', 'serialized', $spec);
     db_add_field($ret, 'cache_menu', 'serialized', $spec);
 
     db_add_field($ret, 'system', 'info', array('type' => 'text'));
-    db_add_field($ret, 'system', 'owner', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''));
+    db_add_field($ret, 'system', 'owner', array('type' => 'varchar', 'length' => 255, 'not null' => true, 'default' => ''));
     if (db_table_exists('locales_target')) {
-      db_add_field($ret, 'locales_target', 'language', array('type' => 'varchar', 'length' => 12, 'not null' => TRUE, 'default' => ''));
+      db_add_field($ret, 'locales_target', 'language', array('type' => 'varchar', 'length' => 12, 'not null' => true, 'default' => ''));
     }
     if (db_table_exists('locales_source')) {
-      db_add_field($ret, 'locales_source', 'textgroup', array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => 'default'));
-      db_add_field($ret, 'locales_source', 'version', array('type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => 'none'));
+      db_add_field($ret, 'locales_source', 'textgroup', array('type' => 'varchar', 'length' => 255, 'not null' => true, 'default' => 'default'));
+      db_add_field($ret, 'locales_source', 'version', array('type' => 'varchar', 'length' => 20, 'not null' => true, 'default' => 'none'));
     }
-    variable_set('update_d6_requirements', TRUE);
+    variable_set('update_d6_requirements', true);
 
     // Create the cache_block table. See system_update_6027() for more details.
     $schema['cache_block'] = array(
       'fields' => array(
-        'cid'        => array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''),
-        'data'       => array('type' => 'blob', 'not null' => FALSE, 'size' => 'big'),
-        'expire'     => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-        'created'    => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
-        'headers'    => array('type' => 'text', 'not null' => FALSE),
-        'serialized' => array('type' => 'int', 'size' => 'small', 'not null' => TRUE, 'default' => 0)
+        'cid'        => array('type' => 'varchar', 'length' => 255, 'not null' => true, 'default' => ''),
+        'data'       => array('type' => 'blob', 'not null' => false, 'size' => 'big'),
+        'expire'     => array('type' => 'int', 'not null' => true, 'default' => 0),
+        'created'    => array('type' => 'int', 'not null' => true, 'default' => 0),
+        'headers'    => array('type' => 'text', 'not null' => false),
+        'serialized' => array('type' => 'int', 'size' => 'small', 'not null' => true, 'default' => 0)
       ),
       'indexes' => array('expire' => array('expire')),
       'primary key' => array('cid'),
@@ -528,17 +528,17 @@ function update_fix_d6_requirements() {
         'name' => array(
           'type' => 'varchar',
           'length' => 255,
-          'not null' => TRUE,
+          'not null' => true,
           'default' => ''),
         'value' => array(
           'type' => 'varchar',
           'length' => 255,
-          'not null' => TRUE,
+          'not null' => true,
           'default' => ''),
         'expire' => array(
           'type' => 'float',
           'size' => 'big',
-          'not null' => TRUE),
+          'not null' => true),
         ),
       'indexes' => array('expire' => array('expire')),
       'primary key' => array('name'),
@@ -552,7 +552,7 @@ function update_fix_d6_requirements() {
 /**
  * Add the update task list to the current page.
  */
-function update_task_list($active = NULL) {
+function update_task_list($active = null) {
   // Default list of tasks.
   $tasks = array(
     'info' => 'Overview',
@@ -588,7 +588,7 @@ function update_check_requirements() {
 
 // Some unavoidable errors happen because the database is not yet up-to-date.
 // Our custom error handler is not yet installed, so we just suppress them.
-ini_set('display_errors', FALSE);
+ini_set('display_errors', false);
 
 require_once './includes/bootstrap.inc';
 
@@ -607,7 +607,7 @@ if (empty($op)) {
   include_once './includes/module.inc';
   $module_list['system']['filename'] = 'modules/system/system.module';
   $module_list['filter']['filename'] = 'modules/filter/filter.module';
-  module_list(TRUE, FALSE, FALSE, $module_list);
+  module_list(true, false, false, $module_list);
   drupal_load('module', 'system');
   drupal_load('module', 'filter');
 
@@ -625,7 +625,7 @@ if (empty($op)) {
   $messages = drupal_set_message();
   if (!empty($messages['warning'])) {
     drupal_maintenance_theme();
-    print theme('update_page', '<form method="post" action="update.php?op=info"><input type="submit" value="Continue" /></form>', FALSE);
+    print theme('update_page', '<form method="post" action="update.php?op=info"><input type="submit" value="Continue" /></form>', false);
     exit;
   }
   install_goto('update.php?op=info');
@@ -640,7 +640,7 @@ update_create_batch_table();
 
 // Turn error reporting back on. From now on, only fatal errors (which are
 // not passed through the error handler) will cause a message to be printed.
-ini_set('display_errors', TRUE);
+ini_set('display_errors', true);
 
 // Access check:
 if (!empty($update_free_access) || $user->uid == 1) {
