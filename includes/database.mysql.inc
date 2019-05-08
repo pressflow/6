@@ -89,6 +89,13 @@ function db_connect($url) {
     mysql_query('SET NAMES utf8', $connection);
   }
 
+  // MySQL 8 has ONLY_FULL_GROUP_BY mode enabled by default. There are too many queries in Drupal 6 that do not
+  // list all columns in GROUP BY clause. So we need to turn off this mode after connecting.
+  list ($version) = explode('-', mysql_get_server_info($connection));
+  if (version_compare($version, '8.0.0', '>=')){
+    mysql_query('SET sql_mode=(SELECT REPLACE(@@sql_mode,\'ONLY_FULL_GROUP_BY\',\'\'));', $connection);
+  }
+
   return $connection;
 }
 

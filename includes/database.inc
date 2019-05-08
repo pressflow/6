@@ -66,6 +66,312 @@ function update_sql($sql) {
 }
 
 /**
+ * MySQL 8 reserved keywords list.
+ *
+ * @see https://dev.mysql.com/doc/refman/8.0/en/keywords.html
+ */
+global $db_mysql8_reserved_keywords;
+$db_mysql8_reserved_keywords = array(
+  'accessible',
+  'add',
+  'admin',
+  'all',
+  'alter',
+  'analyze',
+  'and',
+  'as',
+  'asc',
+  'asensitive',
+  'before',
+  'between',
+  'bigint',
+  'binary',
+  'blob',
+  'both',
+  'by',
+  'call',
+  'cascade',
+  'case',
+  'change',
+  'char',
+  'character',
+  'check',
+  'collate',
+  'column',
+  'condition',
+  'constraint',
+  'continue',
+  'convert',
+  'create',
+  'cross',
+  'cube',
+  'cume_dist',
+  'current_date',
+  'current_time',
+  'current_timestamp',
+  'current_user',
+  'cursor',
+  'database',
+  'databases',
+  'day_hour',
+  'day_microsecond',
+  'day_minute',
+  'day_second',
+  'dec',
+  'decimal',
+  'declare',
+  'default',
+  'delayed',
+  'delete',
+  'dense_rank',
+  'desc',
+  'describe',
+  'deterministic',
+  'distinct',
+  'distinctrow',
+  'div',
+  'double',
+  'drop',
+  'dual',
+  'each',
+  'else',
+  'elseif',
+  'empty',
+  'enclosed',
+  'escaped',
+  'except',
+  'exists',
+  'exit',
+  'explain',
+  'false',
+  'fetch',
+  'first_value',
+  'float',
+  'float4',
+  'float8',
+  'for',
+  'force',
+  'foreign',
+  'from',
+  'fulltext',
+  'function',
+  'generated',
+  'get',
+  'grant',
+  'group',
+  'grouping',
+  'groups',
+  'having',
+  'high_priority',
+  'hour_microsecond',
+  'hour_minute',
+  'hour_second',
+  'if',
+  'ignore',
+  'in',
+  'index',
+  'infile',
+  'inner',
+  'inout',
+  'insensitive',
+  'insert',
+  'int',
+  'int1',
+  'int2',
+  'int3',
+  'int4',
+  'int8',
+  'integer',
+  'interval',
+  'into',
+  'io_after_gtids',
+  'io_before_gtids',
+  'is',
+  'iterate',
+  'join',
+  'json_table',
+  'key',
+  'keys',
+  'kill',
+  'lag',
+  'last_value',
+  'lead',
+  'leading',
+  'leave',
+  'left',
+  'like',
+  'limit',
+  'linear',
+  'lines',
+  'load',
+  'localtime',
+  'localtimestamp',
+  'lock',
+  'long',
+  'longblob',
+  'longtext',
+  'loop',
+  'low_priority',
+  'master_bind',
+  'master_ssl_verify_server_cert',
+  'match',
+  'maxvalue',
+  'mediumblob',
+  'mediumint',
+  'mediumtext',
+  'middleint',
+  'minute_microsecond',
+  'minute_second',
+  'mod',
+  'modifies',
+  'natural',
+  'not',
+  'no_write_to_binlog',
+  'nth_value',
+  'ntile',
+  'null',
+  'numeric',
+  'of',
+  'on',
+  'optimize',
+  'optimizer_costs',
+  'option',
+  'optionally',
+  'or',
+  'order',
+  'out',
+  'outer',
+  'outfile',
+  'over',
+  'partition',
+  'percent_rank',
+  'persist',
+  'persist_only',
+  'precision',
+  'primary',
+  'procedure',
+  'purge',
+  'range',
+  'rank',
+  'read',
+  'reads',
+  'read_write',
+  'real',
+  'recursive',
+  'references',
+  'regexp',
+  'release',
+  'rename',
+  'repeat',
+  'replace',
+  'require',
+  'resignal',
+  'restrict',
+  'return',
+  'revoke',
+  'right',
+  'rlike',
+  'row',
+  'rows',
+  'row_number',
+  'schema',
+  'schemas',
+  'second_microsecond',
+  'select',
+  'sensitive',
+  'separator',
+  'set',
+  'show',
+  'signal',
+  'smallint',
+  'spatial',
+  'specific',
+  'sql',
+  'sqlexception',
+  'sqlstate',
+  'sqlwarning',
+  'sql_big_result',
+  'sql_calc_found_rows',
+  'sql_small_result',
+  'ssl',
+  'starting',
+  'stored',
+  'straight_join',
+  'system',
+  'table',
+  'terminated',
+  'then',
+  'tinyblob',
+  'tinyint',
+  'tinytext',
+  'to',
+  'trailing',
+  'trigger',
+  'true',
+  'undo',
+  'union',
+  'unique',
+  'unlock',
+  'unsigned',
+  'update',
+  'usage',
+  'use',
+  'using',
+  'utc_date',
+  'utc_time',
+  'utc_timestamp',
+  'values',
+  'varbinary',
+  'varchar',
+  'varcharacter',
+  'varying',
+  'virtual',
+  'when',
+  'where',
+  'while',
+  'window',
+  'with',
+  'write',
+  'xor',
+  'year_month',
+  'zerofill',
+);
+
+/**
+ * Checks if we are under certain database driver and database version.
+ *
+ * For example, to check if we are under MySQL 8.0 or higher use
+ * db_version_compare('mysql', '8.0.0').
+ *
+ * @param string $driver
+ *   Database driver name from $db_url setting. For example 'mysql' (which covers both 'mysql:' and 'mysqli:' drivers.
+ * @param string $version
+ *   Database version returned by db_version() function call.
+ * @param string $operator
+ *   Operator to compare version. '>=' by default.
+ * @return bool
+ *   TRUE if version check passes; otherwise FALSE.
+*/
+function db_version_compare($driver, $version, $operator = '>=') {
+  global $db_url, $db_active_name;
+
+  if (is_array($db_url)) {
+    $db_active_url = array_key_exists($db_active_name, $db_url) ? $db_url[$db_active_name] : $db_url['default'];
+  }
+  else {
+    $db_active_url = $db_url;
+  }
+
+  if (substr($db_active_url, 0, strlen($driver)) === $driver) {
+    if (version_compare(db_version(), $version, $operator)) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
  * Append a database prefix to all tables in a query.
  *
  * Queries sent to Drupal should wrap all table names in curly brackets. This
@@ -79,28 +385,47 @@ function update_sql($sql) {
  *   The properly-prefixed string.
  */
 function db_prefix_tables($sql) {
-  global $db_prefix;
+  global $db_prefix, $db_mysql8_reserved_keywords;
 
+  // Add prefixes.
   if (is_array($db_prefix)) {
     if (array_key_exists('default', $db_prefix)) {
       $tmp = $db_prefix;
       unset($tmp['default']);
+
       foreach ($tmp as $key => $val) {
-        $sql = strtr($sql, array('{'. $key .'}' => $val . $key));
+        $sql = strtr($sql, array('{' . $key . '}' => '{' . $val . $key . '}'));
       }
-      return strtr($sql, array('{' => $db_prefix['default'], '}' => ''));
+      $sql = strtr($sql, array('{' => '{' . $db_prefix['default']));
     }
     else {
       foreach ($db_prefix as $key => $val) {
-        $sql = strtr($sql, array('{'. $key .'}' => $val . $key));
+        $sql = strtr($sql, array('{' . $key . '}' => '{' . $val . $key . '}'));
       }
-      return strtr($sql, array('{' => '', '}' => ''));
     }
   }
   else {
-    return strtr($sql, array('{' => $db_prefix, '}' => ''));
+    $sql = strtr($sql, array('{' => '{' . $db_prefix));
   }
+
+  // Need to escape reserved keywords for MySQL 8.
+  if (db_version_compare('mysql', '8.0.0')) {
+    foreach ($db_mysql8_reserved_keywords as $keyword) {
+      $sql = str_replace('{' . $keyword . '}', '`{' . $keyword . '}`', $sql);
+    }
+  }
+
+  // Remove curly braces.
+  $sql = strtr($sql, array('{' => '', '}' => ''));
+
+  return $sql;
 }
+
+/**
+ * Active database connection name.
+ */
+global $db_active_name;
+$db_active_name = FALSE;
 
 /**
  * Activate a database for future queries.
@@ -123,7 +448,8 @@ function db_prefix_tables($sql) {
  */
 function db_set_active($name = 'default') {
   global $db_url, $db_slave_url, $db_type, $active_db, $active_slave_db;
-  static $db_conns, $db_slave_conns, $active_name = FALSE;
+  global $db_active_name;
+  static $db_conns, $db_slave_conns;
 
   if (empty($db_url)) {
     include_once 'includes/install.inc';
@@ -169,9 +495,9 @@ function db_set_active($name = 'default') {
     }
   }
 
-  $previous_name = $active_name;
+  $previous_name = $db_active_name;
   // Set the active connection.
-  $active_name = $name;
+  $db_active_name = $name;
   $active_db = $db_conns[$name];
   if (isset($db_slave_conns[$name])) {
     $active_slave_db = $db_slave_conns[$name];

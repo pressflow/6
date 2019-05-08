@@ -2243,6 +2243,7 @@ function drupal_add_js($data = NULL, $type = 'module', $scope = 'header', $defer
       $javascript['header'] = array(
         'core' => array(
           'misc/jquery.js' => array('cache' => TRUE, 'defer' => FALSE, 'preprocess' => TRUE),
+          'misc/jquery-extend-3.4.0.js' => array('cache' => TRUE, 'defer' => FALSE, 'preprocess' => TRUE),
           'misc/drupal.js' => array('cache' => TRUE, 'defer' => FALSE, 'preprocess' => TRUE),
         ),
         'module' => array(),
@@ -3579,6 +3580,17 @@ function drupal_write_record($table, &$object, $update = array()) {
       }
       else {
         $values[] = serialize($object->$field);
+      }
+    }
+  }
+
+  // Need to escape reserved keywords for MySQL 8.
+  if (db_version_compare('mysql', '8.0.0')) {
+    global $db_mysql8_reserved_keywords;
+
+    foreach ($fields as $key => $field) {
+      if (in_array($field, $db_mysql8_reserved_keywords)) {
+        $fields[$key] = '`' . $field . '`';
       }
     }
   }
