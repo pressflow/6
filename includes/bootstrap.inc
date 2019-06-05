@@ -1479,6 +1479,18 @@ function _drupal_bootstrap($phase) {
 
     case DRUPAL_BOOTSTRAP_CONFIGURATION:
       drupal_unset_globals();
+      // PHP's built-in phar:// stream wrapper is not sufficiently secure. Override
+      // it with a more secure one, which requires PHP 5.3.3. For lower versions,
+      // unregister the built-in one without replacing it. Sites needing phar
+      // support for lower PHP versions must implement hook_stream_wrappers() to
+      // register their desired implementation.
+      if (in_array('phar', stream_get_wrappers(), TRUE)) {
+        stream_wrapper_unregister('phar');
+        if (version_compare(PHP_VERSION, '5.3.3', '>=')) {
+          include_once './includes/file.phar.inc';
+          file_register_phar_wrapper();
+        }
+      }
       // Start a page timer:
       timer_start('page');
       // Initialize the configuration

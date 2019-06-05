@@ -704,7 +704,7 @@ function file_save_upload($source, $validators = array(), $dest = FALSE, $replac
     }
 
     // Rename potentially executable files, to help prevent exploits.
-    if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
+    if (preg_match('/\.(php|phar|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
       $file->filemime = 'text/plain';
       $file->filepath .= '.txt';
       $file->filename .= '.txt';
