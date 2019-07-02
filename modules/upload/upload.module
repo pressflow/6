@@ -278,7 +278,7 @@ function upload_nodeapi(&$node, $op, $teaser = NULL) {
     case 'load':
       $output = '';
       if (variable_get("upload_$node->type", 1) == 1) {
-        $output['files'] = upload_load($node);
+        $output = array('files' => upload_load($node));
         return $output;
       }
       break;

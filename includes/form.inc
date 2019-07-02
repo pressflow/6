@@ -737,7 +737,7 @@ function _form_validate($elements, &$form_state, $form_id = NULL) {
       // A simple call to empty() will not cut it here as some fields, like
       // checkboxes, can return a valid value of '0'. Instead, check the
       // length if it's a string, and the item count if it's an array.
-      if ($elements['#required'] && (!count($elements['#value']) || (is_string($elements['#value']) && strlen(trim($elements['#value'])) == 0))) {
+      if ($elements['#required'] && (is_array($elements['#value']) && !count($elements['#value']) || (is_string($elements['#value']) && strlen(trim($elements['#value'])) == 0))) {
         form_error($elements, $t('!name field is required.', array('!name' => $elements['#title'])));
       }
 
@@ -1424,6 +1424,13 @@ function form_set_value($form_item, $value, &$form_state) {
  * the right array.
  */
 function _form_set_value(&$form_values, $form_item, $parents, $value) {
+  // This makes PHP 7 have the same behavior as PHP 5 when the value is an
+  // empty string, rather than an array. This is depended on surprisingly
+  // often in Drupal 6 contrib.
+  if ($form_values === '') {
+    $form_values = array();
+  }
+
   $parent = array_shift($parents);
   if (empty($parents)) {
     $form_values[$parent] = $value;

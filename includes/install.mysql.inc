@@ -31,6 +31,7 @@ function drupal_test_mysql($url, &$success) {
   $url['pass'] = isset($url['pass']) ? urldecode($url['pass']) : '';
   $url['host'] = urldecode($url['host']);
   $url['path'] = urldecode($url['path']);
+  $url['port'] = isset($url['port']) ? $url['port'] : NULL;
 
   // Allow for non-standard MySQL port.
   if (isset($url['port'])) {

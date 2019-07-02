@@ -236,6 +236,11 @@ function drupal_rewrite_settings($settings = array(), $prefix = '') {
     if ($fp && fwrite($fp, $buffer) === FALSE) {
       drupal_set_message(st('Failed to modify %settings, please verify the file permissions.', array('%settings' => $settings_file)), 'error');
     }
+    fclose($fp);
+    // Invalidate the cache of the settings file so next request read the newly modified one
+    if (function_exists('opcache_invalidate')) {
+      opcache_invalidate($settings_file, TRUE);
+    }
   }
   else {
     drupal_set_message(st('Failed to open %settings, please verify the file permissions.', array('%settings' => $default_settings)), 'error');
