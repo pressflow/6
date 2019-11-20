@@ -432,6 +432,7 @@ function module_implements($hook, $sort = FALSE, $refresh = FALSE) {
 
   if ($refresh) {
     $implementations = array();
+    cache_clear_all('system_cache_tables', 'cache');
     return;
   }
 
