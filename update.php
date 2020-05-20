@@ -345,7 +345,7 @@ function update_results_page() {
               $output .= '<li class="failure"><strong>Failed:</strong> '. $query['query'] .'</li>';
             }
           }
-          if (!count($queries)) {
+          if (empty($queries)) {
             $output .= '<li class="none">No queries</li>';
           }
           $output .= '</ul>';

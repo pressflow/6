@@ -180,6 +180,8 @@ function sess_destroy_sid($sid) {
       unset($_COOKIE[session_name()]);
     }
   }
+
+  return TRUE;
 }
 
 /**
@@ -190,6 +192,7 @@ function sess_destroy_sid($sid) {
  */
 function sess_destroy_uid($uid) {
   db_query('DELETE FROM {sessions} WHERE uid = %d', $uid);
+  return TRUE;
 }
 
 function sess_gc($lifetime) {
