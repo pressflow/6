@@ -1,35 +1,61 @@
-Drupal 6.47 LTS, 2019-01-02
+Drupal 6.52, 2019-05-08 - Long term support
+---------------------------------------
+- Fixed security issues (cross site scripting), backport. See SA-CORE-2019-007.
+- Fixed db_version_compare() does not handle if $db_url is an array
+
+Drupal 6.51, 2019-04-29 - Long term support
+---------------------------------------
+- Add support for MySQL 8
+
+Drupal 6.50, 2019-04-17 - Long term support
+---------------------------------------
+- Fixed security issues (cross site scripting), backport. See SA-CORE-2019-006.
+
+Drupal 6.49, 2019-01-16 - Long term support
+---------------------------------------
+- Fixes issues with some Drush commands when using the PHAR file. See
+  https://www.drupal.org/project/drupal/issues/3026386
+
+Drupal 6.48, 2019-01-16 - Long term support
+---------------------------------------
+- Fixed security issues (arbitrary PHP code execution), backport. See
+  SA-CORE-2019-002.
+
+Drupal 6.47, 2019-01-02 - Long term support
 ---------------------------------------
 - Improved support for PHP 7.2.
 
-Drupal 6.46 LTS, 2018-10-17
+Drupal 6.46, 2018-10-17 - Long term support
 ---------------------------------------
 - Fixed security issues (open redirect), backport. See SA-CORE-2018-006.
 
-Drupal 6.45 LTS, 2018-10-04
+Drupal 6.45, 2018-10-04 - Long term support
 ---------------------------------------
 - Initial support for PHP 7.2.
 
-Drupal 6.44 LTS, 2018-04-25
+Drupal 6.44, 2018-04-25 - Long term support
 ---------------------------------------
 - Fixed security issues (remote code execution), backport. See SA-CORE-2018-004.
 
-Drupal 6.43 LTS, 2018-03-29
------------------------
-- Fixes bug from SA-CORE-2018-002 changes, update version.
+Drupal 6.43, 2018-03-28 - Long term support
+---------------------------------------
+- Bug fixes to changes in 6.42 that affects the OG module.
 
-Drupal 6.41, Drupal 6.42
------------------------
-Skipped to bring version number in line with
-https://github.com/d6lts/drupal
+Drupal 6.42, 2018-03-28 - Long term support
+---------------------------------------
+- Fixed security issues (remote code execution), backport. See SA-CORE-2018-002.
 
-Drupal 6.40 Pressflow, 2018-03-28
------------------------
-- Fixed security issues (multiple vulnerabilities). See SA-CORE-2018-002.
+Drupal 6.40, 2018-02-22 - Long term support
+---------------------------------------
+- Bug fixes to changes in 6.39
 
-Drupal 6.39 Pressflow, 2018-02-21
------------------------
-- Fixed security issues (multiple vulnerabilities). See SA-CORE-2018-001.
+Drupal 6.40, 2018-02-22 - Long term support
+---------------------------------------
+- Bug fixes to changes in 6.39
+
+Drupal 6.39, 2018-02-21 - Long term support
+---------------------------------------
+- Fixed security issues (multiple vulnerabilities), backport. See SA-CORE-2018-001.
 
 Drupal 6.38, 2016-02-24 - Final release
 ---------------------------------------
