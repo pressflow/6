@@ -1,3 +1,35 @@
+Drupal 6.47 LTS, 2019-01-02
+---------------------------------------
+- Improved support for PHP 7.2.
+
+Drupal 6.46 LTS, 2018-10-17
+---------------------------------------
+- Fixed security issues (open redirect), backport. See SA-CORE-2018-006.
+
+Drupal 6.45 LTS, 2018-10-04
+---------------------------------------
+- Initial support for PHP 7.2.
+
+Drupal 6.44 LTS, 2018-04-25
+---------------------------------------
+- Fixed security issues (remote code execution), backport. See SA-CORE-2018-004.
+
+Drupal 6.43 LTS, 2018-03-29
+-----------------------
+- Fixes bug from SA-CORE-2018-002 changes, update version.
+
+Drupal 6.41, Drupal 6.42
+-----------------------
+Skipped to bring version number in line with
+https://github.com/d6lts/drupal
+
+Drupal 6.40 Pressflow, 2018-03-28
+-----------------------
+- Fixed security issues (multiple vulnerabilities). See SA-CORE-2018-002.
+
+Drupal 6.39 Pressflow, 2018-02-21
+-----------------------
+- Fixed security issues (multiple vulnerabilities). See SA-CORE-2018-001.
 
 Drupal 6.38, 2016-02-24 - Final release
 ---------------------------------------

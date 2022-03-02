@@ -1481,7 +1481,7 @@ function url($path = NULL, $options = array()) {
   );
 
   if (!isset($options['external'])) {
-    $options['external'] = menu_path_is_external($path);
+    $options['external'] = $_GET['q'] === $path ? FALSE : menu_path_is_external($path);
   }
 
   // May need language dependent rewriting if language.inc is present.
@@ -1540,6 +1540,10 @@ function url($path = NULL, $options = array()) {
   }
   elseif (!empty($path) && !$options['alias']) {
     $path = drupal_get_path_alias($path, isset($options['language']) ? $options['language']->language : '');
+    // Strip leading slashes from internal paths to prevent them becoming external
+    // URLs without protocol. /example.com should not be turned into
+    // //example.com.
+    $path = ltrim($path, '/');
   }
 
   if (function_exists('custom_url_rewrite_outbound')) {

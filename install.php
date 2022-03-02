@@ -655,7 +655,7 @@ function install_tasks($profile, $task) {
   global $base_url, $install_locale;
 
   // Bootstrap newly installed Drupal, while preserving existing messages.
-  $messages = isset($_SESSION['messages']) ? $_SESSION['messages'] : '';
+  $messages = isset($_SESSION['messages']) ? $_SESSION['messages'] : array();
   drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
   $_SESSION['messages'] = $messages;
 

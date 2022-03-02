@@ -741,7 +741,7 @@ function drupal_page_is_cacheable($force = NULL) {
   $result = $forced_cache
     && !drupal_session_started()
     && ($_SERVER['REQUEST_METHOD'] == 'GET' || $_SERVER['REQUEST_METHOD'] == 'HEAD')
-    && !count(drupal_get_messages(NULL, FALSE))
+    && !drupal_get_messages(NULL, FALSE)
     && !drupal_is_cli();
 
   return $result;
@@ -1483,6 +1483,7 @@ function _drupal_bootstrap($phase) {
       timer_start('page');
       // Initialize the configuration
       conf_init();
+      _drupal_bootstrap_sanitize_request();
       break;
 
     case DRUPAL_BOOTSTRAP_EARLY_PAGE_CACHE:
@@ -1556,6 +1557,10 @@ function _drupal_bootstrap($phase) {
         if (isset($_GET['destination']) && menu_path_is_external($_GET['destination'])) {
           unset($_GET['destination']);
           unset($_REQUEST['destination']);
+        }
+        // Ensure that the destination's query parameters are not dangerous.
+        if (isset($_GET['destination'])) {
+          _drupal_bootstrap_clean_destination();
         }
         // If there's still something in $_REQUEST['destination'] that didn't
         // come from $_GET, check it too.
@@ -1867,7 +1872,12 @@ function drupal_session_regenerate() {
 
   if (drupal_session_started()) {
     $old_session_id = session_id();
+    // On PHP7, sess_read($key) is being called with the new session key but not
+    // on PHP5. This failsafe stores the initial user object, which on PHP5 should
+    // be just the same, and restore it later on.
+    $account = $user;
     session_regenerate_id();
+    $user = $account;
   }
   else {
     // Start the session when it doesn't exist yet.
@@ -2206,4 +2216,174 @@ function filter_xss_bad_protocol($string, $decode = TRUE) {
     }
   } while ($before != $string);
   return check_plain($string);
+}
+
+/**
+ * Sanitizes unsafe keys from the request.
+ */
+function _drupal_bootstrap_sanitize_request() {
+  global $conf;
+  static $sanitized;
+
+  if (!$sanitized) {
+    // Ensure the whitelist array exists.
+    if (!isset($conf['sanitize_input_whitelist']) || !is_array($conf['sanitize_input_whitelist'])) {
+      $conf['sanitize_input_whitelist'] = array();
+    }
+
+    $sanitized_keys = _drupal_bootstrap_sanitize_input($_GET, $conf['sanitize_input_whitelist']);
+    $sanitized_keys = array_merge($sanitized_keys, _drupal_bootstrap_sanitize_input($_POST, $conf['sanitize_input_whitelist']));
+    $sanitized_keys = array_merge($sanitized_keys, _drupal_bootstrap_sanitize_input($_REQUEST, $conf['sanitize_input_whitelist']));
+    $sanitized_keys = array_merge($sanitized_keys, _drupal_bootstrap_sanitize_input($_COOKIE, $conf['sanitize_input_whitelist']));
+    $sanitized_keys = array_unique($sanitized_keys);
+
+    if (count($sanitized_keys) && !empty($conf['sanitize_input_logging'])) {
+      trigger_error(check_plain(sprintf('Potentially unsafe keys removed from request parameters: %s', implode(', ', $sanitized_keys)), E_USER_WARNING));
+    }
+
+    $sanitized = TRUE;
+  }
+}
+
+/**
+ * Sanitizes unsafe keys from user input.
+ *
+ * @param mixed $input
+ *   Input to sanitize.
+ * @param array $whitelist
+ *   Whitelist of values.
+ * @return array
+ */
+function _drupal_bootstrap_sanitize_input(&$input, $whitelist = array()) {
+  $sanitized_keys = array();
+
+  if (is_array($input)) {
+    foreach ($input as $key => $value) {
+      if ($key !== '' && $key[0] === '#' && !in_array($key, $whitelist, TRUE)) {
+        unset($input[$key]);
+        $sanitized_keys[] = $key;
+      }
+      elseif (is_array($input[$key])) {
+        $sanitized_keys = array_merge($sanitized_keys, _drupal_bootstrap_sanitize_input($input[$key], $whitelist));
+      }
+    }
+    // PHP 5.x will leave the array pointer at the end without this.
+    reset($input);
+  }
+
+  return $sanitized_keys;
+}
+
+/**
+ * Removes the destination if it is dangerous.
+ *
+ * Note this can only be called after common.inc has been included.
+ *
+ * @return bool
+ *   TRUE if the destination has been removed from $_GET, FALSE if not.
+ */
+function _drupal_bootstrap_clean_destination() {
+  $dangerous_keys = array();
+
+  $parts = _drupal_parse_url($_GET['destination']);
+  if (!empty($parts['query'])) {
+    $whitelist = variable_get('sanitize_input_whitelist', array());
+    $log_sanitized_keys = variable_get('sanitize_input_logging', FALSE);
+
+    $dangerous_keys = _drupal_bootstrap_sanitize_input($parts['query'], $whitelist);
+    if (!empty($dangerous_keys)) {
+      // The destination is removed rather than sanitized to mirror the
+      // handling of external destinations.
+      unset($_GET['destination']);
+      unset($_REQUEST['destination']);
+      if ($log_sanitized_keys) {
+        trigger_error(sprintf('Potentially unsafe destination removed from query string parameters (GET) because it contained the following keys: %s', implode(', ', $dangerous_keys)));
+      }
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Backport of drupal_parse_url() from Drupal 7.
+ */
+function _drupal_parse_url($url) {
+  $options = array(
+    'path' => NULL,
+    'query' => array(),
+    'fragment' => '',
+  );
+
+  // External URLs: not using parse_url() here, so we do not have to rebuild
+  // the scheme, host, and path without having any use for it.
+  if (strpos($url, '://') !== FALSE) {
+
+    // Split off everything before the query string into 'path'.
+    $parts = explode('?', $url);
+    $options['path'] = $parts[0];
+
+    // If there is a query string, transform it into keyed query parameters.
+    if (isset($parts[1])) {
+      $query_parts = explode('#', $parts[1]);
+      parse_str($query_parts[0], $options['query']);
+
+      // Take over the fragment, if there is any.
+      if (isset($query_parts[1])) {
+        $options['fragment'] = $query_parts[1];
+      }
+    }
+  }
+  else {
+
+    // parse_url() does not support relative URLs, so make it absolute. E.g. the
+    // relative URL "foo/bar:1" isn't properly parsed.
+    $parts = parse_url('http://example.com/' . $url);
+
+    // Strip the leading slash that was just added.
+    $options['path'] = substr($parts['path'], 1);
+    if (isset($parts['query'])) {
+      parse_str($parts['query'], $options['query']);
+    }
+    if (isset($parts['fragment'])) {
+      $options['fragment'] = $parts['fragment'];
+    }
+  }
+
+  // The 'q' parameter contains the path of the current page if clean URLs are
+  // disabled. It overrides the 'path' of the URL when present, even if clean
+  // URLs are enabled, due to how Apache rewriting rules work. The path
+  // parameter must be a string.
+  if (isset($options['query']['q']) && is_string($options['query']['q'])) {
+    $options['path'] = $options['query']['q'];
+    unset($options['query']['q']);
+  }
+  return $options;
+}
+
+// Shim for ereg() family of functions for PHP 7+ where they don't exist.
+if (!function_exists('ereg')) {
+  function ereg($pattern, $subject, &$matches = array()) {
+    return preg_match('/' . $pattern . '/', $subject, $matches);
+  }
+
+  function eregi($pattern, $subject, &$matches = array()) {
+    return preg_match('/' . $pattern . '/i', $subject, $matches);
+  }
+
+  function ereg_replace($pattern, $replacement, $string) {
+    return preg_replace('/' . $pattern . '/', $replacement, $string);
+  }
+
+  function eregi_replace($pattern, $replacement, $string) {
+    return preg_replace('/' . $pattern . '/i', $replacement, $string);
+  }
+
+  function split($pattern, $subject, $limit = -1) {
+    return preg_split('/' . $pattern . '/', $subject, $limit);
+  }
+
+  function spliti($pattern, $subject, $limit = -1) {
+    return preg_split('/' . $pattern . '/i', $subject, $limit);
+  }
 }
